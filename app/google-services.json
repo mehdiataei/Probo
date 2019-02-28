@@ -1,0 +1,42 @@
+{
+  "project_info": {
+    "project_number": "935493588286",
+    "firebase_url": "https://probo-91cac.firebaseio.com",
+    "project_id": "probo-91cac",
+    "storage_bucket": "probo-91cac.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:935493588286:android:b0dbf276f5d811f4",
+        "android_client_info": {
+          "package_name": "com.utoronto.ece1778.probo"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "935493588286-1shp52njgqopno87v2s58sb9mo8arc1k.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAUUnPBfX2JIrIJovubhGTm3_cd5LFrrew"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

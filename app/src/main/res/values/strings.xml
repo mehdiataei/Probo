@@ -1,3 +1,35 @@
 <resources>
     <string name="app_name">Probo</string>
+
+    <string name="sign_in_email_hint">Email</string>
+    <string name="sign_in_password_hint">Password</string>
+    <string name="sign_in_submit_button">SIGN IN</string>
+    <string name="sign_in_sign_up_button">SIGN UP</string>
+    <string name="sign_in_error_icon_description">Error icon</string>
+    <string name="sign_in_error_empty_email">Please enter an email address.</string>
+    <string name="sign_in_error_empty_password">Please enter a password.</string>
+    <string name="sign_in_error_invalid_credentials">The credentials you have entered are not valid.</string>
+    <string name="sign_in_error_no_user">The credentials you have entered are not correct.</string>
+    <string name="sign_in_error_general">An error has occurred. Please try again later.</string>
+    <string name="sign_in_progress">Loading your account.</string>
+
+    <string name="sign_up_label">Sign up</string>
+    <string name="sign_up_profile_image_description">Profile image</string>
+    <string name="sign_up_email_hint">Email</string>
+    <string name="sign_up_password_hint">Password</string>
+    <string name="sign_up_re_password_hint">Re-Enter Password</string>
+    <string name="sign_up_name_hint">Name</string>
+    <string name="sign_up_submit_button">SIGN UP</string>
+    <string name="sign_up_back_button">GO BACK</string>
+    <string name="sign_up_error_empty_email">Please enter an email address.</string>
+    <string name="sign_up_error_empty_password">Please enter a password.</string>
+    <string name="sign_up_error_incorrect_re_password">The passwords you have entered do not match.</string>
+    <string name="sign_up_error_empty_name">Please enter your name.</string>
+    <string name="sign_up_error_weak_password">The password you have entered is too weak.</string>
+    <string name="sign_up_error_invalid_email">The email you have entered is not valid.</string>
+    <string name="sign_up_error_user_exists">The email you have entered is already in use.</string>
+    <string name="sign_up_error_general">An error has occurred. Please try again later.</string>
+    <string name="sign_up_progress_creating">Creating your account.</string>
+    <string name="sign_up_progress_uploading_profile_image">Uploading your profile image.</string>
+    <string name="sign_up_progress_saving">Saving your details.</string>
 </resources>
