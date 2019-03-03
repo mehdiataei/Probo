@@ -1,4 +1,4 @@
-package com.utoronto.ece1778.probo;
+package com.utoronto.ece1778.probo.Login;
 
 import android.content.Intent;
 import android.support.v4.graphics.drawable.RoundedBitmapDrawable;
@@ -11,6 +11,9 @@ import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.utoronto.ece1778.probo.Utils.Helper;
+import com.utoronto.ece1778.probo.R;
 
 public class SignUpActivity extends AppCompatActivity {
     static final int REQUEST_IMAGE_CAPTURE = 1;

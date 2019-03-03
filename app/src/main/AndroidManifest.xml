@@ -16,26 +16,24 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+        <activity android:name=".News.NewsActivity"></activity>
 
         <provider
             android:name="android.support.v4.content.FileProvider"
             android:authorities="${applicationId}.provider"
             android:exported="false"
             android:grantUriPermissions="true">
-
             <meta-data
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/image_files_path" />
         </provider>
 
         <activity
-            android:name=".SignUpActivity"
+            android:name=".Login.SignUpActivity"
             android:label="@string/sign_up_label" />
-
         <activity
-            android:name=".SignInActivity"
+            android:name=".Login.SignInActivity"
             android:theme="@style/AppThemeNoActionBar" />
-
         <activity android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

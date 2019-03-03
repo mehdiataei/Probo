@@ -1,4 +1,4 @@
-package com.utoronto.ece1778.probo;
+package com.utoronto.ece1778.probo.Login;
 
 import android.graphics.Bitmap;
 import android.support.annotation.NonNull;

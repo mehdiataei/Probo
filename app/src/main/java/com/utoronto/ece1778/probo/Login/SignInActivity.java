@@ -1,16 +1,18 @@
-package com.utoronto.ece1778.probo;
+package com.utoronto.ece1778.probo.Login;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.utoronto.ece1778.probo.News.NewsActivity;
+import com.utoronto.ece1778.probo.Utils.Helper;
+import com.utoronto.ece1778.probo.R;
 
 public class SignInActivity extends AppCompatActivity {
     private EditText emailInput;
@@ -67,6 +69,8 @@ public class SignInActivity extends AppCompatActivity {
                 );
 
                 toast.show();
+                Intent intent = new Intent(SignInActivity.this, NewsActivity.class);
+                startActivity(intent);
             }
 
             @Override

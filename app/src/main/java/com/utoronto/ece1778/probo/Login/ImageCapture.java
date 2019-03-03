@@ -1,4 +1,4 @@
-package com.utoronto.ece1778.probo;
+package com.utoronto.ece1778.probo.Login;
 
 import android.content.Context;
 import android.content.Intent;
@@ -16,7 +16,7 @@ public class ImageCapture {
     private Context context;
     private File imageFile;
 
-    ImageCapture(Context context) {
+    public ImageCapture(Context context) {
         this.context = context;
     }
 

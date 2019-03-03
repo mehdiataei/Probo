@@ -1,4 +1,4 @@
-package com.utoronto.ece1778.probo;
+package com.utoronto.ece1778.probo.Login;
 
 import android.content.res.Resources;
 import android.graphics.Bitmap;

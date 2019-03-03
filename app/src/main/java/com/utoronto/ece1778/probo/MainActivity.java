@@ -4,6 +4,8 @@ import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 
+import com.utoronto.ece1778.probo.Login.SignInActivity;
+
 public class MainActivity extends AppCompatActivity {
 
     @Override
