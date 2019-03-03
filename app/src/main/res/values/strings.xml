@@ -34,4 +34,7 @@
     <string name="sign_up_progress_saving">Saving your details.</string>
     <string name="dbname_news">news</string>
     <string name="news_fragment">News</string>
+
+    <string name="article_menu_true">True</string>
+    <string name="article_menu_false">False</string>
 </resources>

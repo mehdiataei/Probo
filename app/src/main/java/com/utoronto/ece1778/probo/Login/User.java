@@ -45,7 +45,7 @@ public class User {
             SIGN_UP_PROGRESS_UPLOADING_PROFILE_IMAGE = 1,
             SIGN_UP_PROGRESS_SAVING = 2;
 
-    User() {
+    public User() {
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
 
         if (user != null) {
@@ -53,8 +53,12 @@ public class User {
         }
     }
 
-    User(String uid) {
+    public User(String uid) {
         this.uid = uid;
+    }
+
+    public String getUid() {
+        return this.uid;
     }
 
     public String getName() {

@@ -52,6 +52,7 @@ public class NewsFragment extends Fragment {
 
     private FirebaseFirestore db;
 
+    private ArrayList<NewsItem> news;
 
     @Nullable
     @Override
@@ -105,7 +106,7 @@ public class NewsFragment extends Fragment {
     private void setupGridView(final NewsFragment fragment) {
         Log.d(TAG, "setupGridView: Setting up news grid.");
 
-        final ArrayList<NewsItem> news = new ArrayList<>();
+        news = new ArrayList<>();
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
         db
@@ -149,8 +150,8 @@ public class NewsFragment extends Fragment {
                                 // set up the RecyclerView
                                 recyclerView.setLayoutManager(new GridLayoutManager(mContext, NUM_OF_COLUMNS, GridLayoutManager.VERTICAL, false));
                                 adapter = new MyRecyclerViewAdapter(mContext, news);
-
                                 recyclerView.setAdapter(adapter);
+                                adapter.setClickListener(handleArticleClick);
 
 
                             }
@@ -166,6 +167,15 @@ public class NewsFragment extends Fragment {
         });
 
     }
+
+    private MyRecyclerViewAdapter.ItemClickListener handleArticleClick = new MyRecyclerViewAdapter.ItemClickListener() {
+        @Override
+        public void onItemClick(View view, int position) {
+            Intent intent = new Intent(mContext, ArticleActivity.class);
+            intent.putExtra("articleId", news.get(position).getNews_id());
+            startActivity(intent);
+        }
+    };
 
     private void checkCurrentUser(FirebaseUser user) {
         Log.d(TAG, "checkCurrentUser: checking if user is logged in.");
