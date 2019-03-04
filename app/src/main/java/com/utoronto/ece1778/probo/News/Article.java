@@ -67,6 +67,11 @@ public class Article {
                 this.body.replace("\\n", System.getProperty("line.separator")),
                 bodyAnnotations
         );
+
+    }
+
+    public String getRawBody() {
+        return this.body;
     }
 
     public Date getDatetime() {

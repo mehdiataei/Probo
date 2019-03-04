@@ -22,6 +22,7 @@ import com.bumptech.glide.Priority;
 import com.bumptech.glide.request.RequestOptions;
 import com.utoronto.ece1778.probo.Login.User;
 import com.utoronto.ece1778.probo.R;
+import com.utoronto.ece1778.probo.Utils.ClickableTextView;
 import com.utoronto.ece1778.probo.Utils.GlideImageLoader;
 import com.utoronto.ece1778.probo.Utils.SquareImageView;
 
@@ -33,7 +34,7 @@ public class ArticleActivity extends AppCompatActivity {
     private Article article;
 
     private TextView headline;
-    private TextView body;
+    private ClickableTextView body;
 
     private User user;
 
@@ -115,6 +116,7 @@ public class ArticleActivity extends AppCompatActivity {
             menu.removeItem(android.R.id.cut);
             menu.removeItem(android.R.id.copy);
             menu.removeItem(android.R.id.shareText);
+//            menu.clear();
 
             return true;
         }
@@ -275,7 +277,8 @@ public class ArticleActivity extends AppCompatActivity {
         author.setText(article.getAuthor());
         datetime.setText(dateFormat.format(article.getDatetime()));
         headline.setText(article.getHeadline());
-        body.setText(article.getBody());
+        body.setTextWithClickableSentences(article.getRawBody().replace("\\n", System.getProperty("line.separator")).replace("\\", ""));
+        //body.setText(article.getBody());
     }
 
     public void updateAnnotations() {
