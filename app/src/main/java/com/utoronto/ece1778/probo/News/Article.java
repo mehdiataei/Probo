@@ -73,6 +73,10 @@ public class Article {
         );
     }
 
+    public String getRawBody() {
+        return this.body;
+    }
+
     public Date getDatetime() {
         return this.datetime;
     }
