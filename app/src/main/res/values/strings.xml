@@ -38,6 +38,8 @@
     <string name="article_menu_true">True</string>
     <string name="article_menu_false">False</string>
 
+    <string name="annotation_input_true">True</string>
+    <string name="annotation_input_false">False</string>
     <string name="annotation_input_close_image_description">Close button</string>
     <string name="annotation_input_title_true">Why is this true?</string>
     <string name="annotation_input_title_false">Why is this false?</string>

@@ -41,7 +41,8 @@ import java.text.DateFormat;
 import java.util.Locale;
 
 public class ArticleActivity extends AppCompatActivity
-        implements AnnotationInputFragment.AnnotationInputFragmentInteractionListener {
+        implements AnnotationInputFragment.AnnotationInputFragmentInteractionListener,
+                    ClickableTextView.ClickableTextViewInterface {
 
     private SwipeRefreshLayout refresh;
     private FrameLayout annotationContainer;
@@ -96,7 +97,6 @@ public class ArticleActivity extends AppCompatActivity
         }
 
         headline.setCustomSelectionActionModeCallback(handleHeadlineTextSelect);
-        body.setCustomSelectionActionModeCallback(handleBodyTextSelect);
 
         refresh.setOnRefreshListener(handleRefresh);
     }
@@ -166,66 +166,11 @@ public class ArticleActivity extends AppCompatActivity
 
             switch (item.getItemId()) {
                 case MENU_TRUE_BUTTON:
-                    showAnnotationInput(Annotation.TYPE_HEADLINE, start, end,1);
+                    showAnnotationInput(article.getHeadline().toString(), Annotation.TYPE_HEADLINE, start, end,1);
                     mode.finish();
                     return true;
                 case MENU_FALSE_BUTTON:
-                    showAnnotationInput(Annotation.TYPE_HEADLINE, start, end,0);
-                    mode.finish();
-                    return true;
-                default:
-                    break;
-            }
-
-            return false;
-        }
-    };
-
-    private ActionMode.Callback handleBodyTextSelect = new ActionMode.Callback() {
-        @Override
-        public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
-            menu.removeItem(android.R.id.selectAll);
-            menu.removeItem(android.R.id.cut);
-            menu.removeItem(android.R.id.copy);
-            menu.removeItem(android.R.id.shareText);
-
-            return true;
-        }
-
-        @Override
-        public boolean onCreateActionMode(ActionMode mode, Menu menu) {
-            menu.add(0, MENU_TRUE_BUTTON, 0, getString(R.string.article_menu_true))
-                    .setIcon(R.drawable.thumb_up_icon);
-
-            menu.add(0, MENU_FALSE_BUTTON, 1, getString(R.string.article_menu_false))
-                    .setIcon(R.drawable.thumb_down_icon);
-
-            return true;
-        }
-
-        @Override
-        public void onDestroyActionMode(ActionMode mode) {}
-
-        @Override
-        public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
-            int start = 0;
-            int end = body.getText().length();
-
-            if (body.isFocused()) {
-                final int selectionStart = body.getSelectionStart();
-                final int selectionEnd = body.getSelectionEnd();
-
-                start = Math.max(0, Math.min(selectionStart, selectionEnd));
-                end = Math.max(0, Math.max(selectionStart, selectionEnd));
-            }
-
-            switch (item.getItemId()) {
-                case MENU_TRUE_BUTTON:
-                    showAnnotationInput(Annotation.TYPE_BODY, start, end,1);
-                    mode.finish();
-                    return true;
-                case MENU_FALSE_BUTTON:
-                    showAnnotationInput(Annotation.TYPE_BODY, start, end, 0);
+                    showAnnotationInput(article.getHeadline().toString(), Annotation.TYPE_HEADLINE, start, end,0);
                     mode.finish();
                     return true;
                 default:
@@ -265,12 +210,13 @@ public class ArticleActivity extends AppCompatActivity
         body.setTextWithClickableSentences(article.getRawBody().replace("\\n", System.getProperty("line.separator")).replace("\\", ""));
     }
 
-    private void showAnnotationInput(String type, int startIndex, int endIndex, int value) {
+    private void showAnnotationInput(String quote, String type, int startIndex, int endIndex, int value) {
         Animation animation = AnimationUtils.loadAnimation(this, R.anim.annotation_input_slide_in);
         FragmentManager manager = getSupportFragmentManager();
         FragmentTransaction transaction = manager.beginTransaction();
 
         annotationInputFragment = AnnotationInputFragment.newInstance(
+                quote,
                 type,
                 startIndex,
                 endIndex,
@@ -339,5 +285,10 @@ public class ArticleActivity extends AppCompatActivity
     @Override
     public void onAnnotationClose() {
         hideAnnotationInput();
+    }
+
+    @Override
+    public void onTextViewClick(String quote, int startIndex, int endIndex) {
+        showAnnotationInput(quote, Annotation.TYPE_BODY, startIndex, endIndex,1);
     }
 }
