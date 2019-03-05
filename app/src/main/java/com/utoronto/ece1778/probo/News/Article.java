@@ -43,6 +43,10 @@ public class Article {
         this.bodyAnnotations = new ArrayList<>();
     }
 
+    public String getId() {
+        return this.id;
+    };
+
     public String getAuthor() {
         return this.author;
     };
@@ -73,50 +77,40 @@ public class Article {
         return this.datetime;
     }
 
-    public void addHeadlineAnnotation(User user, int startIndex, int endIndex, int value) {
+    public void addHeadlineAnnotation(User user, int startIndex, int endIndex, int value, String comment) {
         if (startIndex >= endIndex) {
             return;
         }
 
         Annotation annotation = new Annotation(
-                user.getUid(),
+                user,
+                Annotation.TYPE_HEADLINE,
                 startIndex,
                 endIndex,
-                value
+                value,
+                comment
         );
 
         this.headlineAnnotations.add(annotation);
-
-        this.saveAnnotation(
-                user,
-                startIndex,
-                endIndex,
-                value,
-                Annotation.TYPE_HEADLINE
-        );
+        annotation.save(this);
     }
 
-    public void addBodyAnnotation(User user, int startIndex, int endIndex, int value) {
+    public void addBodyAnnotation(User user, int startIndex, int endIndex, int value, String comment) {
         if (startIndex >= endIndex) {
             return;
         }
 
         Annotation annotation = new Annotation(
-                user.getUid(),
-                startIndex,
-                endIndex,
-                value
-        );
-
-        this.bodyAnnotations.add(annotation);
-
-        this.saveAnnotation(
                 user,
+                Annotation.TYPE_BODY,
                 startIndex,
                 endIndex,
                 value,
-                Annotation.TYPE_BODY
+                comment
         );
+
+        this.bodyAnnotations.add(annotation);
+        annotation.save(this);
     }
 
     private static SpannableString addAnnotations(String original, ArrayList<Annotation> annotations) {
@@ -199,17 +193,25 @@ public class Article {
                             Object endObj = snapshot.get("endIndex");
                             Object valueObj = snapshot.get("value");
                             String userId = snapshot.getString("userId");
+                            String comment = snapshot.getString("comment");
 
-                            if (type != null && startObj != null && endObj != null && valueObj != null && userId != null) {
+                            if (type != null &&
+                                    startObj != null &&
+                                    endObj != null &&
+                                    valueObj != null &&
+                                    userId != null) {
+
                                 Long start = (Long) startObj;
                                 Long end = (Long) endObj;
                                 Long value = (Long) valueObj;
 
                                 Annotation annotation = new Annotation(
-                                        userId,
+                                        new User(userId),
+                                        type,
                                         start.intValue(),
                                         end.intValue(),
-                                        value.intValue()
+                                        value.intValue(),
+                                        comment
                                 );
 
                                 switch (type) {
@@ -231,34 +233,6 @@ public class Article {
                     @Override
                     public void onFailure(@NonNull Exception e) {
                         cb.onError(e);
-                    }
-                });
-    }
-
-    private void saveAnnotation(User user, int startIndex, int endIndex, int value, String type) {
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
-
-        Map<String, Object> newAnnotation = new HashMap<>();
-
-        newAnnotation.put("articleId", this.id);
-        newAnnotation.put("userId", user.getUid());
-        newAnnotation.put("startIndex", startIndex);
-        newAnnotation.put("endIndex", endIndex);
-        newAnnotation.put("value", value);
-        newAnnotation.put("type", type);
-
-        db.collection("annotations")
-                .add(newAnnotation)
-                .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
-                    @Override
-                    public void onSuccess(DocumentReference documentReference) {
-                        Log.d("PROBO_APP", "added annotation");
-                    }
-                })
-                .addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        Log.d("PROBO_APP", "err", e);
                     }
                 });
     }

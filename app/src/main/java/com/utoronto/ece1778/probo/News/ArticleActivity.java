@@ -2,7 +2,11 @@ package com.utoronto.ece1778.probo.News;
 
 import android.drm.DrmStore;
 import android.graphics.Color;
+import android.graphics.Point;
 import android.os.Build;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
+import android.support.v4.widget.DrawerLayout;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -11,10 +15,17 @@ import android.text.SpannableString;
 import android.text.style.BackgroundColorSpan;
 import android.util.Log;
 import android.view.ActionMode;
+import android.view.Display;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.view.animation.TranslateAnimation;
+import android.widget.FrameLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
@@ -28,12 +39,17 @@ import com.utoronto.ece1778.probo.Utils.SquareImageView;
 import java.text.DateFormat;
 import java.util.Locale;
 
-public class ArticleActivity extends AppCompatActivity {
+public class ArticleActivity extends AppCompatActivity
+        implements AnnotationInputFragment.AnnotationInputFragmentInteractionListener {
+
     private SwipeRefreshLayout refresh;
+    private FrameLayout annotationContainer;
     private Article article;
 
     private TextView headline;
     private TextView body;
+
+    private AnnotationInputFragment annotationInputFragment;
 
     private User user;
 
@@ -47,6 +63,7 @@ public class ArticleActivity extends AppCompatActivity {
         setContentView(R.layout.activity_article);
 
         refresh = findViewById(R.id.refresh);
+        annotationContainer = findViewById(R.id.annotation_container);
 
         headline = findViewById(R.id.headline);
         body = findViewById(R.id.body);
@@ -148,30 +165,12 @@ public class ArticleActivity extends AppCompatActivity {
 
             switch (item.getItemId()) {
                 case MENU_TRUE_BUTTON:
-                    article.addHeadlineAnnotation(
-                            user,
-                            start,
-                            end,
-                            1
-                    );
-
-                    updateAnnotations();
-
+                    showAnnotationInput(Annotation.TYPE_HEADLINE, start, end,1);
                     mode.finish();
-
                     return true;
                 case MENU_FALSE_BUTTON:
-                    article.addHeadlineAnnotation(
-                            user,
-                            start,
-                            end,
-                            0
-                    );
-
-                    updateAnnotations();
-
+                    showAnnotationInput(Annotation.TYPE_HEADLINE, start, end,0);
                     mode.finish();
-
                     return true;
                 default:
                     break;
@@ -221,30 +220,12 @@ public class ArticleActivity extends AppCompatActivity {
 
             switch (item.getItemId()) {
                 case MENU_TRUE_BUTTON:
-                    article.addBodyAnnotation(
-                            user,
-                            start,
-                            end,
-                            1
-                    );
-
-                    updateAnnotations();
-
+                    showAnnotationInput(Annotation.TYPE_BODY, start, end,1);
                     mode.finish();
-
                     return true;
                 case MENU_FALSE_BUTTON:
-                    article.addBodyAnnotation(
-                            user,
-                            start,
-                            end,
-                            0
-                    );
-
-                    updateAnnotations();
-
+                    showAnnotationInput(Annotation.TYPE_BODY, start, end, 0);
                     mode.finish();
-
                     return true;
                 default:
                     break;
@@ -281,5 +262,81 @@ public class ArticleActivity extends AppCompatActivity {
     public void updateAnnotations() {
         headline.setText(article.getHeadline());
         body.setText(article.getBody());
+    }
+
+    private void showAnnotationInput(String type, int startIndex, int endIndex, int value) {
+        Animation animation = AnimationUtils.loadAnimation(this, R.anim.annotation_input_slide_in);
+        FragmentManager manager = getSupportFragmentManager();
+        FragmentTransaction transaction = manager.beginTransaction();
+
+        annotationInputFragment = AnnotationInputFragment.newInstance(
+                type,
+                startIndex,
+                endIndex,
+                value
+        );
+
+        transaction.add(R.id.annotation_container, annotationInputFragment);
+
+        transaction.commit();
+
+        annotationContainer.setVisibility(View.VISIBLE);
+        annotationContainer.startAnimation(animation);
+    }
+
+    private void hideAnnotationInput() {
+        Animation animation = AnimationUtils.loadAnimation(this, R.anim.annotation_input_slide_out);
+
+        animation.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {}
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                annotationContainer.setVisibility(View.INVISIBLE);
+
+                if (annotationInputFragment != null) {
+                    FragmentManager manager = getSupportFragmentManager();
+                    FragmentTransaction transaction = manager.beginTransaction();
+                    transaction.remove(annotationInputFragment);
+
+                    transaction.commit();
+                }
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {}
+        });
+
+        annotationContainer.startAnimation(animation);
+    }
+
+    @Override
+    public void onAnnotationSubmit(String type, int startIndex, int endIndex, int value, String comment) {
+        if (type.equals(Annotation.TYPE_HEADLINE)) {
+            article.addHeadlineAnnotation(
+                    user,
+                    startIndex,
+                    endIndex,
+                    value,
+                    comment
+            );
+        } else {
+            article.addBodyAnnotation(
+                    user,
+                    startIndex,
+                    endIndex,
+                    value,
+                    comment
+            );
+        }
+
+        updateAnnotations();
+        hideAnnotationInput();
+    }
+
+    @Override
+    public void onAnnotationClose() {
+        hideAnnotationInput();
     }
 }
