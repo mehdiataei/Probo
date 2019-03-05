@@ -69,6 +69,7 @@ public class ArticleActivity extends AppCompatActivity
 
         headline = findViewById(R.id.headline);
         body = findViewById(R.id.body);
+        body.setLongClickable(false);
 
         user = new User();
 
@@ -202,12 +203,14 @@ public class ArticleActivity extends AppCompatActivity
         author.setText(article.getAuthor());
         datetime.setText(dateFormat.format(article.getDatetime()));
         headline.setText(article.getHeadline());
-        body.setTextWithClickableSentences(article.getRawBody().replace("\\n", System.getProperty("line.separator")).replace("\\", ""));
+        body.setTextWithClickableSentences(article.getBody());
     }
 
     public void updateAnnotations() {
         headline.setText(article.getHeadline());
-        body.setTextWithClickableSentences(article.getRawBody().replace("\\n", System.getProperty("line.separator")).replace("\\", ""));
+        body.setTextWithClickableSentences(article.getBody());
+
+
     }
 
     private void showAnnotationInput(String quote, String type, int startIndex, int endIndex, int value) {
@@ -259,14 +262,15 @@ public class ArticleActivity extends AppCompatActivity
     }
 
     @Override
-    public void onAnnotationSubmit(String type, int startIndex, int endIndex, int value, String comment) {
+    public void onAnnotationSubmit(String type, int startIndex, int endIndex, int value, String comment, BackgroundColorSpan backgroundColorSpan) {
         if (type.equals(Annotation.TYPE_HEADLINE)) {
             article.addHeadlineAnnotation(
                     user,
                     startIndex,
                     endIndex,
                     value,
-                    comment
+                    comment,
+                    backgroundColorSpan
             );
         } else {
             article.addBodyAnnotation(
@@ -274,13 +278,15 @@ public class ArticleActivity extends AppCompatActivity
                     startIndex,
                     endIndex,
                     value,
-                    comment
+                    comment,
+                    backgroundColorSpan
             );
         }
 
         updateAnnotations();
         hideAnnotationInput();
     }
+
 
     @Override
     public void onAnnotationClose() {

@@ -4,6 +4,7 @@ import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.text.style.BackgroundColorSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -35,6 +36,7 @@ public class AnnotationInputFragment extends Fragment {
             annotationEndIndex,
             annotationValue;
 
+    private BackgroundColorSpan backgroundColorSpan;
     private AnnotationInputFragmentInteractionListener interactionListener;
     private ImageButton closeButton;
     private TextView title;
@@ -146,7 +148,8 @@ public class AnnotationInputFragment extends Fragment {
                     annotationStartIndex,
                     annotationEndIndex,
                     annotationValue,
-                    input.getText().toString()
+                    input.getText().toString(),
+                    backgroundColorSpan
             );
         }
     }
@@ -191,7 +194,7 @@ public class AnnotationInputFragment extends Fragment {
     }
 
     public interface AnnotationInputFragmentInteractionListener {
-        void onAnnotationSubmit(String type, int startIndex, int endIndex, int value, String comment);
+        void onAnnotationSubmit(String type, int startIndex, int endIndex, int value, String comment, BackgroundColorSpan backgroundColorSpan);
         void onAnnotationClose();
     }
 }

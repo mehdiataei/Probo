@@ -25,14 +25,17 @@ public class Annotation {
     private int endIndex;
     private int value;
     private String comment;
+    private BackgroundColorSpan backgroundColorSpan;
 
-    public Annotation(User user, String type, int startIndex, int endIndex, int value, String comment) {
+    public Annotation(User user, String type, int startIndex, int endIndex, int value, String comment, BackgroundColorSpan backgroundColorSpan) {
         this.user = user;
         this.type = type;
         this.startIndex = startIndex;
         this.endIndex = endIndex;
         this.value = value;
         this.comment = comment;
+        this.backgroundColorSpan = backgroundColorSpan;
+
     }
 
     public int getStartIndex() {
@@ -51,9 +54,9 @@ public class Annotation {
         return this.comment;
     }
 
-    public BackgroundColorSpan getBackgroundColor() {
-        return new BackgroundColorSpan(this.value == 1 ? Color.YELLOW : Color.RED);
-    }
+//    public BackgroundColorSpan getBackgroundColor() {
+//        return new BackgroundColorSpan(this.value == 1 ? Color.GREEN : Color.RED);
+//    }
 
     public void save(Article article) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
@@ -82,5 +85,14 @@ public class Annotation {
                         Log.d("PROBO_APP", "err", e);
                     }
                 });
+    }
+
+
+    public BackgroundColorSpan getBackgroundColorSpan() {
+        return backgroundColorSpan;
+    }
+
+    public void setBackgroundColorSpan(BackgroundColorSpan backgroundColorSpan) {
+        this.backgroundColorSpan = backgroundColorSpan;
     }
 }
