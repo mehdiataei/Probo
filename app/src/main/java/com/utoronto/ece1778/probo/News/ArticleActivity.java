@@ -25,8 +25,10 @@ import android.view.Window;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.view.animation.TranslateAnimation;
+import android.widget.CompoundButton;
 import android.widget.FrameLayout;
 import android.widget.ProgressBar;
+import android.widget.Switch;
 import android.widget.TextView;
 
 import com.bumptech.glide.Priority;
@@ -43,6 +45,8 @@ import java.util.Locale;
 public class ArticleActivity extends AppCompatActivity
         implements AnnotationInputFragment.AnnotationInputFragmentInteractionListener,
                     ClickableTextView.ClickableTextViewInterface {
+
+    private boolean showHeatmap;
 
     private SwipeRefreshLayout refresh;
     private FrameLayout annotationContainer;
@@ -63,6 +67,8 @@ public class ArticleActivity extends AppCompatActivity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_article);
+
+        showHeatmap = false;
 
         refresh = findViewById(R.id.refresh);
         annotationContainer = findViewById(R.id.annotation_container);
@@ -101,6 +107,24 @@ public class ArticleActivity extends AppCompatActivity
 
         refresh.setOnRefreshListener(handleRefresh);
     }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.article_action_menu, menu);
+
+        MenuItem item = menu.findItem(R.id.heatmap_action);
+        Switch heatmapSwitch = item.getActionView().findViewById(R.id.heatmap_switch);
+        heatmapSwitch.setOnCheckedChangeListener(handleHeatmapSwitch);
+
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    CompoundButton.OnCheckedChangeListener handleHeatmapSwitch = new CompoundButton.OnCheckedChangeListener() {
+        @Override
+        public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+            toggleHeatmap(isChecked);
+        }
+    };
 
     private SwipeRefreshLayout.OnRefreshListener handleRefresh = new SwipeRefreshLayout.OnRefreshListener() {
         @Override
@@ -167,11 +191,11 @@ public class ArticleActivity extends AppCompatActivity
 
             switch (item.getItemId()) {
                 case MENU_TRUE_BUTTON:
-                    showAnnotationInput(article.getHeadline().toString(), Annotation.TYPE_HEADLINE, start, end,1);
+                    showAnnotationInput(article.getHeadline(false).toString(), Annotation.TYPE_HEADLINE, start, end,1);
                     mode.finish();
                     return true;
                 case MENU_FALSE_BUTTON:
-                    showAnnotationInput(article.getHeadline().toString(), Annotation.TYPE_HEADLINE, start, end,0);
+                    showAnnotationInput(article.getHeadline(false).toString(), Annotation.TYPE_HEADLINE, start, end,0);
                     mode.finish();
                     return true;
                 default:
@@ -203,13 +227,13 @@ public class ArticleActivity extends AppCompatActivity
         author.setText(article.getAuthor());
         datetime.setText(dateFormat.format(article.getDatetime()));
 
-        headline.setText(article.getHeadline());
-        body.setTextWithClickableSentences(article.getBody());
+        headline.setText(article.getHeadline(showHeatmap));
+        body.setTextWithClickableSentences(article.getBody(showHeatmap));
     }
 
     public void updateAnnotations() {
-        headline.setText(article.getHeadline());
-        body.setTextWithClickableSentences(article.getBody());
+        headline.setText(article.getHeadline(showHeatmap));
+        body.setTextWithClickableSentences(article.getBody(showHeatmap));
     }
 
     private void showAnnotationInput(String quote, String type, int startIndex, int endIndex, int value) {
@@ -262,6 +286,11 @@ public class ArticleActivity extends AppCompatActivity
         });
 
         annotationContainer.startAnimation(animation);
+    }
+
+    public void toggleHeatmap(boolean show) {
+        showHeatmap = show;
+        updateAnnotations();
     }
 
     @Override

@@ -33,17 +33,23 @@
                     android:padding="16dp"
                     android:textIsSelectable="true" />
 
-                <com.utoronto.ece1778.probo.Utils.SquareImageView
-                    android:id="@+id/image"
+                <RelativeLayout
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:scaleType="centerCrop" />
+                    android:layout_height="match_parent">
 
-                <ProgressBar
-                    android:id="@+id/progress_spinner"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:indeterminateTint="#ffffff" />
+                    <com.utoronto.ece1778.probo.Utils.SquareImageView
+                        android:id="@+id/image"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:scaleType="centerCrop" />
+
+                    <ProgressBar
+                        android:id="@+id/progress_spinner"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:layout_centerInParent="true"
+                        android:indeterminateTint="@color/colorPrimary" />
+                </RelativeLayout>
 
                 <RelativeLayout
                     android:layout_width="match_parent"

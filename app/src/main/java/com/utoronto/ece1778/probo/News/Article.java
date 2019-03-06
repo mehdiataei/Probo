@@ -64,22 +64,24 @@ public class Article {
         return this.imageUrl;
     }
 
-    public SpannableString getHeadline() {
-        return this.getAnnotatedText(
+    public SpannableString getHeadline(boolean showHeatmap) {
+        return showHeatmap ? this.getAnnotatedText(
                 this.headline,
                 this.headlineAnnotations
-        );
+        ) : new SpannableString(this.headline);
     }
 
     public String getDescription() {
         return this.description;
     }
 
-    public SpannableString getBody() {
-        return this.getAnnotatedText(
-                this.body.replace("\\n", System.getProperty("line.separator")),
+    public SpannableString getBody(boolean showHeatmap) {
+        String formattedBody = this.body.replace("\\n", System.getProperty("line.separator"));
+        
+        return showHeatmap ? this.getAnnotatedText(
+                formattedBody,
                 this.bodyAnnotations
-        );
+        ) : new SpannableString(formattedBody);
     }
 
 
