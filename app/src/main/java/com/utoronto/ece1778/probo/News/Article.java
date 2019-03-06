@@ -1,18 +1,14 @@
 package com.utoronto.ece1778.probo.News;
 
-import android.animation.ArgbEvaluator;
 import android.graphics.Color;
 import android.support.annotation.NonNull;
 import android.support.v4.graphics.ColorUtils;
 import android.text.SpannableString;
 import android.text.style.BackgroundColorSpan;
 import android.util.Log;
-import android.widget.ProgressBar;
-import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
@@ -23,9 +19,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 
 public class Article {
 
@@ -41,12 +34,15 @@ public class Article {
 
     private ArrayList<Annotation> headlineAnnotations;
     private ArrayList<Annotation> bodyAnnotations;
+    private HashMap<String, Tuple<Integer, Integer>> annotationCounts;
 
     public static final int
             ARTICLE_ERROR_NOT_FOUND = 0;
 
     public Article(String id) {
         this.id = id;
+
+        this.annotationCounts = new HashMap<>();
 
         this.headlineAnnotations = new ArrayList<>();
         this.bodyAnnotations = new ArrayList<>();
@@ -69,9 +65,9 @@ public class Article {
     }
 
     public SpannableString getHeadline() {
-        return Article.addAnnotations(
+        return this.getAnnotatedText(
                 this.headline,
-                headlineAnnotations
+                this.headlineAnnotations
         );
     }
 
@@ -80,9 +76,9 @@ public class Article {
     }
 
     public SpannableString getBody() {
-        return Article.addAnnotations(
+        return this.getAnnotatedText(
                 this.body.replace("\\n", System.getProperty("line.separator")),
-                bodyAnnotations
+                this.bodyAnnotations
         );
     }
 
@@ -91,7 +87,7 @@ public class Article {
         return this.datetime;
     }
 
-    public void addHeadlineAnnotation(User user, int startIndex, int endIndex, int value, String comment, BackgroundColorSpan backgroundColorSpan) {
+    public void addHeadlineAnnotation(AnnotationSubmitCallback cb, User user, int startIndex, int endIndex, int value, String comment) {
         if (startIndex >= endIndex) {
             return;
         }
@@ -102,15 +98,16 @@ public class Article {
                 startIndex,
                 endIndex,
                 value,
-                comment,
-                backgroundColorSpan
+                comment
         );
 
         this.headlineAnnotations.add(annotation);
-        annotation.save(this);
+        this.updateAnnotationCounts(annotation);
+
+        annotation.save(cb, this);
     }
 
-    public void addBodyAnnotation(User user, int startIndex, int endIndex, int value, String comment, BackgroundColorSpan backgroundColorSpan) {
+    public void addBodyAnnotation(AnnotationSubmitCallback cb, User user, int startIndex, int endIndex, int value, String comment) {
         if (startIndex >= endIndex) {
             return;
         }
@@ -121,20 +118,62 @@ public class Article {
                 startIndex,
                 endIndex,
                 value,
-                comment,
-                backgroundColorSpan
+                comment
         );
 
         this.bodyAnnotations.add(annotation);
-        annotation.save(this);
+        this.updateAnnotationCounts(annotation);
+
+        annotation.save(cb, this);
     }
 
-    private static SpannableString addAnnotations(String original, ArrayList<Annotation> annotations) {
+    private void updateAnnotationCounts(Annotation annotation) {
+        String key = annotation.getType() + ":" +
+                annotation.getStartIndex() + ":" +
+                annotation.getEndIndex();
+
+        Tuple<Integer, Integer> counts = this.annotationCounts.containsKey(key) ?
+                                            this.annotationCounts.get(key) :
+                                            new Tuple<>(0, 0);
+
+        int numTrue = annotation.getValue() == 1 ? counts.getX() + 1 : counts.getX();
+        int numFalse = annotation.getValue() == 0 ? counts.getY() + 1 : counts.getY();
+
+        this.annotationCounts.put(key, new Tuple<>(numTrue, numFalse));
+    }
+
+    private SpannableString getAnnotatedText(String original, ArrayList<Annotation> annotations) {
         SpannableString str = new SpannableString(original);
 
+        int totalHeadlineAnnotations = this.headlineAnnotations.size();
+        int totalBodyAnnotations = this.bodyAnnotations.size();
+
         for (Annotation annotation : annotations) {
+            String annotationKey = annotation.getType() + ":" +
+                    annotation.getStartIndex() + ":" +
+                    annotation.getEndIndex();
+
+            Tuple<Integer, Integer> counts = this.annotationCounts.containsKey(annotationKey) ?
+                                                this.annotationCounts.get(annotationKey) :
+                                                new Tuple<>(0, 0);
+
+            int total = counts.getX() + counts.getY();
+
+            float interpolation = total > 0 ? counts.getX() / (float) total : 0;
+            float alpha = 0;
+
+            if (annotation.getType().equals(Annotation.TYPE_HEADLINE) && totalHeadlineAnnotations > 0) {
+                alpha = total / (float) totalHeadlineAnnotations;
+            } else if (annotation.getType().equals(Annotation.TYPE_BODY) && totalBodyAnnotations > 0) {
+                alpha = total / (float) totalBodyAnnotations;
+            }
+
+            int color = interpolateColor(Color.RED, Color.GREEN, interpolation);
+            int colorAlpha = ColorUtils.setAlphaComponent(color, Math.round(alpha * 255));
+            BackgroundColorSpan backgroundColorSpan = new BackgroundColorSpan(colorAlpha);
+
             str.setSpan(
-                    annotation.getBackgroundColorSpan(),
+                    backgroundColorSpan,
                     annotation.getStartIndex(),
                     annotation.getEndIndex(),
                     0
@@ -203,13 +242,6 @@ public class Article {
                 .addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
                     @Override
                     public void onSuccess(QuerySnapshot queryDocumentSnapshots) {
-
-                        // <startIndex, (numOfTrue, numOfFalse)>
-                        HashMap<Integer, Tuple<Integer, Integer>> freq = new HashMap<>();
-
-                        Integer totalNumOfAnnotations = 0;
-
-
                         for (DocumentSnapshot snapshot : queryDocumentSnapshots) {
                             String type = snapshot.getString("type");
                             Object startObj = snapshot.get("startIndex");
@@ -219,87 +251,25 @@ public class Article {
                             String comment = snapshot.getString("comment");
 
                             if (type != null &&
-                                    startObj != null &&
-                                    endObj != null &&
-                                    valueObj != null &&
-                                    userId != null) {
-
-                                Long start = (Long) startObj;
-                                Long value = (Long) valueObj;
-
-
-                                Integer incTrue = value == 1 ? 1 : 0;
-                                Integer incFalse = value == 0 ? 1 : 0;
-
-
-                                Integer numOfTrue = freq.containsKey(start.intValue()) ? freq.get(start.intValue()).getX() : 0;
-                                Integer numOfFalse = freq.containsKey(start.intValue()) ? freq.get(start.intValue()).getY() : 0;
-
-                                freq.put(start.intValue(),
-                                        new Tuple<>(numOfTrue + incTrue, numOfFalse + incFalse));
-
-                                totalNumOfAnnotations++;
-                            }
-                        }
-
-
-                        for (DocumentSnapshot snapshot : queryDocumentSnapshots) {
-                            String type = snapshot.getString("type");
-                            Object startObj = snapshot.get("startIndex");
-                            Object endObj = snapshot.get("endIndex");
-                            Object valueObj = snapshot.get("value");
-                            String userId = snapshot.getString("userId");
-                            String comment = snapshot.getString("comment");
-
-                            if (type != null &&
-                                    startObj != null &&
-                                    endObj != null &&
-                                    valueObj != null &&
-                                    userId != null) {
+                                startObj != null &&
+                                endObj != null &&
+                                valueObj != null &&
+                                userId != null) {
 
                                 Long start = (Long) startObj;
                                 Long end = (Long) endObj;
                                 Long value = (Long) valueObj;
 
+                                String annotationKey = type + ":" + start.toString() + ":" + end.toString();
 
-                                Integer numOfTrues = freq.get(start.intValue()).getX();
-                                Integer numOfFalses = freq.get(start.intValue()).getY();
-                                Integer total = numOfFalses + numOfTrues;
+                                Tuple<Integer, Integer> counts = annotationCounts.containsKey(annotationKey) ?
+                                                                    annotationCounts.get(annotationKey) :
+                                                                    new Tuple<Integer, Integer>(0, 0);
 
-                                float interpolate = numOfTrues / (float) total;
+                                int numTrue = value == 1 ? counts.getX() + 1 : counts.getX();
+                                int numFalse = value == 0 ? counts.getY() + 1 : counts.getY();
 
-                                Log.d(TAG, "onSuccess: numOfTrues: " + numOfTrues);
-                                Log.d(TAG, "onSuccess: total: " + total);
-                                Log.d(TAG, "onSuccess: totalNumOfAnnotations: " + totalNumOfAnnotations);
-
-
-                                float alpha = total / (float) totalNumOfAnnotations;
-
-                                Log.d(TAG, "onSuccess: alpha: " + alpha);
-
-                                Log.d(TAG, "onSuccess: interpolate before: " + interpolate);
-//                                interpolate = numOfTrues > numOfFalses ? interpolate : Math.abs(1 - interpolate);
-
-
-                                int green = Color.GREEN;
-                                int red = Color.RED;
-
-                                int color = interpolateColor(red, green, interpolate);
-
-                                int colorAlpha = ColorUtils.setAlphaComponent(color, Math.round(alpha * 255));
-
-                                Log.d(TAG, "onSuccess: interpolate after: " + interpolate);
-
-
-                                Log.d(TAG, "onSuccess: color: " + color);
-
-                                Log.d(TAG, "onSuccess: red: " + red);
-                                Log.d(TAG, "onSuccess: green: " + green);
-
-
-                                BackgroundColorSpan backgroundColorSpan = new BackgroundColorSpan(colorAlpha);
-                                int testColor = backgroundColorSpan.getBackgroundColor();
-                                Log.d(TAG, "onSuccess: testColor: " + testColor);
+                                annotationCounts.put(annotationKey, new Tuple<>(numTrue, numFalse));
 
                                 Annotation annotation = new Annotation(
                                         new User(userId),
@@ -307,8 +277,7 @@ public class Article {
                                         start.intValue(),
                                         end.intValue(),
                                         value.intValue(),
-                                        comment,
-                                        backgroundColorSpan
+                                        comment
                                 );
 
                                 switch (type) {
@@ -323,7 +292,6 @@ public class Article {
                                 }
                             }
                         }
-
 
                         cb.onLoad();
                     }
@@ -375,14 +343,15 @@ public class Article {
 
 interface ArticleCallback {
     void onLoad();
-
     void onArticleError(int errorCode);
-
     void onError(Exception e);
 }
 
 interface ArticleAnnotationCallback {
     void onLoad();
-
     void onError(Exception e);
+}
+
+interface ArticleAnnotationSubmitCallback {
+    void onSubmit();
 }

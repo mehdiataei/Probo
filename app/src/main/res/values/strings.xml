@@ -37,6 +37,7 @@
 
     <string name="article_menu_true">True</string>
     <string name="article_menu_false">False</string>
+    <string name="article_add_annotation_error">An error has occurred. Please try again later.</string>
 
     <string name="annotation_input_true">True</string>
     <string name="annotation_input_false">False</string>
@@ -47,6 +48,7 @@
     <string name="annotation_input_error_icon_description">Error icon</string>
     <string name="annotation_input_submit">SUBMIT</string>
     <string name="annotation_input_error_no_comment">Please enter your comment.</string>
+    <string name="annotation_input_progress">Saving.</string>
 
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>

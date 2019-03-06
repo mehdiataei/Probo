@@ -25,17 +25,19 @@ public class Annotation {
     private int endIndex;
     private int value;
     private String comment;
-    private BackgroundColorSpan backgroundColorSpan;
 
-    public Annotation(User user, String type, int startIndex, int endIndex, int value, String comment, BackgroundColorSpan backgroundColorSpan) {
+    public Annotation(User user, String type, int startIndex, int endIndex, int value, String comment) {
         this.user = user;
         this.type = type;
         this.startIndex = startIndex;
         this.endIndex = endIndex;
         this.value = value;
         this.comment = comment;
-        this.backgroundColorSpan = backgroundColorSpan;
 
+    }
+
+    public String getType() {
+        return this.type;
     }
 
     public int getStartIndex() {
@@ -54,11 +56,7 @@ public class Annotation {
         return this.comment;
     }
 
-//    public BackgroundColorSpan getBackgroundColor() {
-//        return new BackgroundColorSpan(this.value == 1 ? Color.GREEN : Color.RED);
-//    }
-
-    public void save(Article article) {
+    public void save(final AnnotationSubmitCallback cb, Article article) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
         Map<String, Object> newAnnotation = new HashMap<>();
@@ -76,23 +74,21 @@ public class Annotation {
                 .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
                     @Override
                     public void onSuccess(DocumentReference documentReference) {
+                        cb.onSubmit();
                         Log.d("PROBO_APP", "added annotation");
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull Exception e) {
+                        cb.onError(e);
                         Log.d("PROBO_APP", "err", e);
                     }
                 });
     }
+}
 
-
-    public BackgroundColorSpan getBackgroundColorSpan() {
-        return backgroundColorSpan;
-    }
-
-    public void setBackgroundColorSpan(BackgroundColorSpan backgroundColorSpan) {
-        this.backgroundColorSpan = backgroundColorSpan;
-    }
+interface AnnotationSubmitCallback {
+    void onSubmit();
+    void onError(Exception e);
 }

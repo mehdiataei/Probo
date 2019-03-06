@@ -74,7 +74,6 @@
                     android:padding="16dp"
                     android:textColor="@color/colorPrimary"
                     android:textSize="16sp"
-                    android:textIsSelectable="true"
                     android:singleLine="false" />
             </LinearLayout>
         </ScrollView>

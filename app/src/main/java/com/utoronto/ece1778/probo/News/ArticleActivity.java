@@ -202,6 +202,7 @@ public class ArticleActivity extends AppCompatActivity
 
         author.setText(article.getAuthor());
         datetime.setText(dateFormat.format(article.getDatetime()));
+
         headline.setText(article.getHeadline());
         body.setTextWithClickableSentences(article.getBody());
     }
@@ -209,14 +210,16 @@ public class ArticleActivity extends AppCompatActivity
     public void updateAnnotations() {
         headline.setText(article.getHeadline());
         body.setTextWithClickableSentences(article.getBody());
-
-
     }
 
     private void showAnnotationInput(String quote, String type, int startIndex, int endIndex, int value) {
         Animation animation = AnimationUtils.loadAnimation(this, R.anim.annotation_input_slide_in);
         FragmentManager manager = getSupportFragmentManager();
         FragmentTransaction transaction = manager.beginTransaction();
+
+        if (annotationInputFragment != null) {
+            transaction.remove(annotationInputFragment);
+        }
 
         annotationInputFragment = AnnotationInputFragment.newInstance(
                 quote,
@@ -243,7 +246,7 @@ public class ArticleActivity extends AppCompatActivity
 
             @Override
             public void onAnimationEnd(Animation animation) {
-                annotationContainer.setVisibility(View.INVISIBLE);
+                annotationContainer.setVisibility(View.GONE);
 
                 if (annotationInputFragment != null) {
                     FragmentManager manager = getSupportFragmentManager();
@@ -262,29 +265,40 @@ public class ArticleActivity extends AppCompatActivity
     }
 
     @Override
-    public void onAnnotationSubmit(String type, int startIndex, int endIndex, int value, String comment, BackgroundColorSpan backgroundColorSpan) {
+    public void onAnnotationSubmit(String type, int startIndex, int endIndex, int value, String comment) {
+        AnnotationSubmitCallback cb = new AnnotationSubmitCallback() {
+            @Override
+            public void onSubmit() {
+                updateAnnotations();
+                annotationInputFragment.hideProgress();
+                hideAnnotationInput();
+            }
+
+            @Override
+            public void onError(Exception e) {
+                annotationInputFragment.showError(getString(R.string.article_add_annotation_error));
+            }
+        };
+
         if (type.equals(Annotation.TYPE_HEADLINE)) {
             article.addHeadlineAnnotation(
+                    cb,
                     user,
                     startIndex,
                     endIndex,
                     value,
-                    comment,
-                    backgroundColorSpan
+                    comment
             );
         } else {
             article.addBodyAnnotation(
+                    cb,
                     user,
                     startIndex,
                     endIndex,
                     value,
-                    comment,
-                    backgroundColorSpan
+                    comment
             );
         }
-
-        updateAnnotations();
-        hideAnnotationInput();
     }
 
 

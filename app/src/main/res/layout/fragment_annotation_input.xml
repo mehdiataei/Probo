@@ -80,6 +80,31 @@
             tools:targetApi="o" />
 
         <RelativeLayout
+            android:id="@+id/progress_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:padding="16dp"
+            android:background="@drawable/rectangle_border_light"
+            android:visibility="gone">
+
+            <ProgressBar
+                android:id="@+id/progress_spinner"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:indeterminateTint="@color/colorPrimary" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:textColor="@color/colorPrimary"
+                android:layout_toEndOf="@+id/progress_spinner"
+                android:layout_centerVertical="true"
+                android:text="@string/annotation_input_progress" />
+        </RelativeLayout>
+
+        <RelativeLayout
             android:id="@+id/error_container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

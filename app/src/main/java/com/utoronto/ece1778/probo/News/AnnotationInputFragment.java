@@ -1,7 +1,6 @@
 package com.utoronto.ece1778.probo.News;
 
 import android.content.Context;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.text.style.BackgroundColorSpan;
@@ -12,6 +11,7 @@ import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.Switch;
 import android.widget.TextView;
@@ -36,7 +36,6 @@ public class AnnotationInputFragment extends Fragment {
             annotationEndIndex,
             annotationValue;
 
-    private BackgroundColorSpan backgroundColorSpan;
     private AnnotationInputFragmentInteractionListener interactionListener;
     private ImageButton closeButton;
     private TextView title;
@@ -44,6 +43,7 @@ public class AnnotationInputFragment extends Fragment {
     private RelativeLayout errorContainer;
     private TextView errorText;
     private Button submitButton;
+    private RelativeLayout progressContainer;
 
     public AnnotationInputFragment() {}
 
@@ -87,6 +87,7 @@ public class AnnotationInputFragment extends Fragment {
         errorContainer = v.findViewById(R.id.error_container);
         errorText = v.findViewById(R.id.error_text);
         submitButton = v.findViewById(R.id.submit);
+        progressContainer = v.findViewById(R.id.progress_container);
 
         quote.setText(annotationQuote);
 
@@ -141,6 +142,7 @@ public class AnnotationInputFragment extends Fragment {
 
         hideError();
         disable();
+        showProgress();
 
         if (interactionListener != null) {
             interactionListener.onAnnotationSubmit(
@@ -148,13 +150,15 @@ public class AnnotationInputFragment extends Fragment {
                     annotationStartIndex,
                     annotationEndIndex,
                     annotationValue,
-                    input.getText().toString(),
-                    backgroundColorSpan
+                    input.getText().toString()
             );
         }
     }
 
     public void showError(String errorMessage) {
+        hideProgress();
+        enable();
+
         errorText.setText(errorMessage);
         errorContainer.setVisibility(View.VISIBLE);
     }
@@ -193,8 +197,16 @@ public class AnnotationInputFragment extends Fragment {
         submitButton.setEnabled(false);
     }
 
+    public void showProgress() {
+        progressContainer.setVisibility(View.VISIBLE);
+    }
+
+    public void hideProgress() {
+        progressContainer.setVisibility(View.GONE);
+    }
+
     public interface AnnotationInputFragmentInteractionListener {
-        void onAnnotationSubmit(String type, int startIndex, int endIndex, int value, String comment, BackgroundColorSpan backgroundColorSpan);
+        void onAnnotationSubmit(String type, int startIndex, int endIndex, int value, String comment);
         void onAnnotationClose();
     }
 }
