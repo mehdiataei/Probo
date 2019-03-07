@@ -21,8 +21,12 @@ import java.util.Date;
 import java.util.HashMap;
 
 public class Article {
-
     public static final String TAG = "ARTICLE";
+
+    public static final int
+            ARTICLE_ANNOTATION_VALID = -1,
+            ARTICLE_ANNOTATION_ERROR_INTERNAL = 0,
+            ARTICLE_ANNOTATION_ERROR_ALREADY_SUBMITTED = 1;
 
     private String id;
     private String author;
@@ -36,7 +40,7 @@ public class Article {
     private ArrayList<Annotation> bodyAnnotations;
 
     private HashMap<String, ArrayList<Annotation>> annotationsMap;
-    private HashMap<String, Tuple<Integer, Integer>> annotationCounts;
+    private HashMap<String, Tuple<Integer, Integer>> annotationStats;
 
     public static final int
             ARTICLE_ERROR_NOT_FOUND = 0;
@@ -45,7 +49,7 @@ public class Article {
         this.id = id;
 
         this.annotationsMap = new HashMap<>();
-        this.annotationCounts = new HashMap<>();
+        this.annotationStats = new HashMap<>();
 
         this.headlineAnnotations = new ArrayList<>();
         this.bodyAnnotations = new ArrayList<>();
@@ -55,13 +59,9 @@ public class Article {
         return this.id;
     }
 
-    ;
-
     public String getAuthor() {
         return this.author;
     }
-
-    ;
 
     public String getImageUrl() {
         return this.imageUrl;
@@ -103,6 +103,11 @@ public class Article {
         return this.datetime;
     }
 
+    public boolean annotationExists(String type, int startIndex, int endIndex) {
+        String key = type + ":" + startIndex + ":" + endIndex;
+        return this.annotationsMap.containsKey(key);
+    }
+
     public ArrayList<Annotation> getLocatedAnnotations(String type, int startIndex, int endIndex) {
         String key = type + ":" + startIndex + ":" + endIndex;
 
@@ -111,8 +116,32 @@ public class Article {
                 new ArrayList<Annotation>();
     }
 
-    public void addHeadlineAnnotation(AnnotationSubmitCallback cb, User user, int startIndex, int endIndex, int value, String comment) {
+    private int checkNewAnnotation(User user, String type, int startIndex, int endIndex) {
         if (startIndex >= endIndex) {
+            return Article.ARTICLE_ANNOTATION_ERROR_INTERNAL;
+        }
+
+        String annotationKey = type + ":" + startIndex + ":" + endIndex;
+        ArrayList<Annotation> annotations = this.annotationsMap.containsKey(annotationKey) ?
+                                            this.annotationsMap.get(annotationKey) :
+                                            new ArrayList<Annotation>();
+
+        int numAnnotations = annotations.size();
+
+        for (int i=0; i<numAnnotations; i++) {
+            if (annotations.get(i).getUser().getUid().equals(user.getUid())) {
+                return Article.ARTICLE_ANNOTATION_ERROR_ALREADY_SUBMITTED;
+            }
+        }
+
+        return Article.ARTICLE_ANNOTATION_VALID;
+    }
+
+    public void addHeadlineAnnotation(AnnotationSubmitCallback cb, User user, int startIndex, int endIndex, int value, String comment) {
+        int errorCode = this.checkNewAnnotation(user, Annotation.TYPE_HEADLINE, startIndex, endIndex);
+
+        if (errorCode != Article.ARTICLE_ANNOTATION_VALID) {
+            cb.onAnnotationError(errorCode);
             return;
         }
 
@@ -134,7 +163,10 @@ public class Article {
     }
 
     public void addBodyAnnotation(AnnotationSubmitCallback cb, User user, int startIndex, int endIndex, int value, String comment) {
-        if (startIndex >= endIndex) {
+        int errorCode = this.checkNewAnnotation(user, Annotation.TYPE_BODY, startIndex, endIndex);
+
+        if (errorCode != Article.ARTICLE_ANNOTATION_VALID) {
+            cb.onAnnotationError(errorCode);
             return;
         }
 
@@ -173,37 +205,37 @@ public class Article {
                 annotation.getStartIndex() + ":" +
                 annotation.getEndIndex();
 
-        Tuple<Integer, Integer> counts = this.annotationCounts.containsKey(key) ?
-                                            this.annotationCounts.get(key) :
+        Tuple<Integer, Integer> counts = this.annotationStats.containsKey(key) ?
+                                            this.annotationStats.get(key) :
                                             new Tuple<>(0, 0);
 
         int numTrue = annotation.getValue() == 1 ? counts.getX() + 1 : counts.getX();
         int numFalse = annotation.getValue() == 0 ? counts.getY() + 1 : counts.getY();
 
-        this.annotationCounts.put(key, new Tuple<>(numTrue, numFalse));
+        this.annotationStats.put(key, new Tuple<>(numTrue, numFalse));
     }
 
     private SpannableString getAnnotatedText(String original, ArrayList<Annotation> annotations, int indexOffset) {
-        int length = original.length();
-
         SpannableString str = new SpannableString(original);
 
+        int originalLength = original.length();
         int totalHeadlineAnnotations = this.headlineAnnotations.size();
         int totalBodyAnnotations = this.bodyAnnotations.size();
 
         for (Annotation annotation : annotations) {
-            int formattedStartIndex = indexOffset + annotation.getStartIndex();
-            int formattedEndIndex = indexOffset + annotation.getEndIndex();
+            int formattedStartIndex = annotation.getStartIndex() - indexOffset;
+            int formattedEndIndex = annotation.getEndIndex() - indexOffset;
 
-            if (formattedStartIndex > length || formattedEndIndex > length) {
+            if (formattedStartIndex < 0 || formattedEndIndex < 0 ||
+                formattedStartIndex > originalLength || formattedEndIndex > originalLength) {
                 continue;
             }
 
             String annotationKey = annotation.getType() + ":" +
-                    formattedStartIndex + ":" + formattedEndIndex;
+                    annotation.getStartIndex() + ":" + annotation.getEndIndex();
 
-            Tuple<Integer, Integer> counts = this.annotationCounts.containsKey(annotationKey) ?
-                                                this.annotationCounts.get(annotationKey) :
+            Tuple<Integer, Integer> counts = this.annotationStats.containsKey(annotationKey) ?
+                                                this.annotationStats.get(annotationKey) :
                                                 new Tuple<>(0, 0);
 
             int total = counts.getX() + counts.getY();
@@ -315,14 +347,14 @@ public class Article {
 
                                 String annotationKey = type + ":" + start.toString() + ":" + end.toString();
 
-                                Tuple<Integer, Integer> counts = annotationCounts.containsKey(annotationKey) ?
-                                                                    annotationCounts.get(annotationKey) :
-                                                                    new Tuple<Integer, Integer>(0, 0);
+                                Tuple<Integer, Integer> stats = annotationStats.containsKey(annotationKey) ?
+                                                                    annotationStats.get(annotationKey) :
+                                                                    new Tuple<>(0, 0);
 
-                                int numTrue = value == 1 ? counts.getX() + 1 : counts.getX();
-                                int numFalse = value == 0 ? counts.getY() + 1 : counts.getY();
+                                int numTrue = value == 1 ? stats.getX() + 1 : stats.getX();
+                                int numFalse = value == 0 ? stats.getY() + 1 : stats.getY();
 
-                                annotationCounts.put(annotationKey, new Tuple<>(numTrue, numFalse));
+                                annotationStats.put(annotationKey, new Tuple<>(numTrue, numFalse));
 
                                 Annotation annotation = new Annotation(
                                         new User(userId),
@@ -405,8 +437,4 @@ interface ArticleCallback {
 interface ArticleAnnotationCallback {
     void onLoad();
     void onError(Exception e);
-}
-
-interface ArticleAnnotationSubmitCallback {
-    void onSubmit();
 }

@@ -33,7 +33,6 @@ public class Annotation {
         this.endIndex = endIndex;
         this.value = value;
         this.comment = comment;
-
     }
 
     public User getUser() {
@@ -94,5 +93,6 @@ public class Annotation {
 
 interface AnnotationSubmitCallback {
     void onSubmit();
+    void onAnnotationError(int errorCode);
     void onError(Exception e);
 }

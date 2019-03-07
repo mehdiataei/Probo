@@ -48,6 +48,8 @@
     <string name="annotation_input_error_icon_description">Error icon</string>
     <string name="annotation_input_submit">SUBMIT</string>
     <string name="annotation_input_error_no_comment">Please enter your comment.</string>
+    <string name="annotation_input_error_already_submitted">You have already annotated this sentence.</string>
+    <string name="annotation_input_error_general">An error has occurred. Please try again later.</string>
     <string name="annotation_input_progress">Saving.</string>
 
     <!-- TODO: Remove or change this placeholder text -->

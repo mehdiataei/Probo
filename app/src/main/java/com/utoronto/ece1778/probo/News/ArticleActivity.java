@@ -1,9 +1,11 @@
 package com.utoronto.ece1778.probo.News;
 
+import android.content.Context;
 import android.drm.DrmStore;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.os.Build;
+import android.os.Vibrator;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
@@ -31,6 +33,7 @@ import android.view.animation.AnimationUtils;
 import android.view.animation.TranslateAnimation;
 import android.widget.CompoundButton;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.Switch;
 import android.widget.TextView;
@@ -41,6 +44,8 @@ import com.utoronto.ece1778.probo.Login.User;
 import com.utoronto.ece1778.probo.R;
 import com.utoronto.ece1778.probo.Utils.ClickableTextView;
 import com.utoronto.ece1778.probo.Utils.GlideImageLoader;
+import com.utoronto.ece1778.probo.Utils.Helper;
+import com.utoronto.ece1778.probo.Utils.LongClickLinkMovementMethod;
 import com.utoronto.ece1778.probo.Utils.SquareImageView;
 import com.utoronto.ece1778.probo.Utils.WrapHeightViewPager;
 
@@ -53,6 +58,9 @@ public class ArticleActivity extends AppCompatActivity
                     ClickableTextView.ClickableTextViewInterface {
 
     private boolean showHeatmap;
+
+    int currentAnnotationStartIndex;
+    int currentAnnotationEndIndex;
 
     private SwipeRefreshLayout refresh;
     private FrameLayout annotationContainer;
@@ -78,6 +86,9 @@ public class ArticleActivity extends AppCompatActivity
 
         showHeatmap = false;
 
+        currentAnnotationStartIndex = -1;
+        currentAnnotationEndIndex = -1;
+
         refresh = findViewById(R.id.refresh);
         annotationContainer = findViewById(R.id.annotation_container);
 
@@ -85,8 +96,6 @@ public class ArticleActivity extends AppCompatActivity
         body = findViewById(R.id.body);
         bodyOverflow = findViewById(R.id.body_overflow);
         annotationsContainer = findViewById(R.id.annotations_container);
-
-        //body.setLongClickable(true);
 
         user = new User();
 
@@ -101,7 +110,7 @@ public class ArticleActivity extends AppCompatActivity
 
                 @Override
                 public void onArticleError(int errorCode) {
-                    Log.d("PROBO_APP", "erroCode: " + errorCode);
+                    Log.d("PROBO_APP", "errorCode: " + errorCode);
                 }
 
                 @Override
@@ -117,8 +126,6 @@ public class ArticleActivity extends AppCompatActivity
         headline.setCustomSelectionActionModeCallback(handleHeadlineTextSelect);
 
         refresh.setOnRefreshListener(handleRefresh);
-
-        //showAnnotations();
     }
 
     @Override
@@ -248,8 +255,12 @@ public class ArticleActivity extends AppCompatActivity
         headline.setText(article.getHeadline(showHeatmap));
         body.setTextWithClickableSentences(article.getBody(showHeatmap, -1, -1));
 
+        annotationsContainer.setVisibility(View.GONE);
         bodyOverflow.setVisibility(View.GONE);
         bodyOverflow.setTextWithClickableSentences(new SpannableString(""));
+
+        currentAnnotationStartIndex = -1;
+        currentAnnotationEndIndex = -1;
     }
 
     private void showLocatedAnnotations(String type, int startIndex, int endIndex) {
@@ -265,11 +276,34 @@ public class ArticleActivity extends AppCompatActivity
     }
 
     private void splitBody(int index) {
+        final int TEXT_MARGIN = 32;
+
         SpannableString firstSection = article.getBody(showHeatmap, 0, index);
         SpannableString secondSection = article.getBody(showHeatmap, index, article.getBodyLength());
 
+        if (firstSection.toString().lastIndexOf("\n") != index - 1) {
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+            );
+
+            params.setMargins(0, 0, 0, TEXT_MARGIN);
+            body.setLayoutParams(params);
+        }
+
+        if (secondSection.toString().indexOf("\n") != 0) {
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+            );
+
+            params.setMargins(0, TEXT_MARGIN, 0, 0);
+            bodyOverflow.setLayoutParams(params);
+        }
+
         body.setTextWithClickableSentences(firstSection);
         bodyOverflow.setTextWithClickableSentences(secondSection);
+        bodyOverflow.setOffsetIndex(index);
         bodyOverflow.setVisibility(View.VISIBLE);
     }
 
@@ -340,6 +374,19 @@ public class ArticleActivity extends AppCompatActivity
             }
 
             @Override
+            public void onAnnotationError(int errorCode) {
+                switch (errorCode) {
+                    case Article.ARTICLE_ANNOTATION_ERROR_ALREADY_SUBMITTED:
+                        annotationInputFragment.showError(getString(R.string.annotation_input_error_already_submitted));
+                        break;
+                    case Article.ARTICLE_ANNOTATION_ERROR_INTERNAL:
+                        annotationInputFragment.showError(getString(R.string.annotation_input_error_general));
+                    default:
+                        annotationInputFragment.showError(getString(R.string.annotation_input_error_general));
+                }
+            }
+
+            @Override
             public void onError(Exception e) {
                 annotationInputFragment.showError(getString(R.string.article_add_annotation_error));
             }
@@ -374,8 +421,30 @@ public class ArticleActivity extends AppCompatActivity
 
     @Override
     public void onTextViewClick(String quote, int startIndex, int endIndex) {
-        //showAnnotationInput(quote, Annotation.TYPE_BODY, startIndex, endIndex,1);
-        showLocatedAnnotations(Annotation.TYPE_BODY, startIndex, endIndex);
+        boolean annotationExists = article.annotationExists(Annotation.TYPE_BODY, startIndex, endIndex);
+
+        if (!showHeatmap || !annotationExists) {
+            return;
+        }
+
+        if (startIndex != currentAnnotationStartIndex || endIndex != currentAnnotationEndIndex) {
+            currentAnnotationStartIndex = startIndex;
+            currentAnnotationEndIndex = endIndex;
+
+            showLocatedAnnotations(Annotation.TYPE_BODY, startIndex, endIndex);
+        } else {
+            updateAnnotations();
+        }
+    }
+
+    @Override
+    public void onTextViewLongClick(String quote, int startIndex, int endIndex) {
+        if (!showHeatmap) {
+            return;
+        }
+
+        Helper.vibrate(getApplicationContext(), 100);
+        showAnnotationInput(quote, Annotation.TYPE_BODY, startIndex, endIndex,1);
     }
 
     private class AnnotationPagerAdapter extends FragmentStatePagerAdapter {

@@ -4,6 +4,7 @@ import java.util.List;
 
 import android.content.Context;
 import android.graphics.Color;
+import android.os.Bundle;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.TextPaint;
@@ -24,6 +25,7 @@ import static android.support.constraint.Constraints.TAG;
  */
 public class ClickableTextView extends android.support.v7.widget.AppCompatTextView {
     private ClickableTextViewInterface clickableTextViewInterface;
+    private int offsetIndex = 0;
 
     public ClickableTextView(Context context) {
         super(context);
@@ -49,15 +51,18 @@ public class ClickableTextView extends android.support.v7.widget.AppCompatTextVi
         }
     }
 
+    public void setOffsetIndex(int offsetIndex) {
+        this.offsetIndex = offsetIndex;
+    }
+
     public void setTextWithClickableSentences(SpannableString annotations) {
         String text = annotations.toString();
 
         ExtractSentences extractSentences = new ExtractSentences(text);
         List<String> sentences = extractSentences.getSentences();
 
-        setMovementMethod(LinkMovementMethod.getInstance());
+        setMovementMethod(LongClickLinkMovementMethod.getInstance());
         setText(addClickableSentence(text, sentences, annotations), BufferType.SPANNABLE);
-
     }
 
     private SpannableStringBuilder addClickableSentence(String str, List<String> clickableSentences, SpannableString annotations) {
@@ -71,24 +76,34 @@ public class ClickableTextView extends android.support.v7.widget.AppCompatTextVi
                 final int idx2 = idx1 + clickableSentence.length();
 
                 ssb.setSpan(
-
                         new NoUnderlineClickableSpan() {
                             @Override
                             public void onClick(@NonNull View widget) {
                                 if (clickableTextViewInterface != null) {
-                                    clickableTextViewInterface.onTextViewClick(clickableSentence, idx1, idx2);
+                                    clickableTextViewInterface.onTextViewClick(
+                                            clickableSentence,
+                                            offsetIndex + idx1,
+                                            offsetIndex + idx2);
                                 }
 
                                 Log.d(TAG, "onClick: " + clickableSentence + ": " + idx1 + " -> " + idx2);
                             }
 
+                            @Override
+                            public void onLongClick(View widget) {
+                                if (clickableTextViewInterface != null) {
+                                    clickableTextViewInterface.onTextViewLongClick(
+                                            clickableSentence,
+                                            offsetIndex + idx1,
+                                            offsetIndex + idx2
+                                    );
+                                }
+                            }
                         },
                         idx1,
                         idx2,
                         0
                 );
-
-
 
                 idx = str.indexOf(clickableSentence, idx2);
             }
@@ -99,7 +114,7 @@ public class ClickableTextView extends android.support.v7.widget.AppCompatTextVi
 
 
     //a version of ClickableSpan without the underline
-    public static abstract class NoUnderlineClickableSpan extends ClickableSpan {
+    public static abstract class NoUnderlineClickableSpan extends LongClickableSpan {
         private int color = -1;
 
         public void setColor(int color) {
@@ -117,5 +132,6 @@ public class ClickableTextView extends android.support.v7.widget.AppCompatTextVi
 
     public interface ClickableTextViewInterface {
         void onTextViewClick(String quote, int startIndex, int endIndex);
+        void onTextViewLongClick(String quote, int startIndex, int endIndex);
     }
 }
