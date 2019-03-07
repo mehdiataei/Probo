@@ -14,6 +14,7 @@ import android.widget.Toast;
 
 import com.utoronto.ece1778.probo.Utils.Helper;
 import com.utoronto.ece1778.probo.R;
+import com.utoronto.ece1778.probo.Utils.ImageBitmap;
 
 public class SignUpActivity extends AppCompatActivity {
     static final int REQUEST_IMAGE_CAPTURE = 1;

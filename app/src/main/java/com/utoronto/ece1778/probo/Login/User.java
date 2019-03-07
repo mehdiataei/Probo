@@ -23,7 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class User {
-    private String uid, profileImagePath, name;
+    private String uid, profileImagePath, name, title;
 
     public static final int
             SIGN_IN_ERROR_EMPTY_EMAIL = 0,
@@ -65,6 +65,10 @@ public class User {
         return this.name;
     }
 
+    public String getTitle() {
+        return this.title;
+    }
+
     public String getProfileImagePath() {
         return this.profileImagePath;
     }
@@ -85,6 +89,7 @@ public class User {
                     public void onSuccess(DocumentSnapshot documentSnapshot) {
                         profileImagePath = documentSnapshot.getString("profileImagePath");
                         name = documentSnapshot.getString("name");
+                        title = documentSnapshot.getString("title");
 
                         cb.onLoad();
                     }
@@ -285,11 +290,11 @@ public class User {
             }
         });
     }
-}
 
-interface UserCallback {
-    void onLoad();
-    void onError(Exception error);
+    public interface UserCallback {
+        void onLoad();
+        void onError(Exception error);
+    }
 }
 
 interface UserSignInCallback {

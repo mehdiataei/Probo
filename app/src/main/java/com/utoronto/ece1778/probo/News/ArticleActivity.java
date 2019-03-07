@@ -4,8 +4,12 @@ import android.drm.DrmStore;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.os.Build;
+import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v4.view.PagerAdapter;
+import android.support.v4.view.ViewPager;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
@@ -38,8 +42,10 @@ import com.utoronto.ece1778.probo.R;
 import com.utoronto.ece1778.probo.Utils.ClickableTextView;
 import com.utoronto.ece1778.probo.Utils.GlideImageLoader;
 import com.utoronto.ece1778.probo.Utils.SquareImageView;
+import com.utoronto.ece1778.probo.Utils.WrapHeightViewPager;
 
 import java.text.DateFormat;
+import java.util.ArrayList;
 import java.util.Locale;
 
 public class ArticleActivity extends AppCompatActivity
@@ -54,6 +60,8 @@ public class ArticleActivity extends AppCompatActivity
 
     private TextView headline;
     private ClickableTextView body;
+    private ClickableTextView bodyOverflow;
+    private WrapHeightViewPager annotationsContainer;
 
     private AnnotationInputFragment annotationInputFragment;
 
@@ -75,7 +83,10 @@ public class ArticleActivity extends AppCompatActivity
 
         headline = findViewById(R.id.headline);
         body = findViewById(R.id.body);
-        body.setLongClickable(false);
+        bodyOverflow = findViewById(R.id.body_overflow);
+        annotationsContainer = findViewById(R.id.annotations_container);
+
+        //body.setLongClickable(true);
 
         user = new User();
 
@@ -106,6 +117,8 @@ public class ArticleActivity extends AppCompatActivity
         headline.setCustomSelectionActionModeCallback(handleHeadlineTextSelect);
 
         refresh.setOnRefreshListener(handleRefresh);
+
+        //showAnnotations();
     }
 
     @Override
@@ -228,12 +241,36 @@ public class ArticleActivity extends AppCompatActivity
         datetime.setText(dateFormat.format(article.getDatetime()));
 
         headline.setText(article.getHeadline(showHeatmap));
-        body.setTextWithClickableSentences(article.getBody(showHeatmap));
+        body.setTextWithClickableSentences(article.getBody(showHeatmap, -1, -1));
     }
 
     public void updateAnnotations() {
         headline.setText(article.getHeadline(showHeatmap));
-        body.setTextWithClickableSentences(article.getBody(showHeatmap));
+        body.setTextWithClickableSentences(article.getBody(showHeatmap, -1, -1));
+
+        bodyOverflow.setVisibility(View.GONE);
+        bodyOverflow.setTextWithClickableSentences(new SpannableString(""));
+    }
+
+    private void showLocatedAnnotations(String type, int startIndex, int endIndex) {
+        ArrayList<Annotation> annotations = article.getLocatedAnnotations(type, startIndex, endIndex);
+
+        annotationsContainer.setPageTransformer(true, new ZoomOutPageTransformer());
+
+        AnnotationPagerAdapter adapter = new AnnotationPagerAdapter(getSupportFragmentManager(), annotations);
+        annotationsContainer.setAdapter(adapter);
+
+        splitBody(endIndex);
+        annotationsContainer.setVisibility(View.VISIBLE);
+    }
+
+    private void splitBody(int index) {
+        SpannableString firstSection = article.getBody(showHeatmap, 0, index);
+        SpannableString secondSection = article.getBody(showHeatmap, index, article.getBodyLength());
+
+        body.setTextWithClickableSentences(firstSection);
+        bodyOverflow.setTextWithClickableSentences(secondSection);
+        bodyOverflow.setVisibility(View.VISIBLE);
     }
 
     private void showAnnotationInput(String quote, String type, int startIndex, int endIndex, int value) {
@@ -254,7 +291,6 @@ public class ArticleActivity extends AppCompatActivity
         );
 
         transaction.add(R.id.annotation_container, annotationInputFragment);
-
         transaction.commit();
 
         annotationContainer.setVisibility(View.VISIBLE);
@@ -338,6 +374,63 @@ public class ArticleActivity extends AppCompatActivity
 
     @Override
     public void onTextViewClick(String quote, int startIndex, int endIndex) {
-        showAnnotationInput(quote, Annotation.TYPE_BODY, startIndex, endIndex,1);
+        //showAnnotationInput(quote, Annotation.TYPE_BODY, startIndex, endIndex,1);
+        showLocatedAnnotations(Annotation.TYPE_BODY, startIndex, endIndex);
+    }
+
+    private class AnnotationPagerAdapter extends FragmentStatePagerAdapter {
+        private ArrayList<Annotation> annotations;
+
+        AnnotationPagerAdapter(FragmentManager fm, ArrayList<Annotation> annotations) {
+            super(fm);
+            this.annotations = annotations;
+        }
+
+        @Override
+        public Fragment getItem(int position) {
+            Annotation annotation = this.annotations.get(position);
+
+            return AnnotationFragment.newInstance(
+                    annotation.getUser().getUid(),
+                    annotation.getComment(),
+                    annotation.getValue()
+            );
+        }
+
+        @Override
+        public int getCount() {
+            return this.annotations.size();
+        }
+    }
+
+    private class ZoomOutPageTransformer implements ViewPager.PageTransformer {
+        private static final float MIN_SCALE = 0.85f;
+        private static final float MIN_ALPHA = 0.75f;
+
+        public void transformPage(View view, float position) {
+            int pageWidth = view.getWidth();
+            int pageHeight = view.getHeight();
+
+            if (position < -1) {
+                view.setAlpha(0f);
+            } else if (position <= 1) {
+                float scaleFactor = Math.max(MIN_SCALE, 1 - Math.abs(position));
+                float vertMargin = pageHeight * (1 - scaleFactor) / 2;
+                float horzMargin = pageWidth * (1 - scaleFactor) / 2;
+
+                if (position < 0) {
+                    view.setTranslationX(horzMargin - vertMargin / 2);
+                } else {
+                    view.setTranslationX(-horzMargin + vertMargin / 2);
+                }
+
+                view.setScaleX(scaleFactor);
+                view.setScaleY(scaleFactor);
+
+                view.setAlpha(MIN_ALPHA + (scaleFactor - MIN_SCALE) / (1 - MIN_SCALE) * (1 - MIN_ALPHA));
+            } else {
+                view.setAlpha(0f);
+            }
+        }
     }
 }

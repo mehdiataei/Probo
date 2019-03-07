@@ -36,6 +36,10 @@ public class Annotation {
 
     }
 
+    public User getUser() {
+        return this.user;
+    }
+
     public String getType() {
         return this.type;
     }

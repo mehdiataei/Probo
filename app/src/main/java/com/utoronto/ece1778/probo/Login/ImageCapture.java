@@ -9,6 +9,8 @@ import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.v4.content.FileProvider;
 
+import com.utoronto.ece1778.probo.Utils.ImageBitmap;
+
 import java.io.File;
 import java.io.IOException;
 

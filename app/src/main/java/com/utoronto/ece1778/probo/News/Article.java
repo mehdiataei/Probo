@@ -34,6 +34,8 @@ public class Article {
 
     private ArrayList<Annotation> headlineAnnotations;
     private ArrayList<Annotation> bodyAnnotations;
+
+    private HashMap<String, ArrayList<Annotation>> annotationsMap;
     private HashMap<String, Tuple<Integer, Integer>> annotationCounts;
 
     public static final int
@@ -42,6 +44,7 @@ public class Article {
     public Article(String id) {
         this.id = id;
 
+        this.annotationsMap = new HashMap<>();
         this.annotationCounts = new HashMap<>();
 
         this.headlineAnnotations = new ArrayList<>();
@@ -67,7 +70,8 @@ public class Article {
     public SpannableString getHeadline(boolean showHeatmap) {
         return showHeatmap ? this.getAnnotatedText(
                 this.headline,
-                this.headlineAnnotations
+                this.headlineAnnotations,
+                0
         ) : new SpannableString(this.headline);
     }
 
@@ -75,18 +79,36 @@ public class Article {
         return this.description;
     }
 
-    public SpannableString getBody(boolean showHeatmap) {
-        String formattedBody = this.body.replace("\\n", System.getProperty("line.separator"));
+    public SpannableString getBody(boolean showHeatmap, int startIndex, int endIndex) {
+        String formattedBody = this.body;
+        int indexOffset = 0;
+
+        if (startIndex != -1 && endIndex != -1) {
+            formattedBody = this.body.substring(startIndex, endIndex);
+            indexOffset = startIndex;
+        }
         
         return showHeatmap ? this.getAnnotatedText(
                 formattedBody,
-                this.bodyAnnotations
+                this.bodyAnnotations,
+                indexOffset
         ) : new SpannableString(formattedBody);
     }
 
+    public int getBodyLength() {
+        return this.body.length();
+    }
 
     public Date getDatetime() {
         return this.datetime;
+    }
+
+    public ArrayList<Annotation> getLocatedAnnotations(String type, int startIndex, int endIndex) {
+        String key = type + ":" + startIndex + ":" + endIndex;
+
+        return this.annotationsMap.containsKey(key) ?
+                this.annotationsMap.get(key) :
+                new ArrayList<Annotation>();
     }
 
     public void addHeadlineAnnotation(AnnotationSubmitCallback cb, User user, int startIndex, int endIndex, int value, String comment) {
@@ -104,6 +126,8 @@ public class Article {
         );
 
         this.headlineAnnotations.add(annotation);
+        this.addAnnotationMap(annotation);
+
         this.updateAnnotationCounts(annotation);
 
         annotation.save(cb, this);
@@ -124,9 +148,24 @@ public class Article {
         );
 
         this.bodyAnnotations.add(annotation);
+        this.addAnnotationMap(annotation);
+
         this.updateAnnotationCounts(annotation);
 
         annotation.save(cb, this);
+    }
+
+    public void addAnnotationMap(Annotation annotation) {
+        String key = annotation.getType() + ":" + annotation.getStartIndex() + ":" + annotation.getEndIndex();
+        ArrayList<Annotation> arrayList = this.annotationsMap.get(key);
+
+        if (arrayList == null) {
+            arrayList = new ArrayList<>();
+        }
+
+        arrayList.add(annotation);
+
+        this.annotationsMap.put(key, arrayList);
     }
 
     private void updateAnnotationCounts(Annotation annotation) {
@@ -144,16 +183,24 @@ public class Article {
         this.annotationCounts.put(key, new Tuple<>(numTrue, numFalse));
     }
 
-    private SpannableString getAnnotatedText(String original, ArrayList<Annotation> annotations) {
+    private SpannableString getAnnotatedText(String original, ArrayList<Annotation> annotations, int indexOffset) {
+        int length = original.length();
+
         SpannableString str = new SpannableString(original);
 
         int totalHeadlineAnnotations = this.headlineAnnotations.size();
         int totalBodyAnnotations = this.bodyAnnotations.size();
 
         for (Annotation annotation : annotations) {
+            int formattedStartIndex = indexOffset + annotation.getStartIndex();
+            int formattedEndIndex = indexOffset + annotation.getEndIndex();
+
+            if (formattedStartIndex > length || formattedEndIndex > length) {
+                continue;
+            }
+
             String annotationKey = annotation.getType() + ":" +
-                    annotation.getStartIndex() + ":" +
-                    annotation.getEndIndex();
+                    formattedStartIndex + ":" + formattedEndIndex;
 
             Tuple<Integer, Integer> counts = this.annotationCounts.containsKey(annotationKey) ?
                                                 this.annotationCounts.get(annotationKey) :
@@ -176,8 +223,8 @@ public class Article {
 
             str.setSpan(
                     backgroundColorSpan,
-                    annotation.getStartIndex(),
-                    annotation.getEndIndex(),
+                    formattedStartIndex,
+                    formattedEndIndex,
                     0
             );
         }
@@ -207,6 +254,10 @@ public class Article {
                                 headline = documentSnapshot.getString("heading");
                                 description = documentSnapshot.getString("description");
                                 body = documentSnapshot.getString("body");
+
+                                if (body != null) {
+                                    body = body.replace("\\n", System.getProperty("line.separator"));
+                                }
 
                                 try {
                                     datetime = new SimpleDateFormat("yyyyMMdd_HHmmss").parse(documentSnapshot.getString("date_created"));
@@ -292,6 +343,8 @@ public class Article {
                                     default:
                                         break;
                                 }
+
+                                addAnnotationMap(annotation);
                             }
                         }
 
