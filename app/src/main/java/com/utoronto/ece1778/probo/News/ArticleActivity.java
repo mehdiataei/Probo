@@ -1,36 +1,21 @@
 package com.utoronto.ece1778.probo.News;
 
-import android.content.Context;
-import android.drm.DrmStore;
-import android.graphics.Color;
-import android.graphics.Point;
-import android.os.Build;
-import android.os.Vibrator;
+import android.os.AsyncTask;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.app.FragmentTransaction;
-import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
-import android.support.v4.widget.DrawerLayout;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.text.Html;
 import android.text.SpannableString;
-import android.text.style.BackgroundColorSpan;
 import android.util.Log;
-import android.view.ActionMode;
-import android.view.Display;
-import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.MotionEvent;
 import android.view.View;
-import android.view.Window;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
-import android.view.animation.TranslateAnimation;
 import android.widget.CompoundButton;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
@@ -45,10 +30,10 @@ import com.utoronto.ece1778.probo.R;
 import com.utoronto.ece1778.probo.Utils.ClickableTextView;
 import com.utoronto.ece1778.probo.Utils.GlideImageLoader;
 import com.utoronto.ece1778.probo.Utils.Helper;
-import com.utoronto.ece1778.probo.Utils.LongClickLinkMovementMethod;
 import com.utoronto.ece1778.probo.Utils.SquareImageView;
 import com.utoronto.ece1778.probo.Utils.WrapHeightViewPager;
 
+import java.lang.ref.WeakReference;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Locale;
@@ -74,10 +59,6 @@ public class ArticleActivity extends AppCompatActivity
     private AnnotationInputFragment annotationInputFragment;
 
     private User user;
-
-    private static final int
-            MENU_TRUE_BUTTON = 0,
-            MENU_FALSE_BUTTON = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -122,8 +103,6 @@ public class ArticleActivity extends AppCompatActivity
             article = new Article(extras.getString("articleId"));
             article.load(cb);
         }
-
-        headline.setCustomSelectionActionModeCallback(handleHeadlineTextSelect);
 
         refresh.setOnRefreshListener(handleRefresh);
     }
@@ -171,61 +150,6 @@ public class ArticleActivity extends AppCompatActivity
         }
     };
 
-    private ActionMode.Callback handleHeadlineTextSelect = new ActionMode.Callback() {
-        @Override
-        public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
-            menu.removeItem(android.R.id.selectAll);
-            menu.removeItem(android.R.id.cut);
-            menu.removeItem(android.R.id.copy);
-            menu.removeItem(android.R.id.shareText);
-
-            return true;
-        }
-
-        @Override
-        public boolean onCreateActionMode(ActionMode mode, Menu menu) {
-            menu.add(0, MENU_TRUE_BUTTON, 0, getString(R.string.article_menu_true))
-                    .setIcon(R.drawable.thumb_up_icon);
-
-            menu.add(0, MENU_FALSE_BUTTON, 1, getString(R.string.article_menu_false))
-                    .setIcon(R.drawable.thumb_down_icon);
-
-            return true;
-        }
-
-        @Override
-        public void onDestroyActionMode(ActionMode mode) {}
-
-        @Override
-        public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
-            int start = 0;
-            int end = headline.getText().length();
-
-            if (headline.isFocused()) {
-                final int selectionStart = headline.getSelectionStart();
-                final int selectionEnd = headline.getSelectionEnd();
-
-                start = Math.max(0, Math.min(selectionStart, selectionEnd));
-                end = Math.max(0, Math.max(selectionStart, selectionEnd));
-            }
-
-            switch (item.getItemId()) {
-                case MENU_TRUE_BUTTON:
-                    showAnnotationInput(article.getHeadline(false).toString(), Annotation.TYPE_HEADLINE, start, end,1);
-                    mode.finish();
-                    return true;
-                case MENU_FALSE_BUTTON:
-                    showAnnotationInput(article.getHeadline(false).toString(), Annotation.TYPE_HEADLINE, start, end,0);
-                    mode.finish();
-                    return true;
-                default:
-                    break;
-            }
-
-            return false;
-        }
-    };
-
     public void populateArticle() {
         ProgressBar progressBar = findViewById(R.id.progress_spinner);
         SquareImageView image = findViewById(R.id.image);
@@ -247,20 +171,12 @@ public class ArticleActivity extends AppCompatActivity
         author.setText(article.getAuthor());
         datetime.setText(dateFormat.format(article.getDatetime()));
 
-        headline.setText(article.getHeadline(showHeatmap));
-        body.setTextWithClickableSentences(article.getBody(showHeatmap, -1, -1));
+        updateArticleText();
     }
 
-    public void updateAnnotations() {
-        headline.setText(article.getHeadline(showHeatmap));
-        body.setTextWithClickableSentences(article.getBody(showHeatmap, -1, -1));
-
-        annotationsContainer.setVisibility(View.GONE);
-        bodyOverflow.setVisibility(View.GONE);
-        bodyOverflow.setTextWithClickableSentences(new SpannableString(""));
-
-        currentAnnotationStartIndex = -1;
-        currentAnnotationEndIndex = -1;
+    public void updateArticleText() {
+        UpdateTextParams params = new UpdateTextParams(article, showHeatmap);
+        new UpdateText(this).execute(params);
     }
 
     private void showLocatedAnnotations(String type, int startIndex, int endIndex) {
@@ -276,35 +192,8 @@ public class ArticleActivity extends AppCompatActivity
     }
 
     private void splitBody(int index) {
-        final int TEXT_MARGIN = 32;
-
-        SpannableString firstSection = article.getBody(showHeatmap, 0, index);
-        SpannableString secondSection = article.getBody(showHeatmap, index, article.getBodyLength());
-
-        if (firstSection.toString().lastIndexOf("\n") != index - 1) {
-            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-            );
-
-            params.setMargins(0, 0, 0, TEXT_MARGIN);
-            body.setLayoutParams(params);
-        }
-
-        if (secondSection.toString().indexOf("\n") != 0) {
-            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-            );
-
-            params.setMargins(0, TEXT_MARGIN, 0, 0);
-            bodyOverflow.setLayoutParams(params);
-        }
-
-        body.setTextWithClickableSentences(firstSection);
-        bodyOverflow.setTextWithClickableSentences(secondSection);
-        bodyOverflow.setOffsetIndex(index);
-        bodyOverflow.setVisibility(View.VISIBLE);
+        SplitTextParams params = new SplitTextParams(article, showHeatmap, index);
+        new SplitText(this).execute(params);
     }
 
     private void showAnnotationInput(String quote, String type, int startIndex, int endIndex, int value) {
@@ -360,7 +249,7 @@ public class ArticleActivity extends AppCompatActivity
 
     public void toggleHeatmap(boolean show) {
         showHeatmap = show;
-        updateAnnotations();
+        updateArticleText();
     }
 
     @Override
@@ -368,7 +257,7 @@ public class ArticleActivity extends AppCompatActivity
         AnnotationSubmitCallback cb = new AnnotationSubmitCallback() {
             @Override
             public void onSubmit() {
-                updateAnnotations();
+                updateArticleText();
                 annotationInputFragment.hideProgress();
                 hideAnnotationInput();
             }
@@ -433,7 +322,7 @@ public class ArticleActivity extends AppCompatActivity
 
             showLocatedAnnotations(Annotation.TYPE_BODY, startIndex, endIndex);
         } else {
-            updateAnnotations();
+            updateArticleText();
         }
     }
 
@@ -445,6 +334,181 @@ public class ArticleActivity extends AppCompatActivity
 
         Helper.vibrate(getApplicationContext(), 100);
         showAnnotationInput(quote, Annotation.TYPE_BODY, startIndex, endIndex,1);
+    }
+
+    private static class UpdateText extends AsyncTask<UpdateTextParams, Void, UpdateTextResults> {
+        private WeakReference<ArticleActivity> activityReference;
+
+        UpdateText(ArticleActivity context) {
+            activityReference = new WeakReference<>(context);
+        }
+
+        protected UpdateTextResults doInBackground(UpdateTextParams... params) {
+            Article currentArticle = params[0].getCurrentArticle();
+            boolean displayHeatmap = params[0].getDisplayHeatmap();
+
+            return new UpdateTextResults(
+                    currentArticle.getHeadline(displayHeatmap),
+                    currentArticle.getBody(displayHeatmap, -1, -1)
+            );
+        }
+
+        protected void onPreExecute() {
+            ArticleActivity activity = activityReference.get();
+            activity.annotationsContainer.setVisibility(View.GONE);
+        }
+
+        protected void onPostExecute(UpdateTextResults results) {
+            ArticleActivity activity = activityReference.get();
+
+            activity.headline.setText(results.getHeadlineResult());
+            activity.body.setTextWithClickableSentences(results.getBodyResult());
+
+            activity.bodyOverflow.setVisibility(View.GONE);
+            activity.bodyOverflow.setTextWithClickableSentences(new SpannableString(""));
+
+            activity.currentAnnotationStartIndex = -1;
+            activity.currentAnnotationEndIndex = -1;
+        }
+    }
+
+    private static class UpdateTextParams {
+        private Article currentArticle;
+        private boolean displayHeatmap;
+
+        UpdateTextParams(Article currentArticle, boolean displayHeatmap) {
+            this.currentArticle = currentArticle;
+            this.displayHeatmap = displayHeatmap;
+        }
+
+        public Article getCurrentArticle() {
+            return this.currentArticle;
+        }
+
+        public boolean getDisplayHeatmap() {
+            return this.displayHeatmap;
+        }
+    }
+
+    private static class UpdateTextResults {
+        private SpannableString headlineResult;
+        private SpannableString bodyResult;
+
+        UpdateTextResults(SpannableString headlineResult, SpannableString bodyResult) {
+            this.headlineResult = headlineResult;
+            this.bodyResult = bodyResult;
+        }
+
+        public SpannableString getHeadlineResult() {
+            return this.headlineResult;
+        }
+
+        public SpannableString getBodyResult() {
+            return this.bodyResult;
+        }
+    }
+
+    private static class SplitText extends AsyncTask<SplitTextParams, Void, SplitTextResults> {
+        private WeakReference<ArticleActivity> activityReference;
+
+        SplitText(ArticleActivity context) {
+            activityReference = new WeakReference<>(context);
+        }
+
+        protected SplitTextResults doInBackground(SplitTextParams... params) {
+            Article currentArticle = params[0].getCurrentArticle();
+            boolean displayHeatmap = params[0].getDisplayHeatmap();
+            int index = params[0].getIndex();
+
+            return new SplitTextResults(
+                    index,
+                    currentArticle.getBody(displayHeatmap, 0, index),
+                    currentArticle.getBody(displayHeatmap, index, currentArticle.getBodyLength())
+            );
+        }
+
+        protected void onPostExecute(SplitTextResults results) {
+            ArticleActivity activity = activityReference.get();
+
+            final int TEXT_MARGIN = 32;
+            int index = results.getIndex();
+
+            SpannableString firstSection = results.getFirstSection();
+            SpannableString secondSection = results.getSecondSection();
+
+            if (firstSection.toString().lastIndexOf("\n") != index - 1) {
+                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                );
+
+                params.setMargins(0, 0, 0, TEXT_MARGIN);
+                activity.body.setLayoutParams(params);
+            }
+
+            if (secondSection.toString().indexOf("\n") != 0) {
+                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                );
+
+                params.setMargins(0, TEXT_MARGIN, 0, 0);
+                activity.bodyOverflow.setLayoutParams(params);
+            }
+
+            activity.body.setTextWithClickableSentences(firstSection);
+            activity.bodyOverflow.setTextWithClickableSentences(secondSection);
+            activity.bodyOverflow.setOffsetIndex(index);
+            activity.bodyOverflow.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private static class SplitTextParams {
+        private Article currentArticle;
+        private boolean displayHeatmap;
+        private int index;
+
+        SplitTextParams(Article currentArticle, boolean displayHeatmap, int index) {
+            this.currentArticle = currentArticle;
+            this.displayHeatmap = displayHeatmap;
+            this.index = index;
+        }
+
+        public Article getCurrentArticle() {
+            return this.currentArticle;
+        }
+
+        public boolean getDisplayHeatmap() {
+            return this.displayHeatmap;
+        }
+
+        public int getIndex() {
+            return this.index;
+        }
+    }
+
+    private static class SplitTextResults {
+        private int index;
+        private SpannableString firstSection;
+        private SpannableString secondSection;
+
+        SplitTextResults(int index, SpannableString firstSection, SpannableString secondSection) {
+            this.index = index;
+            this.firstSection = firstSection;
+            this.secondSection = secondSection;
+        }
+
+        public int getIndex() {
+            return this.index;
+        }
+
+        public SpannableString getFirstSection() {
+            return this.firstSection;
+        }
+
+        public SpannableString getSecondSection() {
+            return this.secondSection;
+        }
     }
 
     private class AnnotationPagerAdapter extends FragmentStatePagerAdapter {

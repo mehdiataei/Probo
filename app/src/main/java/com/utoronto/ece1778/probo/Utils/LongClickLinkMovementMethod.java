@@ -18,6 +18,7 @@ public class LongClickLinkMovementMethod extends LinkMovementMethod {
     @Override
     public boolean onTouchEvent(final TextView widget, Spannable buffer,
                                 MotionEvent event) {
+
         int action = event.getAction();
 
         if(action == MotionEvent.ACTION_CANCEL){
@@ -28,6 +29,7 @@ public class LongClickLinkMovementMethod extends LinkMovementMethod {
 
         if (action == MotionEvent.ACTION_UP ||
                 action == MotionEvent.ACTION_DOWN) {
+
             int x = (int) event.getX();
             int y = (int) event.getY();
 

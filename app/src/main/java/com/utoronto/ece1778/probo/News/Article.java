@@ -1,6 +1,7 @@
 package com.utoronto.ece1778.probo.News;
 
 import android.graphics.Color;
+import android.os.AsyncTask;
 import android.support.annotation.NonNull;
 import android.support.v4.graphics.ColorUtils;
 import android.text.SpannableString;
@@ -424,8 +425,6 @@ public class Article {
 
         return Color.HSVToColor((int) alpha_output, hsv_output);
     }
-
-   
 }
 
 interface ArticleCallback {
