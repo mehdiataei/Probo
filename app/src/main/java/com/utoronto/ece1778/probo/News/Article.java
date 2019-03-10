@@ -68,6 +68,15 @@ public class Article {
         return this.imageUrl;
     }
 
+    public ArrayList<Annotation> getAnnotations() {
+        ArrayList<Annotation> combined = new ArrayList<>();
+
+        combined.addAll(this.headlineAnnotations);
+        combined.addAll(this.bodyAnnotations);
+
+        return combined;
+    }
+
     public SpannableString getHeadline(boolean showHeatmap) {
         return showHeatmap ? this.getAnnotatedText(
                 this.headline,
@@ -147,12 +156,15 @@ public class Article {
         }
 
         Annotation annotation = new Annotation(
+                null,
                 user,
                 Annotation.TYPE_HEADLINE,
                 startIndex,
                 endIndex,
                 value,
-                comment
+                comment,
+                new HashMap<String, AnnotationVote>(),
+                new HashMap<String, AnnotationVote>()
         );
 
         this.headlineAnnotations.add(annotation);
@@ -172,12 +184,15 @@ public class Article {
         }
 
         Annotation annotation = new Annotation(
+                null,
                 user,
                 Annotation.TYPE_BODY,
                 startIndex,
                 endIndex,
                 value,
-                comment
+                comment,
+                new HashMap<String, AnnotationVote>(),
+                new HashMap<String, AnnotationVote>()
         );
 
         this.bodyAnnotations.add(annotation);
@@ -320,7 +335,7 @@ public class Article {
     }
 
     private void loadAnnotations(final ArticleAnnotationCallback cb) {
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        final FirebaseFirestore db = FirebaseFirestore.getInstance();
 
         db.collection("annotations")
                 .whereEqualTo("articleId", this.id)
@@ -328,70 +343,112 @@ public class Article {
                 .addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
                     @Override
                     public void onSuccess(QuerySnapshot queryDocumentSnapshots) {
-                        for (DocumentSnapshot snapshot : queryDocumentSnapshots) {
-                            String type = snapshot.getString("type");
-                            Object startObj = snapshot.get("startIndex");
-                            Object endObj = snapshot.get("endIndex");
-                            Object valueObj = snapshot.get("value");
-                            String userId = snapshot.getString("userId");
-                            String comment = snapshot.getString("comment");
+                        final QuerySnapshot annotationsSnapshots = queryDocumentSnapshots;
 
-                            if (type != null &&
-                                startObj != null &&
-                                endObj != null &&
-                                valueObj != null &&
-                                userId != null) {
+                        db.collection("annotation_votes")
+                                .whereEqualTo("articleId", id)
+                                .get()
+                                .addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
+                                    @Override
+                                    public void onSuccess(QuerySnapshot votesSnapshots) {
+                                        for (DocumentSnapshot snapshot : annotationsSnapshots) {
+                                            String id = snapshot.getId();
+                                            String type = snapshot.getString("type");
+                                            Object startObj = snapshot.get("startIndex");
+                                            Object endObj = snapshot.get("endIndex");
+                                            Object valueObj = snapshot.get("value");
+                                            String userId = snapshot.getString("userId");
+                                            String comment = snapshot.getString("comment");
+                                            HashMap<String, AnnotationVote> upvotes = new HashMap<>();
+                                            HashMap<String, AnnotationVote> downvotes = new HashMap<>();
 
-                                Long start = (Long) startObj;
-                                Long end = (Long) endObj;
-                                Long value = (Long) valueObj;
+                                            if (type != null &&
+                                                    startObj != null &&
+                                                    endObj != null &&
+                                                    valueObj != null &&
+                                                    userId != null) {
 
-                                String annotationKey = type + ":" + start.toString() + ":" + end.toString();
+                                                Long start = (Long) startObj;
+                                                Long end = (Long) endObj;
+                                                Long value = (Long) valueObj;
 
-                                Tuple<Integer, Integer> stats = annotationStats.containsKey(annotationKey) ?
-                                                                    annotationStats.get(annotationKey) :
-                                                                    new Tuple<>(0, 0);
+                                                String annotationKey = type + ":" + start.toString() + ":" + end.toString();
 
-                                int numTrue = value == 1 ? stats.getX() + 1 : stats.getX();
-                                int numFalse = value == 0 ? stats.getY() + 1 : stats.getY();
+                                                Tuple<Integer, Integer> stats = annotationStats.containsKey(annotationKey) ?
+                                                        annotationStats.get(annotationKey) :
+                                                        new Tuple<>(0, 0);
 
-                                annotationStats.put(annotationKey, new Tuple<>(numTrue, numFalse));
+                                                int numTrue = value == 1 ? stats.getX() + 1 : stats.getX();
+                                                int numFalse = value == 0 ? stats.getY() + 1 : stats.getY();
 
-                                Annotation annotation = new Annotation(
-                                        new User(userId),
-                                        type,
-                                        start.intValue(),
-                                        end.intValue(),
-                                        value.intValue(),
-                                        comment
-                                );
+                                                annotationStats.put(annotationKey, new Tuple<>(numTrue, numFalse));
 
-                                switch (type) {
-                                    case "headline":
-                                        headlineAnnotations.add(annotation);
-                                        break;
-                                    case "body":
-                                        bodyAnnotations.add(annotation);
-                                        break;
-                                    default:
-                                        break;
-                                }
+                                                for (DocumentSnapshot votesSnapshot : votesSnapshots) {
+                                                    if (votesSnapshot.getString("annotationId") == id) {
+                                                        AnnotationVote vote = new AnnotationVote(
+                                                                votesSnapshot.getId(),
+                                                                new User(userId),
+                                                                votesSnapshot.getBoolean("value")
+                                                        );
 
-                                addAnnotationMap(annotation);
-                            }
-                        }
+                                                        if (vote.getValue()) {
+                                                            upvotes.put(
+                                                                    votesSnapshot.getString("userId"),
+                                                                    vote
+                                                            );
+                                                        } else {
+                                                            downvotes.put(
+                                                                    votesSnapshot.getString("userId"),
+                                                                    vote
+                                                            );
+                                                        }
+                                                    }
+                                                }
 
-                        cb.onLoad();
+                                                Annotation annotation = new Annotation(
+                                                        id,
+                                                        new User(userId),
+                                                        type,
+                                                        start.intValue(),
+                                                        end.intValue(),
+                                                        value.intValue(),
+                                                        comment,
+                                                        upvotes,
+                                                        downvotes
+                                                );
+
+                                                switch (type) {
+                                                    case "headline":
+                                                        headlineAnnotations.add(annotation);
+                                                        break;
+                                                    case "body":
+                                                        bodyAnnotations.add(annotation);
+                                                        break;
+                                                    default:
+                                                        break;
+                                                }
+
+                                                addAnnotationMap(annotation);
+                                            }
+                                        }
+
+                                        cb.onLoad();
+                                    }
+                                })
+                                .addOnFailureListener(new OnFailureListener() {
+                                    @Override
+                                    public void onFailure(@NonNull Exception e) {
+                                        cb.onError(e);
+                                    }
+                                });
                     }
                 })
-                .
-
-                        addOnFailureListener(new OnFailureListener() {
-                            @Override
-                            public void onFailure(@NonNull Exception e) {
-                                cb.onError(e);
-                            }
-                        });
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        cb.onError(e);
+                    }
+                });
     }
 
 

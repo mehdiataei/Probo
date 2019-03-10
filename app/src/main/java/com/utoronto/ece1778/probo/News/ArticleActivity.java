@@ -40,7 +40,7 @@ import java.util.Locale;
 
 public class ArticleActivity extends AppCompatActivity
         implements AnnotationInputFragment.AnnotationInputFragmentInteractionListener,
-                    ClickableTextView.ClickableTextViewInterface {
+                    AnnotationFragment.AnnotationFragmentInteractionListener {
 
     private boolean showHeatmap;
 
@@ -52,8 +52,7 @@ public class ArticleActivity extends AppCompatActivity
     private Article article;
 
     private TextView headline;
-    private ClickableTextView body;
-    private ClickableTextView bodyOverflow;
+    private ClickableTextView body, bodyOverflow;
     private WrapHeightViewPager annotationsContainer;
 
     private AnnotationInputFragment annotationInputFragment;
@@ -302,14 +301,22 @@ public class ArticleActivity extends AppCompatActivity
         }
     }
 
+    @Override
+    public void onAnnotationVote(AnnotationVoteCallback cb, String id, boolean value) {
+        for (Annotation annotation : article.getAnnotations()) {
+            if (annotation.getId().equals(id)) {
+                annotation.vote(cb, user, value);
+                return;
+            }
+        }
+    }
 
     @Override
     public void onAnnotationClose() {
         hideAnnotationInput();
     }
 
-    @Override
-    public void onTextViewClick(String quote, int startIndex, int endIndex) {
+    public void handleTextViewClick(String quote, int startIndex, int endIndex) {
         boolean annotationExists = article.annotationExists(Annotation.TYPE_BODY, startIndex, endIndex);
 
         if (!showHeatmap || !annotationExists) {
@@ -326,8 +333,7 @@ public class ArticleActivity extends AppCompatActivity
         }
     }
 
-    @Override
-    public void onTextViewLongClick(String quote, int startIndex, int endIndex) {
+    public void handleTextViewLongClick(String quote, int startIndex, int endIndex) {
         if (!showHeatmap) {
             return;
         }
@@ -359,13 +365,25 @@ public class ArticleActivity extends AppCompatActivity
         }
 
         protected void onPostExecute(UpdateTextResults results) {
-            ArticleActivity activity = activityReference.get();
+            final ArticleActivity activity = activityReference.get();
+
+            ClickableTextView.ClickableTextViewInterface cb = new ClickableTextView.ClickableTextViewInterface() {
+                @Override
+                public void onTextViewClick(String quote, int startIndex, int endIndex) {
+                    activity.handleTextViewClick(quote, startIndex, endIndex);
+                }
+
+                @Override
+                public void onTextViewLongClick(String quote, int startIndex, int endIndex) {
+                    activity.handleTextViewLongClick(quote, startIndex, endIndex);
+                }
+            };
 
             activity.headline.setText(results.getHeadlineResult());
-            activity.body.setTextWithClickableSentences(results.getBodyResult());
+            activity.body.setTextWithClickableSentences(results.getBodyResult(), cb, 0);
 
             activity.bodyOverflow.setVisibility(View.GONE);
-            activity.bodyOverflow.setTextWithClickableSentences(new SpannableString(""));
+            activity.bodyOverflow.setTextWithClickableSentences(new SpannableString(""), cb, 0);
 
             activity.currentAnnotationStartIndex = -1;
             activity.currentAnnotationEndIndex = -1;
@@ -428,7 +446,7 @@ public class ArticleActivity extends AppCompatActivity
         }
 
         protected void onPostExecute(SplitTextResults results) {
-            ArticleActivity activity = activityReference.get();
+            final ArticleActivity activity = activityReference.get();
 
             final int TEXT_MARGIN = 32;
             int index = results.getIndex();
@@ -456,9 +474,21 @@ public class ArticleActivity extends AppCompatActivity
                 activity.bodyOverflow.setLayoutParams(params);
             }
 
-            activity.body.setTextWithClickableSentences(firstSection);
-            activity.bodyOverflow.setTextWithClickableSentences(secondSection);
-            activity.bodyOverflow.setOffsetIndex(index);
+            ClickableTextView.ClickableTextViewInterface cb = new ClickableTextView.ClickableTextViewInterface() {
+                @Override
+                public void onTextViewClick(String quote, int startIndex, int endIndex) {
+                    activity.handleTextViewClick(quote, startIndex, endIndex);
+                }
+
+                @Override
+                public void onTextViewLongClick(String quote, int startIndex, int endIndex) {
+                    activity.handleTextViewLongClick(quote, startIndex, endIndex);
+                }
+            };
+
+            activity.body.setTextWithClickableSentences(firstSection, cb, 0);
+
+            activity.bodyOverflow.setTextWithClickableSentences(secondSection, cb, index);
             activity.bodyOverflow.setVisibility(View.VISIBLE);
         }
     }
@@ -524,9 +554,12 @@ public class ArticleActivity extends AppCompatActivity
             Annotation annotation = this.annotations.get(position);
 
             return AnnotationFragment.newInstance(
+                    annotation.getId(),
                     annotation.getUser().getUid(),
                     annotation.getComment(),
-                    annotation.getValue()
+                    annotation.getValue(),
+                    annotation.getUpvoteCount(),
+                    annotation.getDownvoteCount()
             );
         }
 

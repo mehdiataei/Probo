@@ -1,9 +1,11 @@
 package com.utoronto.ece1778.probo.Utils;
 
+import java.lang.ref.WeakReference;
 import java.util.List;
 
 import android.content.Context;
 import android.graphics.Color;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
@@ -13,6 +15,7 @@ import android.text.style.ClickableSpan;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
+import android.widget.TextView;
 
 
 import androidx.annotation.NonNull;
@@ -25,47 +28,43 @@ import static android.support.constraint.Constraints.TAG;
  */
 public class ClickableTextView extends android.support.v7.widget.AppCompatTextView {
     private ClickableTextViewInterface clickableTextViewInterface;
-    private int offsetIndex = 0;
 
     public ClickableTextView(Context context) {
         super(context);
-        attachInterface(context);
     }
 
     public ClickableTextView(Context context, AttributeSet attrs) {
         super(context, attrs);
-        attachInterface(context);
     }
 
     public ClickableTextView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
-        attachInterface(context);
     }
 
-    public void attachInterface(Context context) {
-        if (context instanceof ClickableTextViewInterface) {
-            this.clickableTextViewInterface = (ClickableTextViewInterface) context;
-        } else {
-            throw new RuntimeException(context.toString()
-                    + " must implement AnnotationSubmitCallback");
-        }
-    }
+    public void setTextWithClickableSentences(SpannableString annotations, ClickableTextViewInterface clickableTextViewInterface,
+                                              int offsetIndex) {
 
-    public void setOffsetIndex(int offsetIndex) {
-        this.offsetIndex = offsetIndex;
-    }
-
-    public void setTextWithClickableSentences(SpannableString annotations) {
         String text = annotations.toString();
 
         ExtractSentences extractSentences = new ExtractSentences(text);
         List<String> sentences = extractSentences.getSentences();
 
         setMovementMethod(LongClickLinkMovementMethod.getInstance());
-        setText(addClickableSentence(text, sentences, annotations), BufferType.SPANNABLE);
+
+        SetTextParams params = new SetTextParams(
+                text,
+                sentences,
+                annotations,
+                clickableTextViewInterface,
+                offsetIndex
+        );
+
+        new SetText(this).execute(params);
     }
 
-    private SpannableStringBuilder addClickableSentence(String str, List<String> clickableSentences, SpannableString annotations) {
+    private static SpannableStringBuilder addClickableSentence(String str, List<String> clickableSentences, SpannableString annotations,
+                                                               final ClickableTextViewInterface clickableInterface, final int offset) {
+
         SpannableStringBuilder ssb = new SpannableStringBuilder(annotations);
 
         for (final String clickableSentence : clickableSentences) {
@@ -79,25 +78,20 @@ public class ClickableTextView extends android.support.v7.widget.AppCompatTextVi
                         new NoUnderlineClickableSpan() {
                             @Override
                             public void onClick(@NonNull View widget) {
-                                if (clickableTextViewInterface != null) {
-                                    clickableTextViewInterface.onTextViewClick(
-                                            clickableSentence,
-                                            offsetIndex + idx1,
-                                            offsetIndex + idx2);
-                                }
-
-                                Log.d(TAG, "onClick: " + clickableSentence + ": " + idx1 + " -> " + idx2);
+                                clickableInterface.onTextViewClick(
+                                        clickableSentence,
+                                        offset + idx1,
+                                        offset + idx2
+                                );
                             }
 
                             @Override
                             public void onLongClick(View widget) {
-                                if (clickableTextViewInterface != null) {
-                                    clickableTextViewInterface.onTextViewLongClick(
-                                            clickableSentence,
-                                            offsetIndex + idx1,
-                                            offsetIndex + idx2
-                                    );
-                                }
+                                clickableInterface.onTextViewLongClick(
+                                        clickableSentence,
+                                        offset + idx1,
+                                        offset + idx2
+                                );
                             }
                         },
                         idx1,
@@ -112,6 +106,66 @@ public class ClickableTextView extends android.support.v7.widget.AppCompatTextVi
         return ssb;
     }
 
+    public static class SetText extends AsyncTask<SetTextParams, Void, SpannableStringBuilder> {
+        private WeakReference<ClickableTextView> clickableTextViewWeakReference;
+
+        SetText(ClickableTextView textViewReference) {
+            this.clickableTextViewWeakReference = new WeakReference<>(textViewReference);
+        }
+
+        protected SpannableStringBuilder doInBackground(SetTextParams... params) {
+            return ClickableTextView.addClickableSentence(
+                    params[0].getOriginalString(),
+                    params[0].getClickableSentences(),
+                    params[0].getAnnotations(),
+                    params[0].getClickableInterface(),
+                    params[0].getOffset()
+            );
+        }
+
+        protected void onPostExecute(SpannableStringBuilder results) {
+            ClickableTextView clickableTextView = this.clickableTextViewWeakReference.get();
+            clickableTextView.setText(results);
+        }
+    }
+
+    public static class SetTextParams {
+        private String originalString;
+        private List<String> clickableSentences;
+        private SpannableString annotations;
+        private ClickableTextViewInterface clickableInterface;
+        private int offset;
+
+        SetTextParams(String originalString, List<String> clickableSentences, SpannableString annotations,
+                      ClickableTextViewInterface clickableInterface, int offset) {
+
+            this.originalString = originalString;
+            this.clickableSentences = clickableSentences;
+            this.annotations = annotations;
+            this.clickableInterface = clickableInterface;
+            this.offset = offset;
+        }
+
+        public String getOriginalString() {
+            return this.originalString;
+        }
+
+        public List<String> getClickableSentences() {
+            return this.clickableSentences;
+        }
+
+        public SpannableString getAnnotations() {
+            return this.annotations;
+        }
+
+        public ClickableTextViewInterface getClickableInterface() {
+            return this.clickableInterface;
+        }
+
+        public int getOffset() {
+            return this.offset;
+        }
+    }
 
     //a version of ClickableSpan without the underline
     public static abstract class NoUnderlineClickableSpan extends LongClickableSpan {

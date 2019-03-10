@@ -19,20 +19,39 @@ public class Annotation {
         TYPE_HEADLINE = "headline",
         TYPE_BODY = "body";
 
+    private String id;
     private User user;
     private String type;
     private int startIndex;
     private int endIndex;
     private int value;
     private String comment;
+    private HashMap<String, AnnotationVote> votes;
+    private int upvoteCount;
+    private int downvoteCount;
 
-    public Annotation(User user, String type, int startIndex, int endIndex, int value, String comment) {
+    public Annotation(String id, User user, String type, int startIndex, int endIndex, int value,
+                      String comment, HashMap<String, AnnotationVote> upvotes,
+                      HashMap<String, AnnotationVote> downvotes) {
+
+        this.id = id;
         this.user = user;
         this.type = type;
         this.startIndex = startIndex;
         this.endIndex = endIndex;
         this.value = value;
         this.comment = comment;
+
+        this.votes = new HashMap<>();
+        this.votes.putAll(upvotes);
+        this.votes.putAll(downvotes);
+
+        this.upvoteCount = upvotes.size();
+        this.downvoteCount = downvotes.size();
+    }
+
+    public String getId() {
+        return this.id;
     }
 
     public User getUser() {
@@ -57,6 +76,14 @@ public class Annotation {
 
     public String getComment() {
         return this.comment;
+    }
+
+    public int getUpvoteCount() {
+        return this.upvoteCount;
+    }
+
+    public int getDownvoteCount() {
+        return this.downvoteCount;
     }
 
     public void save(final AnnotationSubmitCallback cb, Article article) {
@@ -89,10 +116,130 @@ public class Annotation {
                     }
                 });
     }
+
+    public void vote(final AnnotationVoteCallback cb, final User user, final boolean value) {
+        AnnotationVoteCallback removeCb = new AnnotationVoteCallback() {
+            @Override
+            public void onSubmit(boolean hadVote, boolean oldValue, int numUpvotes, int numDownvotes) {
+                if (hadVote && oldValue == value) {
+                    cb.onSubmit(false, oldValue, upvoteCount, downvoteCount);
+                    return;
+                }
+
+                FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+                Map<String, Object> annotationVote = new HashMap<>();
+
+                annotationVote.put("userId", user.getUid());
+                annotationVote.put("annotationId", id);
+                annotationVote.put("value", value);
+
+                db.collection("annotation_votes")
+                        .add(annotationVote)
+                        .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
+                            @Override
+                            public void onSuccess(DocumentReference documentReference) {
+                                AnnotationVote vote = new AnnotationVote(
+                                        documentReference.getId(),
+                                        user,
+                                        value
+                                );
+
+                                votes.put(user.getUid(), vote);
+
+                                if (value) {
+                                    upvoteCount++;
+                                } else {
+                                    downvoteCount++;
+                                }
+
+                                cb.onSubmit(true, value, upvoteCount, downvoteCount);
+                            }
+                        })
+                        .addOnFailureListener(new OnFailureListener() {
+                            @Override
+                            public void onFailure(@NonNull Exception e) {
+                                cb.onError(e);
+                            }
+                        });
+            }
+
+            @Override
+            public void onError(Exception e) {
+                cb.onError(e);
+            }
+        };
+
+        removeVote(removeCb, user);
+    }
+
+    private void removeVote(final AnnotationVoteCallback cb, final User user) {
+        if (!this.votes.containsKey(user.getUid())) {
+            cb.onSubmit(false, false, upvoteCount, downvoteCount);
+            return;
+        }
+
+        final AnnotationVote vote = this.votes.get(user.getUid());
+
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        db.collection("annotation_votes")
+                .document(vote.getId())
+                .delete()
+                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void aVoid) {
+                        votes.remove(user.getUid());
+
+                        if (vote.getValue()) {
+                            upvoteCount--;
+                        } else {
+                            downvoteCount--;
+                        }
+
+                        cb.onSubmit(true, vote.getValue(), upvoteCount, downvoteCount);
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        cb.onError(e);
+                    }
+                });
+    }
+}
+
+class AnnotationVote {
+    private String id;
+    private User user;
+    private boolean value;
+
+    AnnotationVote(String id, User user, boolean value) {
+        this.id = id;
+        this.user = user;
+        this.value = value;
+    }
+
+    public String getId() {
+        return this.id;
+    }
+
+    public User getUser() {
+        return this.user;
+    }
+
+    public boolean getValue() {
+        return this.value;
+    }
 }
 
 interface AnnotationSubmitCallback {
     void onSubmit();
     void onAnnotationError(int errorCode);
+    void onError(Exception e);
+}
+
+interface AnnotationVoteCallback {
+    void onSubmit(boolean hasVote, boolean value, int upvoteCount, int downvoteCount);
     void onError(Exception e);
 }
