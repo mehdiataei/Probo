@@ -34,7 +34,9 @@ public class AnnotationFragment extends Fragment {
                                 ARG_COMMENT = "comment",
                                 ARG_VALUE = "value",
                                 ARG_UPVOTE_COUNT = "upvoteCount",
-                                ARG_DOWNVOTE_COUNT = "downvoteCount";
+                                ARG_DOWNVOTE_COUNT = "downvoteCount",
+                                ARG_USER_HAS_UPVOTED = "userHasUpvoted",
+                                ARG_USER_HAS_DOWNVOTED = "userHasDownvoted";
 
     private User user;
 
@@ -44,6 +46,8 @@ public class AnnotationFragment extends Fragment {
     private int value;
     private int upvoteCount;
     private int downvoteCount;
+    private boolean userHasUpvoted;
+    private boolean userHasDownvoted;
 
     private CardView card;
     private ProgressBar profileImageProgress;
@@ -62,7 +66,8 @@ public class AnnotationFragment extends Fragment {
     public AnnotationFragment() {}
 
     public static AnnotationFragment newInstance(String id, String userId, String comment, int value,
-                                                 int upvoteCount, int downvoteCount) {
+                                                 int upvoteCount, int downvoteCount, boolean userHasUpvoted,
+                                                 boolean userHasDownvoted) {
 
         AnnotationFragment fragment = new AnnotationFragment();
         Bundle args = new Bundle();
@@ -73,6 +78,8 @@ public class AnnotationFragment extends Fragment {
         args.putInt(ARG_VALUE, value);
         args.putInt(ARG_UPVOTE_COUNT, upvoteCount);
         args.putInt(ARG_DOWNVOTE_COUNT, downvoteCount);
+        args.putBoolean(ARG_USER_HAS_UPVOTED, userHasUpvoted);
+        args.putBoolean(ARG_USER_HAS_DOWNVOTED, userHasDownvoted);
 
         fragment.setArguments(args);
         return fragment;
@@ -88,6 +95,8 @@ public class AnnotationFragment extends Fragment {
             value = getArguments().getInt(ARG_VALUE);
             upvoteCount = getArguments().getInt(ARG_UPVOTE_COUNT);
             downvoteCount = getArguments().getInt(ARG_DOWNVOTE_COUNT);
+            userHasUpvoted = getArguments().getBoolean(ARG_USER_HAS_UPVOTED);
+            userHasDownvoted = getArguments().getBoolean(ARG_USER_HAS_DOWNVOTED);
         }
     }
 
@@ -125,6 +134,7 @@ public class AnnotationFragment extends Fragment {
         commentText.setText(comment);
 
         updateVoteCounts();
+        updateVoteDrawables();
 
         user = new User(userId);
         user.load(cb);
@@ -196,21 +206,12 @@ public class AnnotationFragment extends Fragment {
                     upvoteCount = numUpvotes;
                     downvoteCount = numDownvotes;
 
+                    userHasUpvoted = hasVote && currentValue;
+                    userHasDownvoted = hasVote && !currentValue;
+
                     updateVoteCounts();
                     hideVoteButtonLoading(button);
-
-                    int drawableId = button.getId() == R.id.upvote ?
-                            (hasVote ? R.drawable.thumb_up_icon_light : R.drawable.thumb_up_icon) :
-                            (hasVote ? R.drawable.thumb_down_icon_light : R.drawable.thumb_down_icon);
-                    
-                    if (value) {
-                        downvoteButton.setImageResource(R.drawable.thumb_down_icon);
-                    } else {
-                        upvoteButton.setImageResource(R.drawable.thumb_up_icon);
-                    }
-
-                    button.setImageResource(drawableId);
-
+                    updateVoteDrawables();
                     enableVoteButtons();
                 }
 
@@ -229,6 +230,19 @@ public class AnnotationFragment extends Fragment {
             disableVoteButtons();
             showVoteButtonLoading(button);
             interactionListener.onAnnotationVote(cb, id, value);
+        }
+    }
+
+    private void updateVoteDrawables() {
+        if (userHasUpvoted) {
+            upvoteButton.setImageResource(R.drawable.thumb_up_icon_light);
+            downvoteButton.setImageResource(R.drawable.thumb_down_icon);
+        } else if (userHasDownvoted) {
+            upvoteButton.setImageResource(R.drawable.thumb_up_icon);
+            downvoteButton.setImageResource(R.drawable.thumb_down_icon_light);
+        } else {
+            upvoteButton.setImageResource(R.drawable.thumb_up_icon);
+            downvoteButton.setImageResource(R.drawable.thumb_down_icon);
         }
     }
 

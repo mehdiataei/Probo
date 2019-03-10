@@ -20,6 +20,7 @@ public class Annotation {
         TYPE_BODY = "body";
 
     private String id;
+    private Article article;
     private User user;
     private String type;
     private int startIndex;
@@ -30,11 +31,12 @@ public class Annotation {
     private int upvoteCount;
     private int downvoteCount;
 
-    public Annotation(String id, User user, String type, int startIndex, int endIndex, int value,
+    public Annotation(String id, Article article, User user, String type, int startIndex, int endIndex, int value,
                       String comment, HashMap<String, AnnotationVote> upvotes,
                       HashMap<String, AnnotationVote> downvotes) {
 
         this.id = id;
+        this.article = article;
         this.user = user;
         this.type = type;
         this.startIndex = startIndex;
@@ -86,6 +88,14 @@ public class Annotation {
         return this.downvoteCount;
     }
 
+    public boolean userHasUpvoted(User user) {
+        return this.votes.containsKey(user.getUid()) && this.votes.get(user.getUid()).getValue();
+    }
+
+    public boolean userHasDownvoted(User user) {
+        return this.votes.containsKey(user.getUid()) && !this.votes.get(user.getUid()).getValue();
+    }
+
     public void save(final AnnotationSubmitCallback cb, Article article) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
@@ -98,6 +108,7 @@ public class Annotation {
         newAnnotation.put("value", this.value);
         newAnnotation.put("type", this.type);
         newAnnotation.put("comment", this.comment);
+        newAnnotation.put("timestamp", System.currentTimeMillis());
 
         db.collection("annotations")
                 .add(newAnnotation)
@@ -132,7 +143,9 @@ public class Annotation {
 
                 annotationVote.put("userId", user.getUid());
                 annotationVote.put("annotationId", id);
+                annotationVote.put("articleId", article.getId());
                 annotationVote.put("value", value);
+                annotationVote.put("timestamp", System.currentTimeMillis());
 
                 db.collection("annotation_votes")
                         .add(annotationVote)

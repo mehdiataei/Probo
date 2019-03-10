@@ -1,5 +1,6 @@
 package com.utoronto.ece1778.probo.News;
 
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -40,7 +41,10 @@ import java.util.Locale;
 
 public class ArticleActivity extends AppCompatActivity
         implements AnnotationInputFragment.AnnotationInputFragmentInteractionListener,
-                    AnnotationFragment.AnnotationFragmentInteractionListener {
+                    AnnotationFragment.AnnotationFragmentInteractionListener,
+                    AnnotationMoreFragment.AnnotationMoreFragmentInteractionListener {
+
+    private final int MAX_NUM_INLINE_ANNOTATION_TILES = 5;
 
     private boolean showHeatmap;
 
@@ -183,7 +187,14 @@ public class ArticleActivity extends AppCompatActivity
 
         annotationsContainer.setPageTransformer(true, new ZoomOutPageTransformer());
 
-        AnnotationPagerAdapter adapter = new AnnotationPagerAdapter(getSupportFragmentManager(), annotations);
+        AnnotationPagerAdapter adapter = new AnnotationPagerAdapter(
+                getSupportFragmentManager(),
+                annotations,
+                type,
+                startIndex,
+                endIndex
+        );
+
         annotationsContainer.setAdapter(adapter);
 
         splitBody(endIndex);
@@ -314,6 +325,18 @@ public class ArticleActivity extends AppCompatActivity
     @Override
     public void onAnnotationClose() {
         hideAnnotationInput();
+    }
+
+    @Override
+    public void onMoreAnnotations(String type, int startIndex, int endIndex) {
+        Intent intent = new Intent(getApplicationContext(), AnnotationsActivity.class);
+
+        intent.putExtra("articleId", article.getId());
+        intent.putExtra("type", type);
+        intent.putExtra("startIndex", startIndex);
+        intent.putExtra("endIndex", endIndex);
+
+        startActivity(intent);
     }
 
     public void handleTextViewClick(String quote, int startIndex, int endIndex) {
@@ -543,14 +566,34 @@ public class ArticleActivity extends AppCompatActivity
 
     private class AnnotationPagerAdapter extends FragmentStatePagerAdapter {
         private ArrayList<Annotation> annotations;
+        private String type;
+        private int startIndex;
+        private int endIndex;
 
-        AnnotationPagerAdapter(FragmentManager fm, ArrayList<Annotation> annotations) {
+        AnnotationPagerAdapter(FragmentManager fm, ArrayList<Annotation> annotations,
+                               String type, int startIndex, int endIndex) {
+
             super(fm);
             this.annotations = annotations;
+            this.type = type;
+            this.startIndex = startIndex;
+            this.endIndex = endIndex;
         }
 
         @Override
         public Fragment getItem(int position) {
+            int rawSize = this.annotations.size();
+            int size = this.getCount();
+
+            if (this.hasOverflow(rawSize) && position == size - 1) {
+                return AnnotationMoreFragment.newInstance(
+                        rawSize - MAX_NUM_INLINE_ANNOTATION_TILES + 1,
+                        this.type,
+                        this.startIndex,
+                        this.endIndex
+                );
+            }
+
             Annotation annotation = this.annotations.get(position);
 
             return AnnotationFragment.newInstance(
@@ -559,13 +602,22 @@ public class ArticleActivity extends AppCompatActivity
                     annotation.getComment(),
                     annotation.getValue(),
                     annotation.getUpvoteCount(),
-                    annotation.getDownvoteCount()
+                    annotation.getDownvoteCount(),
+                    annotation.userHasUpvoted(user),
+                    annotation.userHasDownvoted(user)
             );
+        }
+
+        public boolean hasOverflow(int size) {
+            return size - MAX_NUM_INLINE_ANNOTATION_TILES > 1;
         }
 
         @Override
         public int getCount() {
-            return this.annotations.size();
+            int size = this.annotations.size();
+
+            return this.hasOverflow(size) ?
+                    Math.min(size, MAX_NUM_INLINE_ANNOTATION_TILES) : size;
         }
     }
 

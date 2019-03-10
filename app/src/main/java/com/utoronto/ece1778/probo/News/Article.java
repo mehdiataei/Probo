@@ -157,6 +157,7 @@ public class Article {
 
         Annotation annotation = new Annotation(
                 null,
+                this,
                 user,
                 Annotation.TYPE_HEADLINE,
                 startIndex,
@@ -185,6 +186,7 @@ public class Article {
 
         Annotation annotation = new Annotation(
                 null,
+                this,
                 user,
                 Annotation.TYPE_BODY,
                 startIndex,
@@ -336,6 +338,13 @@ public class Article {
 
     private void loadAnnotations(final ArticleAnnotationCallback cb) {
         final FirebaseFirestore db = FirebaseFirestore.getInstance();
+        final Article currentArticle = this;
+
+        this.annotationsMap = new HashMap<>();
+        this.annotationStats = new HashMap<>();
+
+        this.headlineAnnotations = new ArrayList<>();
+        this.bodyAnnotations = new ArrayList<>();
 
         db.collection("annotations")
                 .whereEqualTo("articleId", this.id)
@@ -352,7 +361,7 @@ public class Article {
                                     @Override
                                     public void onSuccess(QuerySnapshot votesSnapshots) {
                                         for (DocumentSnapshot snapshot : annotationsSnapshots) {
-                                            String id = snapshot.getId();
+                                            String annotationId = snapshot.getId();
                                             String type = snapshot.getString("type");
                                             Object startObj = snapshot.get("startIndex");
                                             Object endObj = snapshot.get("endIndex");
@@ -384,7 +393,7 @@ public class Article {
                                                 annotationStats.put(annotationKey, new Tuple<>(numTrue, numFalse));
 
                                                 for (DocumentSnapshot votesSnapshot : votesSnapshots) {
-                                                    if (votesSnapshot.getString("annotationId") == id) {
+                                                    if (votesSnapshot.getString("annotationId").equals(annotationId)) {
                                                         AnnotationVote vote = new AnnotationVote(
                                                                 votesSnapshot.getId(),
                                                                 new User(userId),
@@ -406,7 +415,8 @@ public class Article {
                                                 }
 
                                                 Annotation annotation = new Annotation(
-                                                        id,
+                                                        annotationId,
+                                                        currentArticle,
                                                         new User(userId),
                                                         type,
                                                         start.intValue(),
