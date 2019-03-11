@@ -22,7 +22,7 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
-import com.utoronto.ece1778.probo.Login.SignInActivity;
+import com.utoronto.ece1778.probo.User.SignInActivity;
 import com.utoronto.ece1778.probo.R;
 import com.utoronto.ece1778.probo.Utils.MyRecyclerViewAdapter;
 import com.utoronto.ece1778.probo.Models.NewsItem;

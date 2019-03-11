@@ -1,19 +1,17 @@
 package com.utoronto.ece1778.probo.News;
 
 import android.graphics.Color;
-import android.os.AsyncTask;
 import android.support.annotation.NonNull;
 import android.support.v4.graphics.ColorUtils;
 import android.text.SpannableString;
 import android.text.style.BackgroundColorSpan;
-import android.util.Log;
 
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
-import com.utoronto.ece1778.probo.Login.User;
+import com.utoronto.ece1778.probo.User.User;
 import com.utoronto.ece1778.probo.Utils.Tuple;
 
 import java.text.SimpleDateFormat;
@@ -396,7 +394,7 @@ public class Article {
                                                     if (votesSnapshot.getString("annotationId").equals(annotationId)) {
                                                         AnnotationVote vote = new AnnotationVote(
                                                                 votesSnapshot.getId(),
-                                                                new User(userId),
+                                                                new User(votesSnapshot.getString("userId")),
                                                                 votesSnapshot.getBoolean("value")
                                                         );
 

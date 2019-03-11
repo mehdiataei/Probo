@@ -4,9 +4,8 @@ import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 
-import com.utoronto.ece1778.probo.Login.SignInActivity;
-import com.utoronto.ece1778.probo.Login.User;
-import com.utoronto.ece1778.probo.News.ArticleActivity;
+import com.utoronto.ece1778.probo.User.SignInActivity;
+import com.utoronto.ece1778.probo.User.User;
 import com.utoronto.ece1778.probo.News.NewsActivity;
 
 public class MainActivity extends AppCompatActivity {

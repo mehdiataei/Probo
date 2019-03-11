@@ -22,6 +22,8 @@
                 android:id="@+id/annotations_container"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
                 android:orientation="vertical" />
         </ScrollView>
     </android.support.v4.widget.SwipeRefreshLayout>

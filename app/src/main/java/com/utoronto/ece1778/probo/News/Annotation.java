@@ -1,15 +1,13 @@
 package com.utoronto.ece1778.probo.News;
 
-import android.graphics.Color;
 import android.support.annotation.NonNull;
-import android.text.style.BackgroundColorSpan;
 import android.util.Log;
 
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.utoronto.ece1778.probo.Login.User;
+import com.utoronto.ece1778.probo.User.User;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -128,8 +126,8 @@ public class Annotation {
                 });
     }
 
-    public void vote(final AnnotationVoteCallback cb, final User user, final boolean value) {
-        AnnotationVoteCallback removeCb = new AnnotationVoteCallback() {
+    public void vote(final AnnotationVote.AnnotationVoteCallback cb, final User user, final boolean value) {
+        AnnotationVote.AnnotationVoteCallback removeCb = new AnnotationVote.AnnotationVoteCallback() {
             @Override
             public void onSubmit(boolean hadVote, boolean oldValue, int numUpvotes, int numDownvotes) {
                 if (hadVote && oldValue == value) {
@@ -186,7 +184,7 @@ public class Annotation {
         removeVote(removeCb, user);
     }
 
-    private void removeVote(final AnnotationVoteCallback cb, final User user) {
+    private void removeVote(final AnnotationVote.AnnotationVoteCallback cb, final User user) {
         if (!this.votes.containsKey(user.getUid())) {
             cb.onSubmit(false, false, upvoteCount, downvoteCount);
             return;
@@ -222,37 +220,8 @@ public class Annotation {
     }
 }
 
-class AnnotationVote {
-    private String id;
-    private User user;
-    private boolean value;
-
-    AnnotationVote(String id, User user, boolean value) {
-        this.id = id;
-        this.user = user;
-        this.value = value;
-    }
-
-    public String getId() {
-        return this.id;
-    }
-
-    public User getUser() {
-        return this.user;
-    }
-
-    public boolean getValue() {
-        return this.value;
-    }
-}
-
 interface AnnotationSubmitCallback {
     void onSubmit();
     void onAnnotationError(int errorCode);
-    void onError(Exception e);
-}
-
-interface AnnotationVoteCallback {
-    void onSubmit(boolean hasVote, boolean value, int upvoteCount, int downvoteCount);
     void onError(Exception e);
 }

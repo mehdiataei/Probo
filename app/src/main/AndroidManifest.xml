@@ -17,7 +17,8 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".News.AnnotationsActivity"></activity>
+        <activity android:name=".User.ProfileActivity"></activity>
+        <activity android:name=".News.AnnotationsActivity" />
         <activity android:name=".News.ArticleActivity" />
         <activity android:name=".News.NewsActivity" />
 
@@ -32,10 +33,10 @@
         </provider>
 
         <activity
-            android:name=".Login.SignUpActivity"
+            android:name=".User.SignUpActivity"
             android:label="@string/sign_up_label" />
         <activity
-            android:name=".Login.SignInActivity"
+            android:name=".User.SignInActivity"
             android:theme="@style/AppThemeNoActionBar" />
         <activity android:name=".MainActivity">
             <intent-filter>

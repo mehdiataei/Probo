@@ -77,7 +77,6 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:padding="16dp"
                     android:orientation="vertical"
                     android:animateLayoutChanges="true">
 
@@ -85,6 +84,8 @@
                         android:id="@+id/body"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp"
                         android:textColor="@color/colorPrimary"
                         android:textSize="16sp"
                         android:singleLine="false" />
@@ -93,12 +94,16 @@
                         android:id="@+id/annotations_container"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp"
                         android:visibility="gone" />
 
                     <com.utoronto.ece1778.probo.Utils.ClickableTextView
                         android:id="@+id/body_overflow"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp"
                         android:textColor="@color/colorPrimary"
                         android:textSize="16sp"
                         android:singleLine="false"

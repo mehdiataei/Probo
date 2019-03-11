@@ -7,7 +7,7 @@
     android:background="@color/colorPrimary"
     android:focusable="true"
     android:focusableInTouchMode="true"
-    tools:context=".Login.SignInActivity">
+    tools:context=".User.SignInActivity">
 
     <ScrollView
         android:layout_width="match_parent"

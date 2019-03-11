@@ -1,20 +1,16 @@
 package com.utoronto.ece1778.probo.News;
 
-import android.content.Context;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.support.v7.widget.GridLayoutManager;
-import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.ScrollView;
 
-import com.utoronto.ece1778.probo.Login.User;
+import com.utoronto.ece1778.probo.User.User;
 import com.utoronto.ece1778.probo.R;
 
 import java.util.ArrayList;
@@ -131,7 +127,7 @@ public class AnnotationsActivity extends AppCompatActivity
     }
 
     @Override
-    public void onAnnotationVote(AnnotationVoteCallback cb, String id, boolean value) {
+    public void onAnnotationVote(AnnotationVote.AnnotationVoteCallback cb, String id, boolean value) {
         for (Annotation annotation : article.getAnnotations()) {
             if (annotation.getId().equals(id)) {
                 annotation.vote(cb, user, value);

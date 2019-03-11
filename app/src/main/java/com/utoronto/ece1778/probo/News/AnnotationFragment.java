@@ -1,9 +1,9 @@
 package com.utoronto.ece1778.probo.News;
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Color;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.graphics.ColorUtils;
@@ -19,12 +19,11 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.utoronto.ece1778.probo.Login.User;
+import com.utoronto.ece1778.probo.User.ProfileActivity;
+import com.utoronto.ece1778.probo.User.User;
 import com.utoronto.ece1778.probo.R;
 import com.utoronto.ece1778.probo.Utils.ImageBitmap;
 import com.utoronto.ece1778.probo.Utils.ImageLoader;
-
-import org.w3c.dom.Text;
 
 import java.util.Locale;
 
@@ -52,7 +51,7 @@ public class AnnotationFragment extends Fragment {
     private CardView card;
     private ProgressBar profileImageProgress;
     private ImageView profileImage;
-    private TextView nameText;
+    private Button nameButton;
     private TextView titleText;
     private ImageButton upvoteButton;
     private ImageButton downvoteButton;
@@ -109,7 +108,7 @@ public class AnnotationFragment extends Fragment {
         card = v.findViewById(R.id.card);
         profileImageProgress = v.findViewById(R.id.profile_image_progress);
         profileImage = v.findViewById(R.id.profile_image);
-        nameText = v.findViewById(R.id.name);
+        nameButton = v.findViewById(R.id.name);
         titleText = v.findViewById(R.id.title);
         TextView commentText = v.findViewById(R.id.comment);
         upvoteButton = v.findViewById(R.id.upvote);
@@ -139,11 +138,23 @@ public class AnnotationFragment extends Fragment {
         user = new User(userId);
         user.load(cb);
 
+        profileImage.setOnClickListener(handleUserClick);
+        nameButton.setOnClickListener(handleUserClick);
+
         upvoteButton.setOnClickListener(handleVoteClick);
         downvoteButton.setOnClickListener(handleVoteClick);
 
         return v;
     }
+
+    private View.OnClickListener handleUserClick = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            Intent intent = new Intent(getActivity().getApplicationContext(), ProfileActivity.class);
+            intent.putExtra("userId", user.getUid());
+            startActivity(intent);
+        }
+    };
 
     private View.OnClickListener handleVoteClick = new View.OnClickListener() {
         @Override
@@ -184,7 +195,7 @@ public class AnnotationFragment extends Fragment {
             profileImage.setVisibility(View.VISIBLE);
         }
 
-        nameText.setText(user.getName());
+        nameButton.setText(user.getName());
 
         if (user.getTitle() != null) {
             titleText.setText(user.getTitle());
@@ -200,7 +211,7 @@ public class AnnotationFragment extends Fragment {
 
     private void handleVote(final ImageButton button, final boolean value) {
         if (interactionListener != null) {
-            AnnotationVoteCallback cb = new AnnotationVoteCallback() {
+            AnnotationVote.AnnotationVoteCallback cb = new AnnotationVote.AnnotationVoteCallback() {
                 @Override
                 public void onSubmit(boolean hasVote, boolean currentValue, int numUpvotes, int numDownvotes) {
                     upvoteCount = numUpvotes;
@@ -294,6 +305,6 @@ public class AnnotationFragment extends Fragment {
     }
 
     public interface AnnotationFragmentInteractionListener {
-        void onAnnotationVote(AnnotationVoteCallback cb, String id, boolean value);
+        void onAnnotationVote(AnnotationVote.AnnotationVoteCallback cb, String id, boolean value);
     }
 }

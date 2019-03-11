@@ -26,7 +26,7 @@ import android.widget.TextView;
 
 import com.bumptech.glide.Priority;
 import com.bumptech.glide.request.RequestOptions;
-import com.utoronto.ece1778.probo.Login.User;
+import com.utoronto.ece1778.probo.User.User;
 import com.utoronto.ece1778.probo.R;
 import com.utoronto.ece1778.probo.Utils.ClickableTextView;
 import com.utoronto.ece1778.probo.Utils.GlideImageLoader;
@@ -313,7 +313,7 @@ public class ArticleActivity extends AppCompatActivity
     }
 
     @Override
-    public void onAnnotationVote(AnnotationVoteCallback cb, String id, boolean value) {
+    public void onAnnotationVote(AnnotationVote.AnnotationVoteCallback cb, String id, boolean value) {
         for (Annotation annotation : article.getAnnotations()) {
             if (annotation.getId().equals(id)) {
                 annotation.vote(cb, user, value);
