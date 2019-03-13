@@ -18,38 +18,56 @@
             android:layout_height="wrap_content"
             android:gravity="center_vertical">
 
-            <TextView
-                android:id="@+id/trueText"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:text="@string/annotation_input_true"
-                android:layout_alignParentStart="true" />
-
             <Switch
                 android:id="@+id/type"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:layout_marginEnd="8dp"
-                android:layout_toEndOf="@id/trueText" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/annotation_input_false"
-                android:layout_toStartOf="@id/close"
-                android:layout_toEndOf="@id/type" />
+                android:layout_centerVertical="true" />
 
             <ImageButton
                 android:id="@+id/close"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="@null"
+                android:layout_centerVertical="true"
                 android:layout_gravity="end"
                 android:layout_alignParentEnd="true"
                 android:src="@drawable/x_dark"
                 android:contentDescription="@string/annotation_input_close_image_description" />
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp">
+
+            <TextView
+                android:id="@+id/falseText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_alignParentStart="true"
+                android:text="@string/annotation_input_false" />
+
+            <SeekBar
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:thumbTint="@color/colorPrimary"
+                android:progressDrawable="@drawable/seekbar_progress"
+                android:progress="50"
+                android:layout_centerVertical="true"
+                android:layout_toEndOf="@id/falseText"
+                android:layout_toStartOf="@id/trueText" />
+
+            <TextView
+                android:id="@+id/trueText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_alignParentEnd="true"
+                android:text="@string/annotation_input_true" />
         </RelativeLayout>
 
         <TextView

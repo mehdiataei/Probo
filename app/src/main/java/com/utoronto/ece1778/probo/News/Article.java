@@ -64,6 +64,8 @@ public class Article {
     private String body;
     private Date datetime;
 
+    private boolean loaded;
+
     private ArrayList<Annotation> headlineAnnotations;
     private ArrayList<Annotation> bodyAnnotations;
     private ArrayList<Sentence> sentences;
@@ -71,7 +73,6 @@ public class Article {
     private HashMap<String, ArrayList<Annotation>> annotationsMap;
     private HashMap<String, Tuple<Integer, Integer>> annotationStats;
 
-    private boolean loaded;
     private String analysed;
     private Thread mThread;
 
@@ -80,6 +81,8 @@ public class Article {
 
     public Article(String id) {
         this.id = id;
+
+        this.loaded = false;
 
         this.annotationsMap = new HashMap<>();
         this.annotationStats = new HashMap<>();
