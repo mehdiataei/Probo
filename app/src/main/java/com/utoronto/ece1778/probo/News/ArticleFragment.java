@@ -43,7 +43,10 @@ import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Locale;
 
-public class ArticleFragment extends Fragment {
+public class ArticleFragment extends Fragment
+        implements AnnotationFragment.AnnotationFragmentInteractionListener,
+                    AnnotationMoreFragment.AnnotationMoreFragmentInteractionListener {
+
     private static final String ARG_ARTICLE_ID = "articleId";
 
     private final int MAX_NUM_INLINE_ANNOTATION_TILES = 5;
@@ -54,9 +57,9 @@ public class ArticleFragment extends Fragment {
     int currentAnnotationEndIndex = -1;
 
     private SwipeRefreshLayout refresh;
-    private FrameLayout annotationContainer;
     private Article article;
 
+    private Switch heatmapSwitch;
     private TextView headline;
     private ClickableTextView body, bodyOverflow;
     private WrapHeightViewPager annotationsContainer;
@@ -64,9 +67,7 @@ public class ArticleFragment extends Fragment {
     private SquareImageView image;
     private TextView author;
     private TextView datetime;
-
-    private AnnotationInputFragment annotationInputFragment;
-
+    
     private User user;
 
     private ArticleFragmentInteractionListener interactionListener;
@@ -103,7 +104,6 @@ public class ArticleFragment extends Fragment {
         View v = inflater.inflate(R.layout.fragment_article, container, false);
 
         refresh = v.findViewById(R.id.refresh);
-        annotationContainer = v.findViewById(R.id.annotation_container);
 
         headline = v.findViewById(R.id.headline);
         body = v.findViewById(R.id.body);
@@ -120,6 +120,10 @@ public class ArticleFragment extends Fragment {
             @Override
             public void onLoad() {
                 populateArticle();
+
+                if (heatmapSwitch != null) {
+                    heatmapSwitch.setEnabled(true);
+                }
             }
 
             @Override
@@ -145,9 +149,13 @@ public class ArticleFragment extends Fragment {
         inflater.inflate(R.menu.article_action_menu, menu);
 
         MenuItem item = menu.findItem(R.id.heatmap_action);
-        Switch heatmapSwitch = item.getActionView().findViewById(R.id.heatmap_switch);
+        heatmapSwitch = item.getActionView().findViewById(R.id.heatmap_switch);
         heatmapSwitch.setChecked(showHeatmap);
         heatmapSwitch.setOnCheckedChangeListener(handleHeatmapSwitch);
+
+        if (article.hasLoaded()) {
+            heatmapSwitch.setEnabled(true);
+        }
 
         super.onCreateOptionsMenu(menu, inflater);
     }
@@ -221,7 +229,7 @@ public class ArticleFragment extends Fragment {
         annotationsContainer.setPageTransformer(true, new ArticleFragment.ZoomOutPageTransformer());
 
         ArticleFragment.AnnotationPagerAdapter adapter = new ArticleFragment.AnnotationPagerAdapter(
-                getActivity().getSupportFragmentManager(),
+                getChildFragmentManager(),
                 annotations,
                 type,
                 startIndex,
@@ -240,58 +248,9 @@ public class ArticleFragment extends Fragment {
     }
 
     private void showAnnotationInput(String quote, String type, int startIndex, int endIndex, int value) {
-        /*Animation animation = AnimationUtils.loadAnimation(getActivity(), R.anim.annotation_input_slide_in);
-        FragmentManager manager = getActivity().getSupportFragmentManager();
-        FragmentTransaction transaction = manager.beginTransaction();
-
-        if (annotationInputFragment != null) {
-            transaction.remove(annotationInputFragment);
-        }
-
-        annotationInputFragment = AnnotationInputFragment.newInstance(
-                quote,
-                type,
-                startIndex,
-                endIndex,
-                value
-        );
-
-        transaction.add(R.id.annotation_container, annotationInputFragment);
-        transaction.commit();
-
-        annotationContainer.setVisibility(View.VISIBLE);
-        annotationContainer.startAnimation(animation);*/
-
         if (interactionListener != null) {
             interactionListener.onAnnotationInput(quote, type, startIndex, endIndex, value);
         }
-    }
-
-    private void hideAnnotationInput() {
-        Animation animation = AnimationUtils.loadAnimation(getActivity(), R.anim.annotation_input_slide_out);
-
-        animation.setAnimationListener(new Animation.AnimationListener() {
-            @Override
-            public void onAnimationStart(Animation animation) {}
-
-            @Override
-            public void onAnimationEnd(Animation animation) {
-                annotationContainer.setVisibility(View.GONE);
-
-                if (annotationInputFragment != null) {
-                    FragmentManager manager = getActivity().getSupportFragmentManager();
-                    FragmentTransaction transaction = manager.beginTransaction();
-                    transaction.remove(annotationInputFragment);
-
-                    transaction.commit();
-                }
-            }
-
-            @Override
-            public void onAnimationRepeat(Animation animation) {}
-        });
-
-        annotationContainer.startAnimation(animation);
     }
 
     public void toggleHeatmap(boolean show) {
@@ -299,37 +258,28 @@ public class ArticleFragment extends Fragment {
         updateArticleText();
     }
 
-    public void onAnnotationSubmit(String type, int startIndex, int endIndex, int value, String comment) {
-        AnnotationSubmitCallback cb = new AnnotationSubmitCallback() {
+    public void onAnnotationSubmit(final Annotation.AnnotationSubmitCallback cb, String type, int startIndex, int endIndex, int value, String comment) {
+        Annotation.AnnotationSubmitCallback submitCb = new Annotation.AnnotationSubmitCallback() {
             @Override
             public void onSubmit() {
+                cb.onSubmit();
                 updateArticleText();
-                annotationInputFragment.hideProgress();
-                hideAnnotationInput();
             }
 
             @Override
             public void onAnnotationError(int errorCode) {
-                switch (errorCode) {
-                    case Article.ARTICLE_ANNOTATION_ERROR_ALREADY_SUBMITTED:
-                        annotationInputFragment.showError(getString(R.string.annotation_input_error_already_submitted));
-                        break;
-                    case Article.ARTICLE_ANNOTATION_ERROR_INTERNAL:
-                        annotationInputFragment.showError(getString(R.string.annotation_input_error_general));
-                    default:
-                        annotationInputFragment.showError(getString(R.string.annotation_input_error_general));
-                }
+                cb.onAnnotationError(errorCode);
             }
 
             @Override
             public void onError(Exception e) {
-                annotationInputFragment.showError(getString(R.string.article_add_annotation_error));
+                cb.onError(e);
             }
         };
 
         if (type.equals(Annotation.TYPE_HEADLINE)) {
             article.addHeadlineAnnotation(
-                    cb,
+                    submitCb,
                     user,
                     startIndex,
                     endIndex,
@@ -338,7 +288,7 @@ public class ArticleFragment extends Fragment {
             );
         } else {
             article.addBodyAnnotation(
-                    cb,
+                    submitCb,
                     user,
                     startIndex,
                     endIndex,
@@ -348,6 +298,7 @@ public class ArticleFragment extends Fragment {
         }
     }
 
+    @Override
     public void onAnnotationVote(AnnotationVote.AnnotationVoteCallback cb, String id, boolean value) {
         for (Annotation annotation : article.getAnnotations()) {
             if (annotation.getId().equals(id)) {
@@ -357,19 +308,18 @@ public class ArticleFragment extends Fragment {
         }
     }
 
-    public void onAnnotationClose() {
-        hideAnnotationInput();
+    @Override
+    public void onMoreAnnotations(String type, int startIndex, int endIndex) {
+        if (interactionListener != null) {
+            interactionListener.onMoreAnnotations(type, startIndex, endIndex);
+        }
     }
 
-    public void onMoreAnnotations(String type, int startIndex, int endIndex) {
-        Intent intent = new Intent(getActivity().getApplicationContext(), AnnotationsActivity.class);
-
-        intent.putExtra("articleId", article.getId());
-        intent.putExtra("type", type);
-        intent.putExtra("startIndex", startIndex);
-        intent.putExtra("endIndex", endIndex);
-
-        startActivity(intent);
+    @Override
+    public void onRouteToProfile(String userId) {
+        if (interactionListener != null) {
+            interactionListener.onRouteToProfile(userId);
+        }
     }
 
     public void handleTextViewClick(String quote, int startIndex, int endIndex) {
@@ -402,10 +352,12 @@ public class ArticleFragment extends Fragment {
     public void onAttach(Context context) {
         super.onAttach(context);
 
-        if (context instanceof ArticleFragmentInteractionListener) {
-            interactionListener = (ArticleFragmentInteractionListener) context;
+        Fragment parentFragment = getParentFragment();
+
+        if (parentFragment instanceof ArticleFragmentInteractionListener) {
+            interactionListener = (ArticleFragmentInteractionListener) parentFragment;
         } else {
-            throw new RuntimeException(context.toString()
+            throw new RuntimeException(parentFragment.toString()
                     + " must implement ArticleFragmentInteractionListener");
         }
     }
@@ -699,5 +651,7 @@ public class ArticleFragment extends Fragment {
 
     public interface ArticleFragmentInteractionListener {
         void onAnnotationInput(String quote, String type, int startIndex, int endIndex, int value);
+        void onMoreAnnotations(String type, int startIndex, int endIndex);
+        void onRouteToProfile(String userId);
     }
 }

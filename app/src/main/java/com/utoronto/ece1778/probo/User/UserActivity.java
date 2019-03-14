@@ -19,13 +19,6 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import com.utoronto.ece1778.probo.News.AnnotationFragment;
-import com.utoronto.ece1778.probo.News.AnnotationInputFragment;
-import com.utoronto.ece1778.probo.News.AnnotationMoreFragment;
-import com.utoronto.ece1778.probo.News.AnnotationVote;
-import com.utoronto.ece1778.probo.News.AnnotationsFragment;
-import com.utoronto.ece1778.probo.News.ArticleFragment;
-import com.utoronto.ece1778.probo.News.ArticlesFragment;
 import com.utoronto.ece1778.probo.News.NewsFragment;
 import com.utoronto.ece1778.probo.R;
 import com.utoronto.ece1778.probo.Utils.ImageBitmap;
@@ -33,11 +26,8 @@ import com.utoronto.ece1778.probo.Utils.ImageLoader;
 
 public class UserActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener,
-                    ArticlesFragment.ArticlesFragmentInteractionListener,
-                    ArticleFragment.ArticleFragmentInteractionListener,
-                    AnnotationFragment.AnnotationFragmentInteractionListener,
-                    AnnotationInputFragment.AnnotationInputFragmentInteractionListener,
-                    AnnotationMoreFragment.AnnotationMoreFragmentInteractionListener {
+                    NewsFragment.NewsFragmentInteractionListener,
+                    ProfileFragment.ProfileFragmentInteractionListener {
 
     public static final int
             ROUTE_NEWS = 0,
@@ -108,6 +98,10 @@ public class UserActivity extends AppCompatActivity
 
     private void routeToNews() {
         if (currentRoute == UserActivity.ROUTE_NEWS) {
+            if (currentFragment instanceof NewsFragment) {
+                ((NewsFragment) currentFragment).goToViewPage(0);
+            }
+
             return;
         }
 
@@ -138,8 +132,8 @@ public class UserActivity extends AppCompatActivity
         FrameLayout frameLayout = findViewById(R.id.content_container);
         ProgressBar contentProgress = findViewById(R.id.content_progress);
 
-        frameLayout.removeAllViews();
         contentProgress.setVisibility(View.VISIBLE);
+        frameLayout.removeAllViews();
 
         transaction.add(R.id.content_container, fragment);
         transaction.addToBackStack(null);
@@ -232,53 +226,7 @@ public class UserActivity extends AppCompatActivity
     }
 
     @Override
-    public void onRouteToArticle(String articleId) {
-        if (currentFragment instanceof NewsFragment) {
-            ((NewsFragment) currentFragment).onRouteToArticle(articleId);
-        }
-    }
-
-    @Override
     public void onRouteToProfile(String userId) {
         routeToProfile(userId);
-    }
-
-    @Override
-    public void onAnnotationVote(AnnotationVote.AnnotationVoteCallback cb, String id, boolean value) {
-        if (currentFragment instanceof ProfileFragment) {
-            ((ProfileFragment) currentFragment).onAnnotationVote(cb, id, value);
-        } else if (currentFragment instanceof ArticleFragment) {
-            ((ArticleFragment) currentFragment).onAnnotationVote(cb, id, value);
-        } else if (currentFragment instanceof AnnotationsFragment) {
-            ((AnnotationsFragment) currentFragment).onAnnotationVote(cb, id, value);
-        }
-    }
-
-    @Override
-    public void onAnnotationInput(String quote, String type, int startIndex, int endIndex, int value) {
-        if (currentFragment instanceof NewsFragment) {
-            ((NewsFragment) currentFragment).onAnnotationInput(quote, type, startIndex, endIndex, value);
-        }
-    }
-
-    @Override
-    public void onAnnotationSubmit(String type, int startIndex, int endIndex, int value, String comment) {
-        if (currentFragment instanceof NewsFragment) {
-            ((NewsFragment) currentFragment).onAnnotationSubmit(type, startIndex, endIndex, value, comment);
-        }
-    }
-
-    @Override
-    public void onAnnotationClose() {
-        if (currentFragment instanceof NewsFragment) {
-            ((NewsFragment) currentFragment).onAnnotationClose();
-        }
-    }
-
-    @Override
-    public void onMoreAnnotations(String type, int startIndex, int endIndex) {
-        if (currentFragment instanceof NewsFragment) {
-            ((NewsFragment) currentFragment).onMoreAnnotations(type, startIndex, endIndex);
-        }
     }
 }

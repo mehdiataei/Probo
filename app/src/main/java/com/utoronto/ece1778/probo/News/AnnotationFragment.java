@@ -286,10 +286,12 @@ public class AnnotationFragment extends Fragment {
     public void onAttach(Context context) {
         super.onAttach(context);
 
-        if (context instanceof AnnotationFragmentInteractionListener) {
-            interactionListener = (AnnotationFragmentInteractionListener) context;
+        Fragment parentFragment = getParentFragment();
+
+        if (parentFragment instanceof AnnotationFragmentInteractionListener) {
+            interactionListener = (AnnotationFragmentInteractionListener) parentFragment;
         } else {
-            throw new RuntimeException(context.toString()
+            throw new RuntimeException(parentFragment.toString()
                     + " must implement AnnotationFragmentInteractionListener");
         }
     }

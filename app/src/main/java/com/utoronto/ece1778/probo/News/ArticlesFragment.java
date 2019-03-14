@@ -205,10 +205,12 @@ public class ArticlesFragment extends Fragment {
     public void onAttach(Context context) {
         super.onAttach(context);
 
-        if (context instanceof ArticlesFragmentInteractionListener) {
-            interactionListener = (ArticlesFragmentInteractionListener) context;
+        Fragment parentFragment = getParentFragment();
+
+        if (parentFragment instanceof ArticlesFragmentInteractionListener) {
+            interactionListener = (ArticlesFragmentInteractionListener) parentFragment;
         } else {
-            throw new RuntimeException(context.toString()
+            throw new RuntimeException(parentFragment.toString()
                     + " must implement ArticlesFragmentInteractionListener");
         }
     }

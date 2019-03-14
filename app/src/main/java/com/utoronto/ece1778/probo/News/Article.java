@@ -42,6 +42,8 @@ public class Article {
     private HashMap<String, ArrayList<Annotation>> annotationsMap;
     private HashMap<String, Tuple<Integer, Integer>> annotationStats;
 
+    private boolean loaded;
+
     public static final int
             ARTICLE_ERROR_NOT_FOUND = 0;
 
@@ -53,6 +55,8 @@ public class Article {
 
         this.headlineAnnotations = new ArrayList<>();
         this.bodyAnnotations = new ArrayList<>();
+
+        this.loaded = false;
     }
 
     public String getId() {
@@ -65,6 +69,10 @@ public class Article {
 
     public String getImageUrl() {
         return this.imageUrl;
+    }
+
+    public boolean hasLoaded() {
+        return this.loaded;
     }
 
     public ArrayList<Annotation> getAnnotations() {
@@ -146,7 +154,7 @@ public class Article {
         return Article.ARTICLE_ANNOTATION_VALID;
     }
 
-    public void addHeadlineAnnotation(AnnotationSubmitCallback cb, User user, int startIndex, int endIndex, int value, String comment) {
+    public void addHeadlineAnnotation(Annotation.AnnotationSubmitCallback cb, User user, int startIndex, int endIndex, int value, String comment) {
         int errorCode = this.checkNewAnnotation(user, Annotation.TYPE_HEADLINE, startIndex, endIndex);
 
         if (errorCode != Article.ARTICLE_ANNOTATION_VALID) {
@@ -175,7 +183,7 @@ public class Article {
         annotation.save(cb, this);
     }
 
-    public void addBodyAnnotation(AnnotationSubmitCallback cb, User user, int startIndex, int endIndex, int value, String comment) {
+    public void addBodyAnnotation(Annotation.AnnotationSubmitCallback cb, User user, int startIndex, int endIndex, int value, String comment) {
         int errorCode = this.checkNewAnnotation(user, Annotation.TYPE_BODY, startIndex, endIndex);
 
         if (errorCode != Article.ARTICLE_ANNOTATION_VALID) {
@@ -284,6 +292,8 @@ public class Article {
     public void load(final ArticleCallback cb) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
+        this.loaded = false;
+
         db.collection("news")
                 .document(this.id)
                 .get()
@@ -314,6 +324,8 @@ public class Article {
                                     cb.onError(e);
                                     return;
                                 }
+
+                                loaded = true;
 
                                 cb.onLoad();
                             }

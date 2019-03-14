@@ -20,7 +20,9 @@ import com.utoronto.ece1778.probo.User.User;
 
 import java.util.ArrayList;
 
-public class AnnotationsFragment extends Fragment {
+public class AnnotationsFragment extends Fragment
+        implements AnnotationFragment.AnnotationFragmentInteractionListener {
+
     private static final String
             ARG_ARTICLE_ID = "articleId",
             ARG_TYPE = "type",
@@ -38,6 +40,8 @@ public class AnnotationsFragment extends Fragment {
     private ProgressBar spinner;
     private ScrollView scrollView;
     private LinearLayout linearLayout;
+
+    private AnnotationsFragmentInteractionListener interactionListener;
 
     public AnnotationsFragment() {
     }
@@ -134,7 +138,7 @@ public class AnnotationsFragment extends Fragment {
 
     private void populate() {
         ArrayList<Annotation> annotations = article.getLocatedAnnotations(type, startIndex, endIndex);
-        FragmentManager manager = getActivity().getSupportFragmentManager();
+        FragmentManager manager = getChildFragmentManager();
         FragmentTransaction transaction = manager.beginTransaction();
 
         linearLayout.removeAllViews();
@@ -164,5 +168,30 @@ public class AnnotationsFragment extends Fragment {
                 return;
             }
         }
+    }
+
+    @Override
+    public void onRouteToProfile(String userId) {
+        if (interactionListener != null) {
+            interactionListener.onRouteToProfile(userId);
+        }
+    }
+
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+
+        Fragment parentFragment = getParentFragment();
+
+        if (parentFragment instanceof AnnotationsFragmentInteractionListener) {
+            interactionListener = (AnnotationsFragmentInteractionListener) parentFragment;
+        } else {
+            throw new RuntimeException(parentFragment.toString()
+                    + " must implement AnnotationsFragmentInteractionListener");
+        }
+    }
+
+    public interface AnnotationsFragmentInteractionListener {
+        void onRouteToProfile(String userId);
     }
 }

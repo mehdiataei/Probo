@@ -121,7 +121,10 @@ public class AnnotationInputFragment extends Fragment {
         @Override
         public void onClick(View v) {
             disable();
-            interactionListener.onAnnotationClose();
+
+            if (interactionListener != null) {
+                interactionListener.onAnnotationClose();
+            }
         }
     };
 
@@ -145,7 +148,34 @@ public class AnnotationInputFragment extends Fragment {
         showProgress();
 
         if (interactionListener != null) {
+            Annotation.AnnotationSubmitCallback cb = new Annotation.AnnotationSubmitCallback() {
+                @Override
+                public void onSubmit() {
+                    hideProgress();
+                    interactionListener.onAnnotationClose();
+                }
+
+                @Override
+                public void onAnnotationError(int errorCode) {
+                    switch (errorCode) {
+                        case Article.ARTICLE_ANNOTATION_ERROR_ALREADY_SUBMITTED:
+                            showError(getString(R.string.annotation_input_error_already_submitted));
+                            break;
+                        case Article.ARTICLE_ANNOTATION_ERROR_INTERNAL:
+                            showError(getString(R.string.annotation_input_error_general));
+                        default:
+                            showError(getString(R.string.annotation_input_error_general));
+                    }
+                }
+
+                @Override
+                public void onError(Exception e) {
+                    showError(getString(R.string.article_add_annotation_error));
+                }
+            };
+
             interactionListener.onAnnotationSubmit(
+                    cb,
                     annotationType,
                     annotationStartIndex,
                     annotationEndIndex,
@@ -170,18 +200,20 @@ public class AnnotationInputFragment extends Fragment {
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
-        if (context instanceof AnnotationInputFragmentInteractionListener) {
-            interactionListener = (AnnotationInputFragmentInteractionListener) context;
+
+        Fragment parentFragment = getParentFragment();
+
+        if (parentFragment instanceof AnnotationInputFragmentInteractionListener) {
+            interactionListener = (AnnotationInputFragmentInteractionListener) parentFragment;
         } else {
-            throw new RuntimeException(context.toString()
-                    + " must implement AnnotationSubmitCallback");
+            throw new RuntimeException(parentFragment.toString()
+                    + " must implement AnnotationInputFragmentInteractionListener");
         }
     }
 
     @Override
-    public void onDetach() {
-        super.onDetach();
-        interactionListener = null;
+    public void onDestroyView() {
+        super.onDestroyView();
         Helper.hideKeyboard(getActivity().getApplicationContext(), getActivity().getCurrentFocus());
     }
 
@@ -206,7 +238,7 @@ public class AnnotationInputFragment extends Fragment {
     }
 
     public interface AnnotationInputFragmentInteractionListener {
-        void onAnnotationSubmit(String type, int startIndex, int endIndex, int value, String comment);
+        void onAnnotationSubmit(Annotation.AnnotationSubmitCallback cb, String type, int startIndex, int endIndex, int value, String comment);
         void onAnnotationClose();
     }
 }

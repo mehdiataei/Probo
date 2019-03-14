@@ -25,7 +25,8 @@ import com.utoronto.ece1778.probo.R;
 import com.utoronto.ece1778.probo.Utils.ImageBitmap;
 import com.utoronto.ece1778.probo.Utils.ImageLoader;
 
-public class ProfileFragment extends Fragment {
+public class ProfileFragment extends Fragment
+        implements AnnotationFragment.AnnotationFragmentInteractionListener {
 
     private static final String ARG_USER_ID = "userId";
 
@@ -39,8 +40,11 @@ public class ProfileFragment extends Fragment {
 
     private User user;
 
+    private ProfileFragmentInteractionListener interactionListener;
+
     public ProfileFragment() {
     }
+
     public static ProfileFragment newInstance(String userId) {
         ProfileFragment fragment = new ProfileFragment();
         Bundle args = new Bundle();
@@ -172,7 +176,7 @@ public class ProfileFragment extends Fragment {
     }
 
     private void populateAnnotations() {
-        FragmentManager manager = getActivity().getSupportFragmentManager();
+        FragmentManager manager = getChildFragmentManager();
         FragmentTransaction transaction = manager.beginTransaction();
 
         for (Annotation annotation : user.getAnnotations()) {
@@ -193,6 +197,7 @@ public class ProfileFragment extends Fragment {
         transaction.commit();
     }
 
+    @Override
     public void onAnnotationVote(AnnotationVote.AnnotationVoteCallback cb, String id, boolean value) {
         for (Annotation annotation : user.getAnnotations()) {
             if (annotation.getId().equals(id)) {
@@ -200,5 +205,28 @@ public class ProfileFragment extends Fragment {
                 return;
             }
         }
+    }
+
+    @Override
+    public void onRouteToProfile(String userId) {
+        if (interactionListener != null) {
+            interactionListener.onRouteToProfile(userId);
+        }
+    }
+
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+
+        if (context instanceof ProfileFragmentInteractionListener) {
+            interactionListener = (ProfileFragmentInteractionListener) context;
+        } else {
+            throw new RuntimeException(context.toString()
+                    + " must implement ProfileFragmentInteractionListener");
+        }
+    }
+
+    public interface ProfileFragmentInteractionListener {
+        void onRouteToProfile(String userId);
     }
 }

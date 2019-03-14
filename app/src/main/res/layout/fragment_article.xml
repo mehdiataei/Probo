@@ -5,6 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/backgroundColor"
     tools:context=".News.ArticleFragment">
 
     <android.support.v4.widget.SwipeRefreshLayout
@@ -77,6 +78,7 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:paddingBottom="16dp"
                     android:orientation="vertical"
                     android:animateLayoutChanges="true">
 
@@ -112,11 +114,4 @@
             </LinearLayout>
         </ScrollView>
     </android.support.v4.widget.SwipeRefreshLayout>
-
-    <FrameLayout
-        android:id="@+id/annotation_container"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="@color/white"
-        android:visibility="invisible" />
 </android.support.constraint.ConstraintLayout>

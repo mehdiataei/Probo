@@ -218,10 +218,10 @@ public class Annotation {
                     }
                 });
     }
-}
 
-interface AnnotationSubmitCallback {
-    void onSubmit();
-    void onAnnotationError(int errorCode);
-    void onError(Exception e);
+    public interface AnnotationSubmitCallback {
+        void onSubmit();
+        void onAnnotationError(int errorCode);
+        void onError(Exception e);
+    }
 }

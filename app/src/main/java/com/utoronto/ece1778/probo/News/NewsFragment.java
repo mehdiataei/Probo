@@ -19,7 +19,12 @@ import java.util.ArrayList;
 
 import javax.annotation.Nullable;
 
-public class NewsFragment extends Fragment {
+public class NewsFragment extends Fragment
+        implements ArticlesFragment.ArticlesFragmentInteractionListener,
+                    ArticleFragment.ArticleFragmentInteractionListener,
+                    AnnotationInputFragment.AnnotationInputFragmentInteractionListener,
+                    AnnotationsFragment.AnnotationsFragmentInteractionListener {
+
     private ArrayList<Fragment> fragments;
     private ViewPager viewPager;
     private PagerAdapter pagerAdapter;
@@ -28,6 +33,8 @@ public class NewsFragment extends Fragment {
 
     private boolean articleUpdated = false;
     private boolean articleExtensionUpdated = false;
+
+    private NewsFragmentInteractionListener interactionListener;
 
     public NewsFragment() {
     }
@@ -41,12 +48,15 @@ public class NewsFragment extends Fragment {
         fragments.add(new ArticlesFragment());
 
         viewPager = v.findViewById(R.id.view_pager);
-        pagerAdapter = new ScreenSlidePagerAdapter(getActivity().getSupportFragmentManager());
+        pagerAdapter = new ScreenSlidePagerAdapter(getChildFragmentManager());
+
+        viewPager.setPageTransformer(true, new DepthPageTransformer());
         viewPager.setAdapter(pagerAdapter);
 
         return v;
     }
 
+    @Override
     public void onRouteToArticle(String articleId) {
         if (fragments.size() > 1) {
             fragments.subList(1, fragments.size()).clear();
@@ -59,6 +69,10 @@ public class NewsFragment extends Fragment {
         pagerAdapter.notifyDataSetChanged();
 
         viewPager.setCurrentItem(1);
+    }
+
+    public void goToViewPage(int pageIndex) {
+        viewPager.setCurrentItem(pageIndex);
     }
 
     public void onRouteToArticleExtension(Fragment fragment) {
@@ -74,6 +88,7 @@ public class NewsFragment extends Fragment {
         viewPager.setCurrentItem(2);
     }
 
+    @Override
     public void onAnnotationInput(String quote, String type, int startIndex, int endIndex, int value) {
         if (fragments.size() > 1 && fragments.get(1) instanceof ArticleFragment) {
             AnnotationInputFragment annotationInputFragment = AnnotationInputFragment.newInstance(
@@ -88,12 +103,14 @@ public class NewsFragment extends Fragment {
         }
     }
 
-    public void onAnnotationSubmit(String type, int startIndex, int endIndex, int value, String comment) {
+    @Override
+    public void onAnnotationSubmit(Annotation.AnnotationSubmitCallback cb, String type, int startIndex, int endIndex, int value, String comment) {
         if (fragments.size() > 1 && fragments.get(1) instanceof ArticleFragment) {
-            ((ArticleFragment) fragments.get(1)).onAnnotationSubmit(type, startIndex, endIndex, value, comment);
+            ((ArticleFragment) fragments.get(1)).onAnnotationSubmit(cb, type, startIndex, endIndex, value, comment);
         }
     }
 
+    @Override
     public void onMoreAnnotations(String type, int startIndex, int endIndex) {
         if (fragments.size() > 1 && fragments.get(1) instanceof ArticleFragment) {
             ArticleFragment articleFragment = (ArticleFragment) fragments.get(1);
@@ -110,9 +127,31 @@ public class NewsFragment extends Fragment {
         }
     }
 
+    @Override
     public void onAnnotationClose() {
-        if (fragments.size() > 1 && fragments.get(1) instanceof ArticleFragment) {
-            ((ArticleFragment) fragments.get(1)).onAnnotationClose();
+        if (fragments.size() > 2 && fragments.get(2) instanceof AnnotationInputFragment) {
+            viewPager.setCurrentItem(1);
+            fragments.subList(2, fragments.size()).clear();
+            pagerAdapter.notifyDataSetChanged();
+        }
+    }
+
+    @Override
+    public void onRouteToProfile(String userId) {
+        if (interactionListener != null) {
+            interactionListener.onRouteToProfile(userId);
+        }
+    }
+
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+
+        if (context instanceof NewsFragmentInteractionListener) {
+            interactionListener = (NewsFragmentInteractionListener) context;
+        } else {
+            throw new RuntimeException(context.toString()
+                    + " must implement NewsFragmentInteractionListener");
         }
     }
 
@@ -131,7 +170,10 @@ public class NewsFragment extends Fragment {
             if (object instanceof ArticleFragment && articleUpdated) {
                 articleUpdated = false;
                 return POSITION_NONE;
-            } else if (object instanceof AnnotationsFragment) {
+            } else if (object instanceof AnnotationInputFragment && articleExtensionUpdated) {
+                articleExtensionUpdated = false;
+                return POSITION_NONE;
+            } else if (object instanceof AnnotationsFragment && articleExtensionUpdated) {
                 articleExtensionUpdated = false;
                 return POSITION_NONE;
             }
@@ -143,5 +185,35 @@ public class NewsFragment extends Fragment {
         public int getCount() {
             return fragments.size();
         }
+    }
+
+    private class DepthPageTransformer implements ViewPager.PageTransformer {
+        private static final float MIN_SCALE = 0.75f;
+
+        public void transformPage(View view, float position) {
+            int pageWidth = view.getWidth();
+
+            if (position < -1) {
+                view.setAlpha(0f);
+            } else if (position <= 0) {
+                view.setAlpha(1f);
+                view.setTranslationX(0f);
+                view.setScaleX(1f);
+                view.setScaleY(1f);
+            } else if (position <= 1) {
+                view.setAlpha(1 - position);
+                view.setTranslationX(pageWidth * -position);
+
+                float scaleFactor = MIN_SCALE + (1 - MIN_SCALE) * (1 - Math.abs(position));
+                view.setScaleX(scaleFactor);
+                view.setScaleY(scaleFactor);
+            } else {
+                view.setAlpha(0f);
+            }
+        }
+    }
+
+    public interface NewsFragmentInteractionListener {
+        void onRouteToProfile(String userId);
     }
 }
