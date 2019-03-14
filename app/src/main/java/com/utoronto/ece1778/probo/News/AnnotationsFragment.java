@@ -1,22 +1,31 @@
 package com.utoronto.ece1778.probo.News;
 
+import android.content.Context;
+import android.net.Uri;
+import android.os.Bundle;
+import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.widget.SwipeRefreshLayout;
-import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
+import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.ScrollView;
 
-import com.utoronto.ece1778.probo.User.User;
 import com.utoronto.ece1778.probo.R;
+import com.utoronto.ece1778.probo.User.User;
 
 import java.util.ArrayList;
 
-public class AnnotationsActivity extends AppCompatActivity
-        implements AnnotationFragment.AnnotationFragmentInteractionListener {
+public class AnnotationsFragment extends Fragment {
+    private static final String
+            ARG_ARTICLE_ID = "articleId",
+            ARG_TYPE = "type",
+            ARG_START_INDEX = "startIndex",
+            ARG_END_INDEX = "endIndex";
 
     private User user;
 
@@ -28,30 +37,53 @@ public class AnnotationsActivity extends AppCompatActivity
     private SwipeRefreshLayout swipeRefreshLayout;
     private ProgressBar spinner;
     private ScrollView scrollView;
+    private LinearLayout linearLayout;
+
+    public AnnotationsFragment() {
+    }
+
+    public static AnnotationsFragment newInstance(String articleId, String type, int startIndex, int endIndex) {
+        AnnotationsFragment fragment = new AnnotationsFragment();
+        Bundle args = new Bundle();
+
+        args.putString(ARG_ARTICLE_ID, articleId);
+        args.putString(ARG_TYPE, type);
+        args.putInt(ARG_START_INDEX, startIndex);
+        args.putInt(ARG_END_INDEX, endIndex);
+
+        fragment.setArguments(args);
+        return fragment;
+    }
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_annotations);
+        if (getArguments() != null) {
+            article = new Article(getArguments().getString(ARG_ARTICLE_ID));
+            type = getArguments().getString(ARG_TYPE);
+            startIndex = getArguments().getInt(ARG_START_INDEX);
+            endIndex = getArguments().getInt(ARG_END_INDEX);
+        }
+    }
 
-        swipeRefreshLayout = findViewById(R.id.refresh);
-        spinner = findViewById(R.id.progress_spinner);
-        scrollView = findViewById(R.id.scroll);
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
 
-        Bundle extras = getIntent().getExtras();
+        View v = inflater.inflate(R.layout.fragment_annotations, container, false);
+
+        swipeRefreshLayout = v.findViewById(R.id.refresh);
+        spinner = v.findViewById(R.id.progress_spinner);
+        scrollView = v.findViewById(R.id.scroll);
+        linearLayout = v.findViewById(R.id.annotations_container);
+
+        swipeRefreshLayout.setOnRefreshListener(handleRefresh);
 
         user = new User();
 
-        if (extras != null) {
-            article = new Article(extras.getString("articleId"));
-            type = extras.getString("type");
-            startIndex = extras.getInt("startIndex");
-            endIndex = extras.getInt("endIndex");
+        load();
 
-            load();
-        }
-
-        swipeRefreshLayout.setOnRefreshListener(handleRefresh);
+        return v;
     }
 
     private SwipeRefreshLayout.OnRefreshListener handleRefresh = new SwipeRefreshLayout.OnRefreshListener() {
@@ -102,10 +134,9 @@ public class AnnotationsActivity extends AppCompatActivity
 
     private void populate() {
         ArrayList<Annotation> annotations = article.getLocatedAnnotations(type, startIndex, endIndex);
-        FragmentManager manager = getSupportFragmentManager();
+        FragmentManager manager = getActivity().getSupportFragmentManager();
         FragmentTransaction transaction = manager.beginTransaction();
 
-        LinearLayout linearLayout = findViewById(R.id.annotations_container);
         linearLayout.removeAllViews();
 
         for (Annotation annotation : annotations) {
@@ -126,7 +157,6 @@ public class AnnotationsActivity extends AppCompatActivity
         transaction.commit();
     }
 
-    @Override
     public void onAnnotationVote(AnnotationVote.AnnotationVoteCallback cb, String id, boolean value) {
         for (Annotation annotation : article.getAnnotations()) {
             if (annotation.getId().equals(id)) {
@@ -134,9 +164,5 @@ public class AnnotationsActivity extends AppCompatActivity
                 return;
             }
         }
-    }
-
-    @Override
-    public void onRouteToProfile(String userId) {
     }
 }

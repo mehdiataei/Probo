@@ -1,203 +1,147 @@
 package com.utoronto.ece1778.probo.News;
 
 import android.content.Context;
-import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
-import android.support.v7.widget.GridLayoutManager;
-import android.support.v7.widget.RecyclerView;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentStatePagerAdapter;
+import android.support.v4.view.PagerAdapter;
+import android.support.v4.view.ViewPager;
 import android.util.Log;
 import android.view.LayoutInflater;
-
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.Task;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
-import com.google.firebase.firestore.QuerySnapshot;
-import com.utoronto.ece1778.probo.User.SignInActivity;
 import com.utoronto.ece1778.probo.R;
-import com.utoronto.ece1778.probo.Utils.MyRecyclerViewAdapter;
-import com.utoronto.ece1778.probo.Models.NewsItem;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Date;
 
+import javax.annotation.Nullable;
 
 public class NewsFragment extends Fragment {
+    private ArrayList<Fragment> fragments;
+    private ViewPager viewPager;
+    private PagerAdapter pagerAdapter;
 
+    private String currentArticleId;
 
-    private static final String TAG = "NewsFragment";
+    private boolean articleUpdated = false;
+    private boolean articleExtensionUpdated = false;
 
-    private MyRecyclerViewAdapter adapter;
-    RecyclerView recyclerView;
+    public NewsFragment() {
+    }
 
-    private static final int NUM_OF_COLUMNS = 1;
-
-    private Context mContext;
-
-    // Firebase
-    private FirebaseAuth mAuth;
-    private FirebaseAuth.AuthStateListener mAuthListener;
-
-    private FirebaseFirestore db;
-
-    private ArrayList<NewsItem> news;
-
-    @Nullable
     @Override
-    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_news, container, false);
-        db = FirebaseFirestore.getInstance();
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+        View v = inflater.inflate(R.layout.fragment_news, container, false);
 
-        mContext = getActivity();
+        fragments = new ArrayList<>();
+        fragments.add(new ArticlesFragment());
 
-        setupFirebaseAuth();
-        setupGridView(this);
-        recyclerView = view.findViewById(R.id.rvNumbers);
+        viewPager = v.findViewById(R.id.view_pager);
+        pagerAdapter = new ScreenSlidePagerAdapter(getActivity().getSupportFragmentManager());
+        viewPager.setAdapter(pagerAdapter);
 
-        return view;
+        return v;
     }
 
-    /**
-     * Firebase Auth setup
-     */
+    public void onRouteToArticle(String articleId) {
+        if (fragments.size() > 1) {
+            fragments.subList(1, fragments.size()).clear();
+        }
 
-    private void setupFirebaseAuth() {
-        Log.d(TAG, "setupFirebaseAuth: setting up firebase auth.");
+        articleUpdated = !articleId.equals(currentArticleId);
+        currentArticleId = articleId;
 
-        mAuth = FirebaseAuth.getInstance();
+        fragments.add(ArticleFragment.newInstance(articleId));
+        pagerAdapter.notifyDataSetChanged();
 
-        mAuthListener = new FirebaseAuth.AuthStateListener() {
-            @Override
-            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
-                FirebaseUser user = firebaseAuth.getCurrentUser();
-                Log.d(TAG, "onAuthStateChanged: State changed.");
-
-                checkCurrentUser(user);
-
-                if (user != null) {
-                    // User is signed in
-                    Log.d(TAG, "onAuthStateChanged:signed_in:" + user.getUid());
-
-
-                } else {
-
-                    // User is signed out
-                    Log.d(TAG, "onAuthStateChanged:signed_out");
-                }
-            }
-
-        };
-
+        viewPager.setCurrentItem(1);
     }
 
+    public void onRouteToArticleExtension(Fragment fragment) {
+        if (fragments.size() > 2) {
+            fragments.subList(2, fragments.size()).clear();
+        }
 
-    private void setupGridView(final NewsFragment fragment) {
-        Log.d(TAG, "setupGridView: Setting up news grid.");
+        articleExtensionUpdated = true;
 
-        news = new ArrayList<>();
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        fragments.add(fragment);
+        pagerAdapter.notifyDataSetChanged();
 
-        db
-                .collection(getString(R.string.dbname_news))
-                .get()
-                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
-                    @Override
-                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
-                        if (task.isSuccessful()) {
-
-                            if (task.getResult() != null) {
-
-                                for (QueryDocumentSnapshot document : task.getResult()) {
-
-                                    news.add(document.toObject(NewsItem.class));
-                                }
-
-                                // Sort news chronologically
-                                news.sort(new Comparator<NewsItem>() {
-                                    @Override
-                                    public int compare(NewsItem o1, NewsItem o2) {
-
-                                        try {
-
-                                            Date o1_date = new SimpleDateFormat("yyyyMMdd_HHmmss").parse(o1.getDate_created());
-                                            Date o2_date = new SimpleDateFormat("yyyyMMdd_HHmmss").parse(o2.getDate_created());
-
-                                            int compare = o2_date.compareTo(o1_date);
-
-                                            return compare;
-
-                                        } catch (ParseException e) {
-                                            e.printStackTrace();
-                                            return 0;
-                                        }
-
-                                    }
-                                });
-
-
-                                // set up the RecyclerView
-                                recyclerView.setLayoutManager(new GridLayoutManager(mContext, NUM_OF_COLUMNS, GridLayoutManager.VERTICAL, false));
-                                adapter = new MyRecyclerViewAdapter(mContext, news);
-                                recyclerView.setAdapter(adapter);
-                                adapter.setClickListener(handleArticleClick);
-
-
-                            }
-
-
-                        }
-                    }
-                }).addOnFailureListener(new OnFailureListener() {
-            @Override
-            public void onFailure(@NonNull Exception e) {
-                Log.d(TAG, "onFailure: Failed to initialize the grid.");
-            }
-        });
-
+        viewPager.setCurrentItem(2);
     }
 
-    private MyRecyclerViewAdapter.ItemClickListener handleArticleClick = new MyRecyclerViewAdapter.ItemClickListener() {
+    public void onAnnotationInput(String quote, String type, int startIndex, int endIndex, int value) {
+        if (fragments.size() > 1 && fragments.get(1) instanceof ArticleFragment) {
+            AnnotationInputFragment annotationInputFragment = AnnotationInputFragment.newInstance(
+                    quote,
+                    type,
+                    startIndex,
+                    endIndex,
+                    value
+            );
+
+            onRouteToArticleExtension(annotationInputFragment);
+        }
+    }
+
+    public void onAnnotationSubmit(String type, int startIndex, int endIndex, int value, String comment) {
+        if (fragments.size() > 1 && fragments.get(1) instanceof ArticleFragment) {
+            ((ArticleFragment) fragments.get(1)).onAnnotationSubmit(type, startIndex, endIndex, value, comment);
+        }
+    }
+
+    public void onMoreAnnotations(String type, int startIndex, int endIndex) {
+        if (fragments.size() > 1 && fragments.get(1) instanceof ArticleFragment) {
+            ArticleFragment articleFragment = (ArticleFragment) fragments.get(1);
+            String articleId = articleFragment.getArticle().getId();
+
+            AnnotationsFragment annotationsFragment = AnnotationsFragment.newInstance(
+                    articleId,
+                    type,
+                    startIndex,
+                    endIndex
+            );
+
+            onRouteToArticleExtension(annotationsFragment);
+        }
+    }
+
+    public void onAnnotationClose() {
+        if (fragments.size() > 1 && fragments.get(1) instanceof ArticleFragment) {
+            ((ArticleFragment) fragments.get(1)).onAnnotationClose();
+        }
+    }
+
+    private class ScreenSlidePagerAdapter extends FragmentStatePagerAdapter {
+        ScreenSlidePagerAdapter(FragmentManager fragmentManager) {
+            super(fragmentManager);
+        }
+
         @Override
-        public void onItemClick(View view, int position) {
-            Intent intent = new Intent(mContext, ArticleActivity.class);
-            intent.putExtra("articleId", news.get(position).getNews_id());
-            startActivity(intent);
+        public Fragment getItem(int position) {
+            return fragments.get(position);
         }
-    };
 
-    private void checkCurrentUser(FirebaseUser user) {
-        Log.d(TAG, "checkCurrentUser: checking if user is logged in.");
+        @Override
+        public int getItemPosition(@Nullable Object object) {
+            if (object instanceof ArticleFragment && articleUpdated) {
+                articleUpdated = false;
+                return POSITION_NONE;
+            } else if (object instanceof AnnotationsFragment) {
+                articleExtensionUpdated = false;
+                return POSITION_NONE;
+            }
 
-        if (user == null) {
-            Intent intent = new Intent(mContext, SignInActivity.class);
-            startActivity(intent);
+            return POSITION_UNCHANGED;
         }
-    }
 
-
-    @Override
-    public void onStart() {
-        super.onStart();
-        mAuth.addAuthStateListener(mAuthListener);
-    }
-
-    @Override
-    public void onStop() {
-        super.onStop();
-        if (mAuthListener != null) {
-            mAuth.removeAuthStateListener(mAuthListener);
+        @Override
+        public int getCount() {
+            return fragments.size();
         }
     }
 }

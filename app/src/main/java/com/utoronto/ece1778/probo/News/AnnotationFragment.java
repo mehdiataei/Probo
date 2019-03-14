@@ -1,7 +1,6 @@
 package com.utoronto.ece1778.probo.News;
 
 import android.content.Context;
-import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -19,7 +18,6 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.utoronto.ece1778.probo.User.ProfileActivity;
 import com.utoronto.ece1778.probo.User.User;
 import com.utoronto.ece1778.probo.R;
 import com.utoronto.ece1778.probo.Utils.ImageBitmap;
@@ -150,9 +148,7 @@ public class AnnotationFragment extends Fragment {
     private View.OnClickListener handleUserClick = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
-            Intent intent = new Intent(getActivity().getApplicationContext(), ProfileActivity.class);
-            intent.putExtra("userId", user.getUid());
-            startActivity(intent);
+            interactionListener.onRouteToProfile(user.getUid());
         }
     };
 
@@ -306,5 +302,6 @@ public class AnnotationFragment extends Fragment {
 
     public interface AnnotationFragmentInteractionListener {
         void onAnnotationVote(AnnotationVote.AnnotationVoteCallback cb, String id, boolean value);
+        void onRouteToProfile(String userId);
     }
 }

@@ -6,7 +6,7 @@ import android.os.Bundle;
 
 import com.utoronto.ece1778.probo.User.SignInActivity;
 import com.utoronto.ece1778.probo.User.User;
-import com.utoronto.ece1778.probo.News.NewsActivity;
+import com.utoronto.ece1778.probo.User.UserActivity;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -18,7 +18,7 @@ public class MainActivity extends AppCompatActivity {
         Intent intent;
 
         if (User.isSignedIn()) {
-            intent = new Intent(this, NewsActivity.class);
+            intent = new Intent(this, UserActivity.class);
         } else {
             intent = new Intent(this, SignInActivity.class);
         }

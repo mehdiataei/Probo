@@ -10,7 +10,6 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.utoronto.ece1778.probo.News.NewsActivity;
 import com.utoronto.ece1778.probo.Utils.Helper;
 import com.utoronto.ece1778.probo.R;
 
@@ -69,7 +68,7 @@ public class SignInActivity extends AppCompatActivity {
                 );
 
                 toast.show();
-                Intent intent = new Intent(SignInActivity.this, NewsActivity.class);
+                Intent intent = new Intent(SignInActivity.this, UserActivity.class);
                 startActivity(intent);
             }
 

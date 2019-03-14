@@ -1,15 +1,17 @@
 package com.utoronto.ece1778.probo.User;
 
+import android.content.Context;
 import android.graphics.Bitmap;
+import android.net.Uri;
+import android.os.Bundle;
+import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.graphics.drawable.RoundedBitmapDrawable;
 import android.support.v4.widget.SwipeRefreshLayout;
-import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
-import android.support.v7.widget.RecyclerView;
-import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -23,43 +25,69 @@ import com.utoronto.ece1778.probo.R;
 import com.utoronto.ece1778.probo.Utils.ImageBitmap;
 import com.utoronto.ece1778.probo.Utils.ImageLoader;
 
-import java.util.ArrayList;
+public class ProfileFragment extends Fragment {
 
-public class ProfileActivity extends AppCompatActivity
-        implements AnnotationFragment.AnnotationFragmentInteractionListener {
+    private static final String ARG_USER_ID = "userId";
 
     private SwipeRefreshLayout refreshLayout;
+    private ProgressBar annotationsProgress;
+    private LinearLayout annotationsContainer;
+    private RelativeLayout profileImageProgressContainer;
+    private ImageView profileImage;
+    private TextView nameText;
+    private TextView titleText;
 
     private User user;
 
+    public ProfileFragment() {
+    }
+    public static ProfileFragment newInstance(String userId) {
+        ProfileFragment fragment = new ProfileFragment();
+        Bundle args = new Bundle();
+        args.putString(ARG_USER_ID, userId);
+        fragment.setArguments(args);
+        return fragment;
+    }
+
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_profile);
-
-        refreshLayout = findViewById(R.id.refresh);
-
-        Bundle extras = getIntent().getExtras();
-
-        if (extras != null) {
-            User.UserCallback cb = new User.UserCallback() {
-                @Override
-                public void onLoad() {
-                    populate();
-                }
-
-                @Override
-                public void onError(Exception error) {
-                }
-            };
-
-            user = new User(extras.getString("userId"));
-            user.load(cb);
-
-            loadAnnotations();
+        if (getArguments() != null) {
+            user = new User(getArguments().getString(ARG_USER_ID));
         }
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+
+        View v = inflater.inflate(R.layout.fragment_profile, container, false);
+
+        refreshLayout = v.findViewById(R.id.refresh);
+        annotationsProgress = v.findViewById(R.id.annotations_progress);
+        annotationsContainer = v.findViewById(R.id.annotations_container);
+        profileImageProgressContainer = v.findViewById(R.id.profile_image_progress_container);
+        profileImage = v.findViewById(R.id.profile_image);
+        nameText = v.findViewById(R.id.name);
+        titleText = v.findViewById(R.id.title);
+
+        User.UserCallback cb = new User.UserCallback() {
+            @Override
+            public void onLoad() {
+                populate();
+            }
+
+            @Override
+            public void onError(Exception error) {
+            }
+        };
+
+        user.load(cb);
+        loadAnnotations();
 
         refreshLayout.setOnRefreshListener(handleRefresh);
+
+        return v;
     }
 
     private SwipeRefreshLayout.OnRefreshListener handleRefresh = new SwipeRefreshLayout.OnRefreshListener() {
@@ -83,11 +111,6 @@ public class ProfileActivity extends AppCompatActivity
     };
 
     private void populate() {
-        final RelativeLayout profileImageProgressContainer = findViewById(R.id.profile_image_progress_container);
-        final ImageView profileImage = findViewById(R.id.profile_image);
-        final TextView nameText = findViewById(R.id.name);
-        final TextView titleText = findViewById(R.id.title);
-
         ImageLoader.ImageLoaderCallback cb = new ImageLoader.ImageLoaderCallback() {
             @Override
             public void onSuccess(Bitmap image) {
@@ -108,7 +131,11 @@ public class ProfileActivity extends AppCompatActivity
         };
 
         if (user.getProfileImagePath() != null) {
-            ImageLoader imageLoader = new ImageLoader(user.getProfileImagePath(), getApplicationContext());
+            ImageLoader imageLoader = new ImageLoader(
+                    user.getProfileImagePath(),
+                    getActivity().getApplicationContext()
+            );
+
             imageLoader.load(cb);
         } else {
             profileImage.setVisibility(View.VISIBLE);
@@ -126,9 +153,6 @@ public class ProfileActivity extends AppCompatActivity
     }
 
     private void loadAnnotations() {
-        final ProgressBar annotationsProgress = findViewById(R.id.annotations_progress);
-        final LinearLayout annotationsContainer = findViewById(R.id.annotations_container);
-
         User.UserAnnotationsCallback cb = new User.UserAnnotationsCallback() {
             @Override
             public void onLoad() {
@@ -143,12 +167,12 @@ public class ProfileActivity extends AppCompatActivity
 
         annotationsContainer.removeAllViews();
         annotationsProgress.setVisibility(View.VISIBLE);
-        
+
         user.loadAnnotations(cb);
     }
 
     private void populateAnnotations() {
-        FragmentManager manager = getSupportFragmentManager();
+        FragmentManager manager = getActivity().getSupportFragmentManager();
         FragmentTransaction transaction = manager.beginTransaction();
 
         for (Annotation annotation : user.getAnnotations()) {
@@ -169,7 +193,6 @@ public class ProfileActivity extends AppCompatActivity
         transaction.commit();
     }
 
-    @Override
     public void onAnnotationVote(AnnotationVote.AnnotationVoteCallback cb, String id, boolean value) {
         for (Annotation annotation : user.getAnnotations()) {
             if (annotation.getId().equals(id)) {

@@ -17,10 +17,11 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".User.ProfileActivity"></activity>
+        <activity
+            android:name=".User.UserActivity"
+            android:label="@string/app_name"
+            android:theme="@style/AppTheme.NoActionBar"></activity>
         <activity android:name=".News.AnnotationsActivity" />
-        <activity android:name=".News.ArticleActivity" />
-        <activity android:name=".News.NewsActivity" />
 
         <provider
             android:name="android.support.v4.content.FileProvider"
@@ -38,7 +39,10 @@
         <activity
             android:name=".User.SignInActivity"
             android:theme="@style/AppThemeNoActionBar" />
-        <activity android:name=".MainActivity">
+        <activity
+            android:name=".MainActivity"
+            android:noHistory="true">
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

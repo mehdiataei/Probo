@@ -32,6 +32,13 @@
     <string name="sign_up_progress_creating">Creating your account.</string>
     <string name="sign_up_progress_uploading_profile_image">Uploading your profile image.</string>
     <string name="sign_up_progress_saving">Saving your details.</string>
+
+    <string name="user_nav_home">Home</string>
+    <string name="user_nav_profile">Profile</string>
+    <string name="user_nav_settings">Settings</string>
+    <string name="user_nav_account">Account</string>
+    <string name="user_nav_preferences">Preferences</string>
+
     <string name="dbname_news">news</string>
     <string name="news_fragment">News</string>
 
@@ -58,4 +65,10 @@
 
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="nav_header_title">Android Studio</string>
+    <string name="nav_header_subtitle">android.studio@android.com</string>
+    <string name="nav_header_desc">Navigation header</string>
+    <string name="action_settings">Settings</string>
 </resources>

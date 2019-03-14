@@ -1,20 +1,24 @@
 package com.utoronto.ece1778.probo.News;
 
+import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.SwipeRefreshLayout;
-import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.text.SpannableString;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.CompoundButton;
@@ -26,8 +30,8 @@ import android.widget.TextView;
 
 import com.bumptech.glide.Priority;
 import com.bumptech.glide.request.RequestOptions;
-import com.utoronto.ece1778.probo.User.User;
 import com.utoronto.ece1778.probo.R;
+import com.utoronto.ece1778.probo.User.User;
 import com.utoronto.ece1778.probo.Utils.ClickableTextView;
 import com.utoronto.ece1778.probo.Utils.GlideImageLoader;
 import com.utoronto.ece1778.probo.Utils.Helper;
@@ -39,17 +43,15 @@ import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Locale;
 
-public class ArticleActivity extends AppCompatActivity
-        implements AnnotationInputFragment.AnnotationInputFragmentInteractionListener,
-                    AnnotationFragment.AnnotationFragmentInteractionListener,
-                    AnnotationMoreFragment.AnnotationMoreFragmentInteractionListener {
+public class ArticleFragment extends Fragment {
+    private static final String ARG_ARTICLE_ID = "articleId";
 
     private final int MAX_NUM_INLINE_ANNOTATION_TILES = 5;
 
-    private boolean showHeatmap;
+    private boolean showHeatmap = false;
 
-    int currentAnnotationStartIndex;
-    int currentAnnotationEndIndex;
+    int currentAnnotationStartIndex = -1;
+    int currentAnnotationEndIndex = -1;
 
     private SwipeRefreshLayout refresh;
     private FrameLayout annotationContainer;
@@ -58,67 +60,103 @@ public class ArticleActivity extends AppCompatActivity
     private TextView headline;
     private ClickableTextView body, bodyOverflow;
     private WrapHeightViewPager annotationsContainer;
+    private ProgressBar progressBar;
+    private SquareImageView image;
+    private TextView author;
+    private TextView datetime;
 
     private AnnotationInputFragment annotationInputFragment;
 
     private User user;
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_article);
+    private ArticleFragmentInteractionListener interactionListener;
 
-        showHeatmap = false;
+    public ArticleFragment() {
+    }
 
-        currentAnnotationStartIndex = -1;
-        currentAnnotationEndIndex = -1;
+    public static ArticleFragment newInstance(String articleId) {
+        ArticleFragment fragment = new ArticleFragment();
+        Bundle args = new Bundle();
+        args.putString(ARG_ARTICLE_ID, articleId);
+        fragment.setArguments(args);
+        return fragment;
+    }
 
-        refresh = findViewById(R.id.refresh);
-        annotationContainer = findViewById(R.id.annotation_container);
-
-        headline = findViewById(R.id.headline);
-        body = findViewById(R.id.body);
-        bodyOverflow = findViewById(R.id.body_overflow);
-        annotationsContainer = findViewById(R.id.annotations_container);
-
-        user = new User();
-
-        Bundle extras = getIntent().getExtras();
-
-        if (extras != null) {
-            ArticleCallback cb = new ArticleCallback() {
-                @Override
-                public void onLoad() {
-                    populateArticle();
-                }
-
-                @Override
-                public void onArticleError(int errorCode) {
-                    Log.d("PROBO_APP", "errorCode: " + errorCode);
-                }
-
-                @Override
-                public void onError(Exception e) {
-                    Log.d("PROBO_APP", "err", e);
-                }
-            };
-
-            article = new Article(extras.getString("articleId"));
-            article.load(cb);
-        }
-
-        refresh.setOnRefreshListener(handleRefresh);
+    public Article getArticle() {
+        return this.article;
     }
 
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.article_action_menu, menu);
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setHasOptionsMenu(true);
+
+        if (getArguments() != null) {
+            article = new Article(getArguments().getString(ARG_ARTICLE_ID));
+        }
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+
+        View v = inflater.inflate(R.layout.fragment_article, container, false);
+
+        refresh = v.findViewById(R.id.refresh);
+        annotationContainer = v.findViewById(R.id.annotation_container);
+
+        headline = v.findViewById(R.id.headline);
+        body = v.findViewById(R.id.body);
+        bodyOverflow = v.findViewById(R.id.body_overflow);
+        annotationsContainer = v.findViewById(R.id.annotations_container);
+        progressBar = v.findViewById(R.id.progress_spinner);
+        image = v.findViewById(R.id.image);
+        author = v.findViewById(R.id.author);
+        datetime = v.findViewById(R.id.datetime);
+
+        user = new User();
+
+        ArticleCallback cb = new ArticleCallback() {
+            @Override
+            public void onLoad() {
+                populateArticle();
+            }
+
+            @Override
+            public void onArticleError(int errorCode) {
+                Log.d("PROBO_APP", "errorCode: " + errorCode);
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Log.d("PROBO_APP", "err", e);
+            }
+        };
+
+        article.load(cb);
+
+        refresh.setOnRefreshListener(handleRefresh);
+
+        return v;
+    }
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        inflater.inflate(R.menu.article_action_menu, menu);
 
         MenuItem item = menu.findItem(R.id.heatmap_action);
         Switch heatmapSwitch = item.getActionView().findViewById(R.id.heatmap_switch);
+        heatmapSwitch.setChecked(showHeatmap);
         heatmapSwitch.setOnCheckedChangeListener(handleHeatmapSwitch);
 
-        return super.onCreateOptionsMenu(menu);
+        super.onCreateOptionsMenu(menu, inflater);
+    }
+
+    @Override
+    public void onDestroyView() {
+        setHasOptionsMenu(false);
+
+        super.onDestroyView();
     }
 
     CompoundButton.OnCheckedChangeListener handleHeatmapSwitch = new CompoundButton.OnCheckedChangeListener() {
@@ -154,11 +192,6 @@ public class ArticleActivity extends AppCompatActivity
     };
 
     public void populateArticle() {
-        ProgressBar progressBar = findViewById(R.id.progress_spinner);
-        SquareImageView image = findViewById(R.id.image);
-        TextView author = findViewById(R.id.author);
-        TextView datetime = findViewById(R.id.datetime);
-
         RequestOptions options = new RequestOptions()
                 .centerCrop()
                 .priority(Priority.HIGH);
@@ -178,17 +211,17 @@ public class ArticleActivity extends AppCompatActivity
     }
 
     public void updateArticleText() {
-        UpdateTextParams params = new UpdateTextParams(article, showHeatmap);
-        new UpdateText(this).execute(params);
+        ArticleFragment.UpdateTextParams params = new ArticleFragment.UpdateTextParams(article, showHeatmap);
+        new ArticleFragment.UpdateText(this).execute(params);
     }
 
     private void showLocatedAnnotations(String type, int startIndex, int endIndex) {
         ArrayList<Annotation> annotations = article.getLocatedAnnotations(type, startIndex, endIndex);
 
-        annotationsContainer.setPageTransformer(true, new ZoomOutPageTransformer());
+        annotationsContainer.setPageTransformer(true, new ArticleFragment.ZoomOutPageTransformer());
 
-        AnnotationPagerAdapter adapter = new AnnotationPagerAdapter(
-                getSupportFragmentManager(),
+        ArticleFragment.AnnotationPagerAdapter adapter = new ArticleFragment.AnnotationPagerAdapter(
+                getActivity().getSupportFragmentManager(),
                 annotations,
                 type,
                 startIndex,
@@ -202,13 +235,13 @@ public class ArticleActivity extends AppCompatActivity
     }
 
     private void splitBody(int index) {
-        SplitTextParams params = new SplitTextParams(article, showHeatmap, index);
-        new SplitText(this).execute(params);
+        ArticleFragment.SplitTextParams params = new ArticleFragment.SplitTextParams(article, showHeatmap, index);
+        new ArticleFragment.SplitText(this).execute(params);
     }
 
     private void showAnnotationInput(String quote, String type, int startIndex, int endIndex, int value) {
-        Animation animation = AnimationUtils.loadAnimation(this, R.anim.annotation_input_slide_in);
-        FragmentManager manager = getSupportFragmentManager();
+        /*Animation animation = AnimationUtils.loadAnimation(getActivity(), R.anim.annotation_input_slide_in);
+        FragmentManager manager = getActivity().getSupportFragmentManager();
         FragmentTransaction transaction = manager.beginTransaction();
 
         if (annotationInputFragment != null) {
@@ -227,11 +260,15 @@ public class ArticleActivity extends AppCompatActivity
         transaction.commit();
 
         annotationContainer.setVisibility(View.VISIBLE);
-        annotationContainer.startAnimation(animation);
+        annotationContainer.startAnimation(animation);*/
+
+        if (interactionListener != null) {
+            interactionListener.onAnnotationInput(quote, type, startIndex, endIndex, value);
+        }
     }
 
     private void hideAnnotationInput() {
-        Animation animation = AnimationUtils.loadAnimation(this, R.anim.annotation_input_slide_out);
+        Animation animation = AnimationUtils.loadAnimation(getActivity(), R.anim.annotation_input_slide_out);
 
         animation.setAnimationListener(new Animation.AnimationListener() {
             @Override
@@ -242,7 +279,7 @@ public class ArticleActivity extends AppCompatActivity
                 annotationContainer.setVisibility(View.GONE);
 
                 if (annotationInputFragment != null) {
-                    FragmentManager manager = getSupportFragmentManager();
+                    FragmentManager manager = getActivity().getSupportFragmentManager();
                     FragmentTransaction transaction = manager.beginTransaction();
                     transaction.remove(annotationInputFragment);
 
@@ -262,7 +299,6 @@ public class ArticleActivity extends AppCompatActivity
         updateArticleText();
     }
 
-    @Override
     public void onAnnotationSubmit(String type, int startIndex, int endIndex, int value, String comment) {
         AnnotationSubmitCallback cb = new AnnotationSubmitCallback() {
             @Override
@@ -312,7 +348,6 @@ public class ArticleActivity extends AppCompatActivity
         }
     }
 
-    @Override
     public void onAnnotationVote(AnnotationVote.AnnotationVoteCallback cb, String id, boolean value) {
         for (Annotation annotation : article.getAnnotations()) {
             if (annotation.getId().equals(id)) {
@@ -322,14 +357,12 @@ public class ArticleActivity extends AppCompatActivity
         }
     }
 
-    @Override
     public void onAnnotationClose() {
         hideAnnotationInput();
     }
 
-    @Override
     public void onMoreAnnotations(String type, int startIndex, int endIndex) {
-        Intent intent = new Intent(getApplicationContext(), AnnotationsActivity.class);
+        Intent intent = new Intent(getActivity().getApplicationContext(), AnnotationsActivity.class);
 
         intent.putExtra("articleId", article.getId());
         intent.putExtra("type", type);
@@ -361,34 +394,46 @@ public class ArticleActivity extends AppCompatActivity
             return;
         }
 
-        Helper.vibrate(getApplicationContext(), 100);
+        Helper.vibrate(getActivity().getApplicationContext(), 100);
         showAnnotationInput(quote, Annotation.TYPE_BODY, startIndex, endIndex,1);
     }
 
-    private static class UpdateText extends AsyncTask<UpdateTextParams, Void, UpdateTextResults> {
-        private WeakReference<ArticleActivity> activityReference;
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
 
-        UpdateText(ArticleActivity context) {
+        if (context instanceof ArticleFragmentInteractionListener) {
+            interactionListener = (ArticleFragmentInteractionListener) context;
+        } else {
+            throw new RuntimeException(context.toString()
+                    + " must implement ArticleFragmentInteractionListener");
+        }
+    }
+
+    private static class UpdateText extends AsyncTask<ArticleFragment.UpdateTextParams, Void, ArticleFragment.UpdateTextResults> {
+        private WeakReference<ArticleFragment> activityReference;
+
+        UpdateText(ArticleFragment context) {
             activityReference = new WeakReference<>(context);
         }
 
-        protected UpdateTextResults doInBackground(UpdateTextParams... params) {
+        protected ArticleFragment.UpdateTextResults doInBackground(ArticleFragment.UpdateTextParams... params) {
             Article currentArticle = params[0].getCurrentArticle();
             boolean displayHeatmap = params[0].getDisplayHeatmap();
 
-            return new UpdateTextResults(
+            return new ArticleFragment.UpdateTextResults(
                     currentArticle.getHeadline(displayHeatmap),
                     currentArticle.getBody(displayHeatmap, -1, -1)
             );
         }
 
         protected void onPreExecute() {
-            ArticleActivity activity = activityReference.get();
+            ArticleFragment activity = activityReference.get();
             activity.annotationsContainer.setVisibility(View.GONE);
         }
 
-        protected void onPostExecute(UpdateTextResults results) {
-            final ArticleActivity activity = activityReference.get();
+        protected void onPostExecute(ArticleFragment.UpdateTextResults results) {
+            final ArticleFragment activity = activityReference.get();
 
             ClickableTextView.ClickableTextViewInterface cb = new ClickableTextView.ClickableTextViewInterface() {
                 @Override
@@ -449,27 +494,27 @@ public class ArticleActivity extends AppCompatActivity
         }
     }
 
-    private static class SplitText extends AsyncTask<SplitTextParams, Void, SplitTextResults> {
-        private WeakReference<ArticleActivity> activityReference;
+    private static class SplitText extends AsyncTask<ArticleFragment.SplitTextParams, Void, ArticleFragment.SplitTextResults> {
+        private WeakReference<ArticleFragment> activityReference;
 
-        SplitText(ArticleActivity context) {
+        SplitText(ArticleFragment context) {
             activityReference = new WeakReference<>(context);
         }
 
-        protected SplitTextResults doInBackground(SplitTextParams... params) {
+        protected ArticleFragment.SplitTextResults doInBackground(ArticleFragment.SplitTextParams... params) {
             Article currentArticle = params[0].getCurrentArticle();
             boolean displayHeatmap = params[0].getDisplayHeatmap();
             int index = params[0].getIndex();
 
-            return new SplitTextResults(
+            return new ArticleFragment.SplitTextResults(
                     index,
                     currentArticle.getBody(displayHeatmap, 0, index),
                     currentArticle.getBody(displayHeatmap, index, currentArticle.getBodyLength())
             );
         }
 
-        protected void onPostExecute(SplitTextResults results) {
-            final ArticleActivity activity = activityReference.get();
+        protected void onPostExecute(ArticleFragment.SplitTextResults results) {
+            final ArticleFragment activity = activityReference.get();
 
             final int TEXT_MARGIN = 32;
             int index = results.getIndex();
@@ -650,5 +695,9 @@ public class ArticleActivity extends AppCompatActivity
                 view.setAlpha(0f);
             }
         }
+    }
+
+    public interface ArticleFragmentInteractionListener {
+        void onAnnotationInput(String quote, String type, int startIndex, int endIndex, int value);
     }
 }

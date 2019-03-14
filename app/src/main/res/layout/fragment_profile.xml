@@ -6,7 +6,7 @@
     android:id="@+id/refresh"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".User.ProfileActivity">
+    tools:context=".User.ProfileFragment">
 
     <LinearLayout
         android:layout_width="match_parent"
