@@ -21,7 +21,6 @@
             android:name=".User.UserActivity"
             android:label="@string/app_name"
             android:theme="@style/AppTheme.NoActionBar"></activity>
-        <activity android:name=".News.AnnotationsActivity" />
 
         <provider
             android:name="android.support.v4.content.FileProvider"
