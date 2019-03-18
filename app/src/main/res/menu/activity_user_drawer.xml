@@ -3,7 +3,10 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:showIn="navigation_view">
 
-    <group android:checkableBehavior="single">
+    <group
+        android:id="@+id/nav_group_main"
+        android:checkableBehavior="single">
+
         <item
             android:id="@+id/nav_home"
             android:icon="@drawable/home_icon"
@@ -15,18 +18,34 @@
             android:title="@string/user_nav_profile" />
     </group>
 
-    <item android:title="@string/user_nav_settings">
-        <menu>
-            <item
-                android:id="@+id/nav_account"
-                android:icon="@drawable/account_icon"
-                android:title="@string/user_nav_account" />
+    <group
+        android:id="@+id/nav_group_settings"
+        android:checkableBehavior="single">
 
-            <item
-                android:id="@+id/nav_preferences"
-                android:icon="@drawable/preferences_icon"
-                android:title="@string/user_nav_preferences" />
-        </menu>
-    </item>
+        <item android:title="@string/user_nav_settings">
+            <menu>
+                <group android:checkableBehavior="single">
+                    <item
+                        android:id="@+id/nav_account"
+                        android:icon="@drawable/account_icon"
+                        android:title="@string/user_nav_account" />
 
+                    <item
+                        android:id="@+id/nav_preferences"
+                        android:icon="@drawable/preferences_icon"
+                        android:title="@string/user_nav_preferences" />
+                </group>
+            </menu>
+        </item>
+    </group>
+
+    <group
+        android:id="@+id/nav_group_sign_out"
+        android:checkableBehavior="none">
+
+        <item
+            android:id="@+id/nav_sign_out"
+            android:icon="@drawable/sign_out_icon"
+            android:title="@string/user_nav_sign_out" />
+    </group>
 </menu>

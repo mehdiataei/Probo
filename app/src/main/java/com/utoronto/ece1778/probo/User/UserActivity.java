@@ -1,5 +1,6 @@
 package com.utoronto.ece1778.probo.User;
 
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -19,6 +20,7 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.google.firebase.auth.FirebaseAuth;
 import com.utoronto.ece1778.probo.News.NewsFragment;
 import com.utoronto.ece1778.probo.R;
 import com.utoronto.ece1778.probo.Utils.ImageBitmap;
@@ -92,6 +94,9 @@ public class UserActivity extends AppCompatActivity
                 routeToAccount();
                 break;
             case R.id.nav_preferences:
+                break;
+            case R.id.nav_sign_out:
+                signOut();
                 break;
         }
 
@@ -238,6 +243,13 @@ public class UserActivity extends AppCompatActivity
             titleText.setText(user.getTitle());
             titleText.setVisibility(View.VISIBLE);
         }
+    }
+
+    private void signOut() {
+        Intent intent = new Intent(this, SignInActivity.class);
+        FirebaseAuth.getInstance().signOut();
+        startActivity(intent);
+        finish();
     }
 
     private void enableUserNavigation() {

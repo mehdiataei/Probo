@@ -38,6 +38,7 @@
     <string name="user_nav_settings">Settings</string>
     <string name="user_nav_account">Account</string>
     <string name="user_nav_preferences">Preferences</string>
+    <string name="user_nav_sign_out">Sign out</string>
 
     <string name="account_profile_image_description">Profile image</string>
     <string name="account_email_hint">Email</string>
