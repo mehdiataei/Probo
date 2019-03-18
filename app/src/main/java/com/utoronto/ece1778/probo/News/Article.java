@@ -1,5 +1,6 @@
 package com.utoronto.ece1778.probo.News;
 
+import android.content.Context;
 import android.graphics.Color;
 import android.os.AsyncTask;
 import android.provider.Telephony;
@@ -34,6 +35,7 @@ import com.utoronto.ece1778.probo.Utils.Tuple;
 import com.utoronto.ece1778.probo.Models.Sentence;
 
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -161,12 +163,33 @@ public class Article {
         ) : new SpannableString(formattedBody);
     }
 
+    public String getRawBody() {
+
+        return body;
+    }
+
     public int getBodyLength() {
         return this.body.length();
     }
 
     public Date getDatetime() {
         return this.datetime;
+    }
+
+    public ArrayList<Sentence> getSentences() {
+        return sentences;
+    }
+
+    public void setSentences(ArrayList<Sentence> sentences) {
+        this.sentences = sentences;
+    }
+
+    public String getAnalysed() {
+        return analysed;
+    }
+
+    public void setAnalysed(String analysed) {
+        this.analysed = analysed;
     }
 
     public boolean annotationExists(String type, int startIndex, int endIndex) {
@@ -563,94 +586,6 @@ public class Article {
         float alpha_output = interpolate(alpha_a, alpha_b, proportion);
 
         return Color.HSVToColor((int) alpha_output, hsv_output);
-    }
-
-    private class SentencesAttributes extends AsyncTask<AsyncTaskParams, Void, Void>  {
-        @Override
-        protected Void doInBackground(AsyncTaskParams... params) {
-            String body = params[0].body;
-            String articleId = params[0].articleId;
-
-            ExtractSentences extractSentences = new ExtractSentences(body);
-
-            List<String> sentencesList = extractSentences.getSentences();
-
-
-            IamOptions options = new IamOptions.Builder()
-                    .apiKey("48kgp2fHd9HVz6fe3f0TsQjTWysYNx9iKc2eyh2aUoQ-")
-                    .build();
-
-            NaturalLanguageUnderstanding naturalLanguageUnderstanding = new NaturalLanguageUnderstanding("2018-11-16", options);
-            naturalLanguageUnderstanding.setEndPoint("https://gateway.watsonplatform.net/natural-language-understanding/api");
-
-            SentimentOptions sentiment = new SentimentOptions.Builder()
-                    .build();
-
-            Features features = new Features.Builder()
-                    .sentiment(sentiment)
-                    .build();
-
-            for (String sentence : sentencesList) {
-
-                String result = "";
-
-                int startIndex = body.indexOf(sentence);
-                final int endIndex = startIndex + body.length();
-
-
-                AnalyzeOptions parameters = new AnalyzeOptions.Builder().text(sentence)
-                        .features(features)
-                        .build();
-
-                try {
-
-                    AnalysisResults response = naturalLanguageUnderstanding
-                            .analyze(parameters)
-                            .execute();
-
-                     result = response.getSentiment().getDocument().getScore().toString();
-                     String label = response.getSentiment().getDocument().getLabel();
-
-
-                     Sentence s = new Sentence(sentence, articleId, result, label, String.valueOf(startIndex), String.valueOf(endIndex));
-
-                    sentences.add(s);
-
-
-                } catch (RuntimeException e) {
-
-                }
-
-            }
-
-
-            FirebaseFirestore db = FirebaseFirestore.getInstance();
-
-            Map<String, Object> docData = new HashMap<>();
-            docData.put("analysed", "true");
-
-            db.collection("news").document(id).collection("sentences").add(sentences);
-
-            db.collection("news").document(id).set(docData);
-
-
-            return null;
-        }
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-        }
-    }
-
-    private static class AsyncTaskParams {
-        String body;
-        String articleId;
-
-        public AsyncTaskParams(String body, String articleId) {
-            this.body = body;
-            this.articleId = articleId;
-        }
     }
 
     public interface ArticleCallback {

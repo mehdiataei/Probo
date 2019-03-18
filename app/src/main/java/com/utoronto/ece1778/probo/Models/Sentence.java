@@ -7,7 +7,6 @@ public class Sentence implements Parcelable {
 
     private String text;
     private String articleId;
-    private String sentimentNumber;
     private String sentiment;
     private String startIndex;
     private String endIndex;
@@ -17,10 +16,9 @@ public class Sentence implements Parcelable {
     public Sentence() {
     }
 
-    public Sentence(String text, String articleId, String sentimentNumber, String sentiment,  String startIndex, String endIndex) {
+    public Sentence(String text, String articleId, String sentiment,  String startIndex, String endIndex) {
         this.text = text;
         this.articleId = articleId;
-        this.sentimentNumber = sentimentNumber;
         this.sentiment = sentiment;
         this.startIndex = startIndex;
         this.endIndex = endIndex;
@@ -29,7 +27,6 @@ public class Sentence implements Parcelable {
     protected Sentence(Parcel in) {
         text = in.readString();
         articleId = in.readString();
-        sentimentNumber = in.readString();
         sentiment = in.readString();
         startIndex = in.readString();
         endIndex = in.readString();
@@ -58,10 +55,54 @@ public class Sentence implements Parcelable {
 
         dest.writeString(text);
         dest.writeString(articleId);
-        dest.writeString(sentimentNumber);
         dest.writeString(sentiment);
         dest.writeString(startIndex);
         dest.writeString(endIndex);
 
+    }
+
+
+    public String getText() {
+        return text;
+    }
+
+    public void setText(String text) {
+        this.text = text;
+    }
+
+    public String getArticleId() {
+        return articleId;
+    }
+
+    public void setArticleId(String articleId) {
+        this.articleId = articleId;
+    }
+
+    public String getSentiment() {
+        return sentiment;
+    }
+
+    public void setSentiment(String sentiment) {
+        this.sentiment = sentiment;
+    }
+
+    public String getStartIndex() {
+        return startIndex;
+    }
+
+    public void setStartIndex(String startIndex) {
+        this.startIndex = startIndex;
+    }
+
+    public String getEndIndex() {
+        return endIndex;
+    }
+
+    public void setEndIndex(String endIndex) {
+        this.endIndex = endIndex;
+    }
+
+    public static Creator<Sentence> getCREATOR() {
+        return CREATOR;
     }
 }
