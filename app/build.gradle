@@ -41,7 +41,6 @@ dependencies {
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
     implementation 'com.ibm.watson.developer_cloud:java-sdk:6.14.0'
 
-
 //    // Dependencies for Google API Client Libraries
 //    implementation("com.google.http-client:google-http-client:$googleApiClientVersion") {
 //        exclude module: 'httpclient'

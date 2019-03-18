@@ -49,6 +49,13 @@ public class User {
             SIGN_UP_PROGRESS_UPLOADING_PROFILE_IMAGE = 1,
             SIGN_UP_PROGRESS_SAVING = 2;
 
+    public static final int
+            UPDATE_ERROR_EMPTY_NAME = 0;
+
+    public static final int
+            UPDATE_PROGRESS_UPLOADING_PROFILE_IMAGE = 0,
+            UPDATE_PROGRESS_SAVING = 1;
+
     private String uid, profileImagePath, name, title;
     private ArrayList<Annotation> annotations;
     private boolean loaded;
@@ -87,6 +94,18 @@ public class User {
 
     public ArrayList<Annotation> getAnnotations() {
         return this.annotations;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public void setProfileImagePath(String profileImagePath) {
+        this.profileImagePath = profileImagePath;
     }
 
     public boolean hasLoaded() {
@@ -378,6 +397,62 @@ public class User {
                 });
     }
 
+    public void update(final UserUpdateCallback cb, Bitmap profileImage, final String name, final String title, final boolean profileImageChanged) {
+        if (name == null || name.length() == 0) {
+            cb.onUpdateError(User.UPDATE_ERROR_EMPTY_NAME);
+            return;
+        }
+
+        final User currentUser = this;
+
+        UserUploadProfileImageCallback uploadCb = new UserUploadProfileImageCallback() {
+            @Override
+            public void onUploaded(final String path) {
+                Map<String, Object> updatedUser = new HashMap<>();
+                FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+                final String newProfileImagePath = profileImageChanged ? path : profileImagePath;
+
+                updatedUser.put("profileImagePath", newProfileImagePath);
+                updatedUser.put("name", name);
+                updatedUser.put("title", title);
+
+                cb.onProgress(User.UPDATE_PROGRESS_SAVING);
+
+                db.collection("users")
+                        .document(uid)
+                        .update(updatedUser)
+                        .addOnSuccessListener(new OnSuccessListener<Void>() {
+                            @Override
+                            public void onSuccess(Void aVoid) {
+                                currentUser.setProfileImagePath(newProfileImagePath);
+                                currentUser.setName(name);
+                                currentUser.setTitle(title);
+
+                                cb.onUpdate(currentUser);
+                            }
+                        })
+                        .addOnFailureListener(new OnFailureListener() {
+                            @Override
+                            public void onFailure(@NonNull Exception e) {
+                                cb.onError(e);
+                            }
+                        });
+            }
+
+            @Override
+            public void onError(Exception error) {
+                cb.onError(error);
+            }
+        };
+
+        if (profileImageChanged && profileImage != null) {
+            cb.onProgress(User.UPDATE_PROGRESS_UPLOADING_PROFILE_IMAGE);
+        }
+
+        User.uploadProfileImage(uploadCb, this.uid, profileImage);
+    }
+
     public static void uploadProfileImage(final UserUploadProfileImageCallback cb, String userUid, Bitmap image) {
         if (image == null) {
             cb.onUploaded(null);
@@ -429,6 +504,13 @@ public class User {
     public interface UserSignUpCallback {
         void onSignedUp(User user);
         void onSignUpError(int errorCode);
+        void onProgress(int progressCode);
+        void onError(Exception error);
+    }
+
+    public interface UserUpdateCallback {
+        void onUpdate(User user);
+        void onUpdateError(int errorCode);
         void onProgress(int progressCode);
         void onError(Exception error);
     }

@@ -39,6 +39,17 @@
     <string name="user_nav_account">Account</string>
     <string name="user_nav_preferences">Preferences</string>
 
+    <string name="account_profile_image_description">Profile image</string>
+    <string name="account_email_hint">Email</string>
+    <string name="account_name_hint">Name</string>
+    <string name="account_title_hint">Title</string>
+    <string name="account_submit_button">SAVE</string>
+    <string name="account_error_empty_name">Please enter your name.</string>
+    <string name="account_loading">Loading your account.</string>
+    <string name="account_progress_uploading_profile_image">Uploading your profile image.</string>
+    <string name="account_progress_saving">Saving.</string>
+    <string name="account_error_general">An error has occurred. Please try again later.</string>
+
     <string name="dbname_news">news</string>
     <string name="news_fragment">News</string>
 

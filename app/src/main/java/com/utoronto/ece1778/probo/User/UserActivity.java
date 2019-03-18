@@ -27,16 +27,19 @@ import com.utoronto.ece1778.probo.Utils.ImageLoader;
 public class UserActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener,
                     NewsFragment.NewsFragmentInteractionListener,
-                    ProfileFragment.ProfileFragmentInteractionListener {
+                    ProfileFragment.ProfileFragmentInteractionListener,
+                    AccountFragment.AccountFragmentInteractionListener {
 
     public static final int
             ROUTE_NEWS = 0,
-            ROUTE_PROFILE = 1;
+            ROUTE_PROFILE = 1,
+            ROUTE_ACCOUNT = 2;
 
     private User user;
 
     private int currentRoute;
     private Fragment currentFragment;
+    private String currentProfileUserId;
 
     private boolean userNavigationEnabled;
 
@@ -86,6 +89,7 @@ public class UserActivity extends AppCompatActivity
                 routeToProfile(user.getUid());
                 break;
             case R.id.nav_account:
+                routeToAccount();
                 break;
             case R.id.nav_preferences:
                 break;
@@ -114,7 +118,9 @@ public class UserActivity extends AppCompatActivity
     }
 
     private void routeToProfile(String userId) {
-        if (userNavigationEnabled && currentRoute == UserActivity.ROUTE_PROFILE) {
+        if (userNavigationEnabled && currentRoute == UserActivity.ROUTE_PROFILE &&
+            userId.equals(currentProfileUserId)) {
+
             return;
         }
 
@@ -122,6 +128,20 @@ public class UserActivity extends AppCompatActivity
 
         currentRoute = UserActivity.ROUTE_PROFILE;
         currentFragment = ProfileFragment.newInstance(userId);
+        currentProfileUserId = userId;
+
+        displayFragment(currentFragment);
+    }
+
+    private void routeToAccount() {
+        if (userNavigationEnabled && currentRoute == UserActivity.ROUTE_ACCOUNT) {
+            return;
+        }
+
+        removeCurrentFragment();
+
+        currentRoute = UserActivity.ROUTE_ACCOUNT;
+        currentFragment = AccountFragment.newInstance(user.getUid());
 
         displayFragment(currentFragment);
     }
@@ -165,44 +185,7 @@ public class UserActivity extends AppCompatActivity
         User.UserCallback cb = new User.UserCallback() {
             @Override
             public void onLoad() {
-                final ImageView profileImage = findViewById(R.id.nav_header_profile_image);
-                TextView nameText = findViewById(R.id.nav_header_name);
-                TextView titleText = findViewById(R.id.nav_header_title);
-
-                if (user.getProfileImagePath() != null) {
-                    final ProgressBar progressBar = findViewById(R.id.nav_header_profile_image_progress);
-
-                    ImageLoader.ImageLoaderCallback imageCb = new ImageLoader.ImageLoaderCallback() {
-                        @Override
-                        public void onSuccess(Bitmap image) {
-                            ImageBitmap imageBitmap = new ImageBitmap(image);
-                            RoundedBitmapDrawable roundedImage = imageBitmap.getCroppedRoundedBitmapDrawable(getResources());
-
-                            profileImage.setImageDrawable(roundedImage);
-                        }
-
-                        @Override
-                        public void onFailure(Exception e) {
-                        }
-
-                        @Override
-                        public void onComplete() {
-                            profileImage.setVisibility(View.VISIBLE);
-                            progressBar.setVisibility(View.GONE);
-                        }
-                    };
-
-                    ImageLoader imageLoader = new ImageLoader(user.getProfileImagePath(), getApplicationContext());
-                    imageLoader.load(imageCb);
-                }
-
-                nameText.setText(user.getName());
-
-                if (user.getTitle() != null) {
-                    titleText.setText(user.getTitle());
-                    titleText.setVisibility(View.VISIBLE);
-                }
-
+                populateUser();
                 enableUserNavigation();
             }
 
@@ -217,12 +200,58 @@ public class UserActivity extends AppCompatActivity
         user.load(cb);
     }
 
+    private void populateUser() {
+        final ImageView profileImage = findViewById(R.id.nav_header_profile_image);
+        TextView nameText = findViewById(R.id.nav_header_name);
+        TextView titleText = findViewById(R.id.nav_header_title);
+
+        if (user.getProfileImagePath() != null) {
+            final ProgressBar progressBar = findViewById(R.id.nav_header_profile_image_progress);
+
+            ImageLoader.ImageLoaderCallback imageCb = new ImageLoader.ImageLoaderCallback() {
+                @Override
+                public void onSuccess(Bitmap image) {
+                    ImageBitmap imageBitmap = new ImageBitmap(image);
+                    RoundedBitmapDrawable roundedImage = imageBitmap.getCroppedRoundedBitmapDrawable(getResources());
+
+                    profileImage.setImageDrawable(roundedImage);
+                }
+
+                @Override
+                public void onFailure(Exception e) {
+                }
+
+                @Override
+                public void onComplete() {
+                    profileImage.setVisibility(View.VISIBLE);
+                    progressBar.setVisibility(View.GONE);
+                }
+            };
+
+            ImageLoader imageLoader = new ImageLoader(user.getProfileImagePath(), getApplicationContext());
+            imageLoader.load(imageCb);
+        }
+
+        nameText.setText(user.getName());
+
+        if (user.getTitle() != null) {
+            titleText.setText(user.getTitle());
+            titleText.setVisibility(View.VISIBLE);
+        }
+    }
+
     private void enableUserNavigation() {
         userNavigationEnabled = true;
     }
 
     private void disableUserNavigation() {
         userNavigationEnabled = false;
+    }
+
+    @Override
+    public void onAccountUpdated(User user) {
+        this.user = user;
+        populateUser();
     }
 
     @Override
