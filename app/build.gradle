@@ -18,6 +18,12 @@ android {
     }
 }
 
+ext {
+    supportLibraryVersion = '25.3.1'
+    googleApiClientVersion = '1.22.0'
+}
+
+
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation 'com.android.support:appcompat-v7:28.0.0'
@@ -33,6 +39,24 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
+    implementation 'com.ibm.watson.developer_cloud:java-sdk:6.14.0'
+
+
+//    // Dependencies for Google API Client Libraries
+//    implementation("com.google.http-client:google-http-client:$googleApiClientVersion") {
+//        exclude module: 'httpclient'
+//        exclude module: 'jsr305'
+//    }
+//    implementation("com.google.api-client:google-api-client-android:$googleApiClientVersion"){
+//        exclude module: 'httpclient'
+//        exclude module: 'jsr305'
+//    }
+//    implementation("com.google.apis:google-api-services-language:v1-rev386-$googleApiClientVersion") {
+//        exclude module: 'httpclient'
+//        exclude module: 'jsr305'
+//    }
+
+    implementation 'com.ibm.watson.developer_cloud:java-sdk:6.11.0'
 
     //Glide
     implementation 'com.github.bumptech.glide:okhttp3-integration:4.4.0'
@@ -44,3 +68,14 @@ dependencies {
 }
 
 apply plugin: 'com.google.gms.google-services'
+
+
+
+task copySecretKey(type: Copy) {
+    def File secretKey = file "$System.env.GOOGLE_APPLICATION_CREDENTIALS"
+    from secretKey.getParent()
+    include secretKey.getName()
+    into 'src/main/res/raw'
+    rename secretKey.getName(), "credential.json"
+}
+preBuild.dependsOn(copySecretKey)

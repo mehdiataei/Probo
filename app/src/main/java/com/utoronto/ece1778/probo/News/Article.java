@@ -1,24 +1,50 @@
 package com.utoronto.ece1778.probo.News;
 
 import android.graphics.Color;
+import android.os.AsyncTask;
+import android.provider.Telephony;
 import android.support.annotation.NonNull;
 import android.support.v4.graphics.ColorUtils;
 import android.text.SpannableString;
 import android.text.style.BackgroundColorSpan;
 import android.util.Log;
 
+import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+
+
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.ibm.watson.developer_cloud.natural_language_understanding.v1.NaturalLanguageUnderstanding;
+import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.AnalysisResults;
+import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.AnalyzeOptions;
+import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.CategoriesOptions;
+import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.Features;
+import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.SentimentOptions;
+import com.ibm.watson.developer_cloud.service.security.IamOptions;
+import com.utoronto.ece1778.probo.Models.NewsItem;
+import com.utoronto.ece1778.probo.R;
 import com.utoronto.ece1778.probo.User.User;
+import com.utoronto.ece1778.probo.Utils.ExtractSentences;
 import com.utoronto.ece1778.probo.Utils.Tuple;
+import com.utoronto.ece1778.probo.Models.Sentence;
 
+import java.io.IOException;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 
 public class Article {
     public static final String TAG = "ARTICLE";
@@ -38,11 +64,14 @@ public class Article {
 
     private ArrayList<Annotation> headlineAnnotations;
     private ArrayList<Annotation> bodyAnnotations;
+    private ArrayList<Sentence> sentences;
 
     private HashMap<String, ArrayList<Annotation>> annotationsMap;
     private HashMap<String, Tuple<Integer, Integer>> annotationStats;
 
     private boolean loaded;
+    private String analysed;
+    private Thread mThread;
 
     public static final int
             ARTICLE_ERROR_NOT_FOUND = 0;
@@ -124,7 +153,7 @@ public class Article {
             formattedBody = this.body.substring(startIndex, endIndex);
             indexOffset = startIndex;
         }
-        
+
         return showHeatmap ? this.getAnnotatedText(
                 formattedBody,
                 this.bodyAnnotations,
@@ -160,12 +189,12 @@ public class Article {
 
         String annotationKey = type + ":" + startIndex + ":" + endIndex;
         ArrayList<Annotation> annotations = this.annotationsMap.containsKey(annotationKey) ?
-                                            this.annotationsMap.get(annotationKey) :
-                                            new ArrayList<Annotation>();
+                this.annotationsMap.get(annotationKey) :
+                new ArrayList<Annotation>();
 
         int numAnnotations = annotations.size();
 
-        for (int i=0; i<numAnnotations; i++) {
+        for (int i = 0; i < numAnnotations; i++) {
             if (annotations.get(i).getUser().getUid().equals(user.getUid())) {
                 return Article.ARTICLE_ANNOTATION_ERROR_ALREADY_SUBMITTED;
             }
@@ -251,8 +280,8 @@ public class Article {
                 annotation.getEndIndex();
 
         Tuple<Integer, Integer> counts = this.annotationStats.containsKey(key) ?
-                                            this.annotationStats.get(key) :
-                                            new Tuple<>(0, 0);
+                this.annotationStats.get(key) :
+                new Tuple<>(0, 0);
 
         int numTrue = annotation.getValue() == 1 ? counts.getX() + 1 : counts.getX();
         int numFalse = annotation.getValue() == 0 ? counts.getY() + 1 : counts.getY();
@@ -272,7 +301,7 @@ public class Article {
             int formattedEndIndex = annotation.getEndIndex() - indexOffset;
 
             if (formattedStartIndex < 0 || formattedEndIndex < 0 ||
-                formattedStartIndex > originalLength || formattedEndIndex > originalLength) {
+                    formattedStartIndex > originalLength || formattedEndIndex > originalLength) {
                 continue;
             }
 
@@ -280,8 +309,8 @@ public class Article {
                     annotation.getStartIndex() + ":" + annotation.getEndIndex();
 
             Tuple<Integer, Integer> counts = this.annotationStats.containsKey(annotationKey) ?
-                                                this.annotationStats.get(annotationKey) :
-                                                new Tuple<>(0, 0);
+                    this.annotationStats.get(annotationKey) :
+                    new Tuple<>(0, 0);
 
             int total = counts.getX() + counts.getY();
 
@@ -333,13 +362,26 @@ public class Article {
                                 headline = documentSnapshot.getString("heading");
                                 description = documentSnapshot.getString("description");
                                 body = documentSnapshot.getString("body");
+                                analysed = documentSnapshot.getString("analysed");
+
 
                                 if (body != null) {
                                     body = body.replace("\\n", System.getProperty("line.separator"));
+
                                 }
 
+
+//                                if (analysed.equals("false") && body !=null) {
+//
+//                                    AsyncTaskParams params = new AsyncTaskParams(body, id);
+//
+//                                    SentencesAttributes task = new SentencesAttributes();
+//                                    task.execute(params);
+//
+//                                }
+
                                 try {
-                                    datetime = new SimpleDateFormat("yyyyMMdd_HHmmss").parse(documentSnapshot.getString("date_created"));
+                                    datetime = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.CANADA).parse(documentSnapshot.getString("date_created"));
                                 } catch (Exception e) {
                                     cb.onError(e);
                                     return;
@@ -492,7 +534,6 @@ public class Article {
                 });
     }
 
-
     private float interpolate(float a, float b, float proportion) {
         return (a + ((b - a) * proportion));
     }
@@ -522,6 +563,94 @@ public class Article {
         float alpha_output = interpolate(alpha_a, alpha_b, proportion);
 
         return Color.HSVToColor((int) alpha_output, hsv_output);
+    }
+
+    private class SentencesAttributes extends AsyncTask<AsyncTaskParams, Void, Void>  {
+        @Override
+        protected Void doInBackground(AsyncTaskParams... params) {
+            String body = params[0].body;
+            String articleId = params[0].articleId;
+
+            ExtractSentences extractSentences = new ExtractSentences(body);
+
+            List<String> sentencesList = extractSentences.getSentences();
+
+
+            IamOptions options = new IamOptions.Builder()
+                    .apiKey("48kgp2fHd9HVz6fe3f0TsQjTWysYNx9iKc2eyh2aUoQ-")
+                    .build();
+
+            NaturalLanguageUnderstanding naturalLanguageUnderstanding = new NaturalLanguageUnderstanding("2018-11-16", options);
+            naturalLanguageUnderstanding.setEndPoint("https://gateway.watsonplatform.net/natural-language-understanding/api");
+
+            SentimentOptions sentiment = new SentimentOptions.Builder()
+                    .build();
+
+            Features features = new Features.Builder()
+                    .sentiment(sentiment)
+                    .build();
+
+            for (String sentence : sentencesList) {
+
+                String result = "";
+
+                int startIndex = body.indexOf(sentence);
+                final int endIndex = startIndex + body.length();
+
+
+                AnalyzeOptions parameters = new AnalyzeOptions.Builder().text(sentence)
+                        .features(features)
+                        .build();
+
+                try {
+
+                    AnalysisResults response = naturalLanguageUnderstanding
+                            .analyze(parameters)
+                            .execute();
+
+                     result = response.getSentiment().getDocument().getScore().toString();
+                     String label = response.getSentiment().getDocument().getLabel();
+
+
+                     Sentence s = new Sentence(sentence, articleId, result, label, String.valueOf(startIndex), String.valueOf(endIndex));
+
+                    sentences.add(s);
+
+
+                } catch (RuntimeException e) {
+
+                }
+
+            }
+
+
+            FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+            Map<String, Object> docData = new HashMap<>();
+            docData.put("analysed", "true");
+
+            db.collection("news").document(id).collection("sentences").add(sentences);
+
+            db.collection("news").document(id).set(docData);
+
+
+            return null;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+        }
+    }
+
+    private static class AsyncTaskParams {
+        String body;
+        String articleId;
+
+        public AsyncTaskParams(String body, String articleId) {
+            this.body = body;
+            this.articleId = articleId;
+        }
     }
 
     public interface ArticleCallback {
