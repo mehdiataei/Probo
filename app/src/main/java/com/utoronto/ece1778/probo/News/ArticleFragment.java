@@ -1,14 +1,12 @@
 package com.utoronto.ece1778.probo.News;
 
 import android.content.Context;
-import android.content.Intent;
-import android.net.Uri;
+
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentStatePagerAdapter;
-import android.support.v4.app.FragmentTransaction;
+
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -31,18 +29,41 @@ import android.widget.TextView;
 
 import com.bumptech.glide.Priority;
 import com.bumptech.glide.request.RequestOptions;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.ibm.watson.developer_cloud.http.ServiceCallback;
+import com.ibm.watson.developer_cloud.natural_language_understanding.v1.NaturalLanguageUnderstanding;
+import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.AnalysisResults;
+import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.AnalyzeOptions;
+import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.Features;
+import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.SentimentOptions;
+import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.TargetedSentimentResults;
+import com.ibm.watson.developer_cloud.service.security.IamOptions;
+import com.utoronto.ece1778.probo.Models.Sentence;
 import com.utoronto.ece1778.probo.R;
 import com.utoronto.ece1778.probo.User.User;
 import com.utoronto.ece1778.probo.Utils.ClickableTextView;
+import com.utoronto.ece1778.probo.Utils.ExtractSentences;
 import com.utoronto.ece1778.probo.Utils.GlideImageLoader;
 import com.utoronto.ece1778.probo.Utils.Helper;
+import com.utoronto.ece1778.probo.Utils.SentimentParams;
 import com.utoronto.ece1778.probo.Utils.SquareImageView;
 import com.utoronto.ece1778.probo.Utils.WrapHeightViewPager;
 
 import java.lang.ref.WeakReference;
 import java.text.DateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.ListIterator;
 import java.util.Locale;
+import java.util.Map;
+
+import static com.utoronto.ece1778.probo.News.Article.TAG;
 
 public class ArticleFragment extends Fragment
         implements AnnotationsFragment.AnnotationsFragmentInteractionListener {
@@ -67,7 +88,7 @@ public class ArticleFragment extends Fragment
     private SquareImageView image;
     private TextView author;
     private TextView datetime;
-    
+
     private User user;
 
     private ArticleFragmentInteractionListener interactionListener;
@@ -120,6 +141,7 @@ public class ArticleFragment extends Fragment
             @Override
             public void onLoad() {
                 populateArticle();
+
 
                 if (heatmapSwitch != null) {
                     heatmapSwitch.setEnabled(true);
@@ -338,7 +360,7 @@ public class ArticleFragment extends Fragment
         }
 
         Helper.vibrate(getActivity().getApplicationContext(), 100);
-        showAnnotationInput(quote, Annotation.TYPE_BODY, startIndex, endIndex,1);
+        showAnnotationInput(quote, Annotation.TYPE_BODY, startIndex, endIndex, 1);
     }
 
     @Override
@@ -355,318 +377,469 @@ public class ArticleFragment extends Fragment
         }
     }
 
-    private static class UpdateText extends AsyncTask<ArticleFragment.UpdateTextParams, Void, ArticleFragment.UpdateTextResults> {
+    private class SentimentAnalysis extends AsyncTask<SentimentParams, Void, ArrayList<Sentence>> {
+
+
         private WeakReference<ArticleFragment> activityReference;
 
-        UpdateText(ArticleFragment context) {
-            activityReference = new WeakReference<>(context);
+        public SentimentAnalysis(ArticleFragment context) {
+
+            this.activityReference = new WeakReference<>(context);
         }
 
-        protected ArticleFragment.UpdateTextResults doInBackground(ArticleFragment.UpdateTextParams... params) {
-            Article currentArticle = params[0].getCurrentArticle();
-            boolean displayHeatmap = params[0].getDisplayHeatmap();
+        @Override
+        protected ArrayList<Sentence> doInBackground(SentimentParams... sentimentParams) {
 
-            return new ArticleFragment.UpdateTextResults(
-                    currentArticle.getHeadline(displayHeatmap),
-                    currentArticle.getBody(displayHeatmap, -1, -1)
-            );
+
+            final String body = sentimentParams[0].getBody();
+            final String articleId = sentimentParams[0].getArticleId();
+
+
+            final ArrayList<Sentence> sTemp = new ArrayList<>();
+
+            ExtractSentences extractSentences = new ExtractSentences(body);
+
+            List<String> sentencesList = extractSentences.getSentences();
+
+            sentencesList.removeAll(Collections.singleton(null));
+            sentencesList.removeAll(Collections.singleton(""));
+
+            IamOptions options = new IamOptions.Builder()
+                    .apiKey("48kgp2fHd9HVz6fe3f0TsQjTWysYNx9iKc2eyh2aUoQ-")
+                    .build();
+
+            NaturalLanguageUnderstanding naturalLanguageUnderstanding = new NaturalLanguageUnderstanding("2018-11-16", options);
+            naturalLanguageUnderstanding.setEndPoint("https://gateway.watsonplatform.net/natural-language-understanding/api");
+
+            SentimentOptions sentiment = new SentimentOptions.Builder().targets(sentencesList)
+                    .build();
+
+            Features features = new Features.Builder()
+                    .sentiment(sentiment)
+                    .build();
+
+
+            AnalyzeOptions parameters = new AnalyzeOptions.Builder().text(body)
+                    .features(features)
+                    .build();
+
+            naturalLanguageUnderstanding
+                    .analyze(parameters).enqueue(new ServiceCallback<AnalysisResults>() {
+                @Override
+                public void onResponse(AnalysisResults response) {
+
+
+                    ListIterator<TargetedSentimentResults> iterator = response.getSentiment().getTargets().listIterator();
+
+                    while (iterator.hasNext()) {
+
+                        Log.d(TAG, "onResponse: Receiving interate response.");
+
+                        TargetedSentimentResults result = iterator.next();
+                        String sentence = result.getText();
+                        String score = result.getScore().toString();
+                        final int startIndex = body.indexOf(sentence);
+                        final int endIndex = startIndex + sentence.length();
+
+
+                        Sentence s = new Sentence(sentence, articleId, score, String.valueOf(startIndex), String.valueOf(endIndex));
+                        sTemp.add(s);
+
+                    }
+                }
+
+
+                @Override
+                public void onFailure(Exception e) {
+
+                }
+
+
+            });
+
+
+            return sTemp;
         }
 
-        protected void onPreExecute() {
-            ArticleFragment activity = activityReference.get();
-            activity.annotationsContainer.setVisibility(View.GONE);
-        }
+        @Override
+        protected void onPostExecute(ArrayList<Sentence> sentences) {
+            super.onPostExecute(sentences);
 
-        protected void onPostExecute(ArticleFragment.UpdateTextResults results) {
+            Log.d("Probo_app", "onTaskCompleted: Sentiment Analysis completed.");
+
+
             final ArticleFragment activity = activityReference.get();
+            activity.article.setSentences(sentences);
 
-            ClickableTextView.ClickableTextViewInterface cb = new ClickableTextView.ClickableTextViewInterface() {
-                @Override
-                public void onTextViewClick(String quote, int startIndex, int endIndex) {
-                    activity.handleTextViewClick(quote, startIndex, endIndex);
-                }
+            FirebaseFirestore db = FirebaseFirestore.getInstance();
 
-                @Override
-                public void onTextViewLongClick(String quote, int startIndex, int endIndex) {
-                    activity.handleTextViewLongClick(quote, startIndex, endIndex);
-                }
-            };
+            Map<String, Object> docData = new HashMap<>();
+            docData.put("analysed", "true");
 
-            activity.headline.setText(results.getHeadlineResult());
-            activity.body.setTextWithClickableSentences(results.getBodyResult(), cb, 0);
 
-            activity.bodyOverflow.setVisibility(View.GONE);
-            activity.bodyOverflow.setTextWithClickableSentences(new SpannableString(""), cb, 0);
+            Log.d(TAG, "onPostExecute: Sentence size: " + sentences.size());
 
-            activity.currentAnnotationStartIndex = -1;
-            activity.currentAnnotationEndIndex = -1;
+
+            for( Sentence s : sentences) {
+
+                Log.d(TAG, "onPostExecute: Adding sentences...");
+
+                db.collection("news").document(article.getId()).collection("sentences").add(s).addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
+                    @Override
+                    public void onSuccess(DocumentReference documentReference) {
+                        Log.d("Probo_app", "onSuccess: Added sentence to the database.");
+                    }
+                }).addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Log.d("Probo_app", "onFailure: Failed adding sentence to the database.");
+                    }
+                });
+
+            }
+
+            db.collection("news").document(article.getId()).update(docData);
+
+
         }
+
+
     }
 
-    private static class UpdateTextParams {
-        private Article currentArticle;
-        private boolean displayHeatmap;
+    private void startSentimentAnalysis() {
 
-        UpdateTextParams(Article currentArticle, boolean displayHeatmap) {
-            this.currentArticle = currentArticle;
-            this.displayHeatmap = displayHeatmap;
-        }
+        SentimentParams params = new SentimentParams(article.getRawBody(), article.getId());
 
-        public Article getCurrentArticle() {
-            return this.currentArticle;
-        }
+        SentimentAnalysis task = new SentimentAnalysis(this);
+        task.execute(params);
 
-        public boolean getDisplayHeatmap() {
-            return this.displayHeatmap;
-        }
     }
 
-    private static class UpdateTextResults {
-        private SpannableString headlineResult;
-        private SpannableString bodyResult;
 
-        UpdateTextResults(SpannableString headlineResult, SpannableString bodyResult) {
-            this.headlineResult = headlineResult;
-            this.bodyResult = bodyResult;
-        }
 
-        public SpannableString getHeadlineResult() {
-            return this.headlineResult;
-        }
+private static class UpdateText extends AsyncTask<ArticleFragment.UpdateTextParams, Void, ArticleFragment.UpdateTextResults> {
+    private WeakReference<ArticleFragment> activityReference;
 
-        public SpannableString getBodyResult() {
-            return this.bodyResult;
-        }
+    UpdateText(ArticleFragment context) {
+        activityReference = new WeakReference<>(context);
     }
 
-    private static class SplitText extends AsyncTask<ArticleFragment.SplitTextParams, Void, ArticleFragment.SplitTextResults> {
-        private WeakReference<ArticleFragment> activityReference;
+    protected ArticleFragment.UpdateTextResults doInBackground(ArticleFragment.UpdateTextParams... params) {
+        Article currentArticle = params[0].getCurrentArticle();
+        boolean displayHeatmap = params[0].getDisplayHeatmap();
 
-        SplitText(ArticleFragment context) {
-            activityReference = new WeakReference<>(context);
+        return new ArticleFragment.UpdateTextResults(
+                currentArticle.getHeadline(displayHeatmap),
+                currentArticle.getBody(displayHeatmap, -1, -1)
+        );
+    }
+
+    protected void onPreExecute() {
+        ArticleFragment activity = activityReference.get();
+        activity.annotationsContainer.setVisibility(View.GONE);
+    }
+
+    protected void onPostExecute(ArticleFragment.UpdateTextResults results) {
+        final ArticleFragment activity = activityReference.get();
+
+
+        if (activity.article.getAnalysed().equals("false")) {
+            activity.startSentimentAnalysis();
+
         }
 
-        protected ArticleFragment.SplitTextResults doInBackground(ArticleFragment.SplitTextParams... params) {
-            Article currentArticle = params[0].getCurrentArticle();
-            boolean displayHeatmap = params[0].getDisplayHeatmap();
-            int index = params[0].getIndex();
 
-            return new ArticleFragment.SplitTextResults(
-                    index,
-                    currentArticle.getBody(displayHeatmap, 0, index),
-                    currentArticle.getBody(displayHeatmap, index, currentArticle.getBodyLength())
+        ClickableTextView.ClickableTextViewInterface cb = new ClickableTextView.ClickableTextViewInterface() {
+            @Override
+            public void onTextViewClick(String quote, int startIndex, int endIndex) {
+                activity.handleTextViewClick(quote, startIndex, endIndex);
+            }
+
+            @Override
+            public void onTextViewLongClick(String quote, int startIndex, int endIndex) {
+                activity.handleTextViewLongClick(quote, startIndex, endIndex);
+            }
+        };
+
+        activity.headline.setText(results.getHeadlineResult());
+        activity.body.setTextWithClickableSentences(results.getBodyResult(), cb, 0);
+
+        activity.bodyOverflow.setVisibility(View.GONE);
+        activity.bodyOverflow.setTextWithClickableSentences(new SpannableString(""), cb, 0);
+
+        activity.currentAnnotationStartIndex = -1;
+        activity.currentAnnotationEndIndex = -1;
+    }
+}
+
+private static class UpdateTextParams {
+    private Article currentArticle;
+    private boolean displayHeatmap;
+
+    UpdateTextParams(Article currentArticle, boolean displayHeatmap) {
+        this.currentArticle = currentArticle;
+        this.displayHeatmap = displayHeatmap;
+    }
+
+    public Article getCurrentArticle() {
+        return this.currentArticle;
+    }
+
+    public boolean getDisplayHeatmap() {
+        return this.displayHeatmap;
+    }
+}
+
+private static class UpdateTextResults {
+    private SpannableString headlineResult;
+    private SpannableString bodyResult;
+
+    UpdateTextResults(SpannableString headlineResult, SpannableString bodyResult) {
+        this.headlineResult = headlineResult;
+        this.bodyResult = bodyResult;
+    }
+
+    public SpannableString getHeadlineResult() {
+        return this.headlineResult;
+    }
+
+    public SpannableString getBodyResult() {
+        return this.bodyResult;
+    }
+}
+
+private static class SplitText extends AsyncTask<ArticleFragment.SplitTextParams, Void, ArticleFragment.SplitTextResults> {
+    private WeakReference<ArticleFragment> activityReference;
+
+    SplitText(ArticleFragment context) {
+        activityReference = new WeakReference<>(context);
+    }
+
+    protected ArticleFragment.SplitTextResults doInBackground(ArticleFragment.SplitTextParams... params) {
+        Article currentArticle = params[0].getCurrentArticle();
+        boolean displayHeatmap = params[0].getDisplayHeatmap();
+        int index = params[0].getIndex();
+
+        return new ArticleFragment.SplitTextResults(
+                index,
+                currentArticle.getBody(displayHeatmap, 0, index),
+                currentArticle.getBody(displayHeatmap, index, currentArticle.getBodyLength())
+        );
+    }
+
+    protected void onPostExecute(ArticleFragment.SplitTextResults results) {
+        final ArticleFragment activity = activityReference.get();
+
+        final int TEXT_MARGIN = 32;
+        int index = results.getIndex();
+
+        SpannableString firstSection = results.getFirstSection();
+        SpannableString secondSection = results.getSecondSection();
+
+        if (firstSection.toString().lastIndexOf("\n") != index - 1) {
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
             );
+
+            params.setMargins(0, 0, 0, TEXT_MARGIN);
+            activity.body.setLayoutParams(params);
         }
 
-        protected void onPostExecute(ArticleFragment.SplitTextResults results) {
-            final ArticleFragment activity = activityReference.get();
+        if (secondSection.toString().indexOf("\n") != 0) {
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+            );
 
-            final int TEXT_MARGIN = 32;
-            int index = results.getIndex();
+            params.setMargins(0, TEXT_MARGIN, 0, 0);
+            activity.bodyOverflow.setLayoutParams(params);
+        }
 
-            SpannableString firstSection = results.getFirstSection();
-            SpannableString secondSection = results.getSecondSection();
-
-            if (firstSection.toString().lastIndexOf("\n") != index - 1) {
-                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.WRAP_CONTENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
-                );
-
-                params.setMargins(0, 0, 0, TEXT_MARGIN);
-                activity.body.setLayoutParams(params);
+        ClickableTextView.ClickableTextViewInterface cb = new ClickableTextView.ClickableTextViewInterface() {
+            @Override
+            public void onTextViewClick(String quote, int startIndex, int endIndex) {
+                activity.handleTextViewClick(quote, startIndex, endIndex);
             }
 
-            if (secondSection.toString().indexOf("\n") != 0) {
-                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.WRAP_CONTENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
-                );
-
-                params.setMargins(0, TEXT_MARGIN, 0, 0);
-                activity.bodyOverflow.setLayoutParams(params);
+            @Override
+            public void onTextViewLongClick(String quote, int startIndex, int endIndex) {
+                activity.handleTextViewLongClick(quote, startIndex, endIndex);
             }
+        };
 
-            ClickableTextView.ClickableTextViewInterface cb = new ClickableTextView.ClickableTextViewInterface() {
+        activity.body.setTextWithClickableSentences(firstSection, cb, 0);
+
+        activity.bodyOverflow.setTextWithClickableSentences(secondSection, cb, index);
+        activity.bodyOverflow.setVisibility(View.VISIBLE);
+    }
+}
+
+private static class SplitTextParams {
+    private Article currentArticle;
+    private boolean displayHeatmap;
+    private int index;
+
+    SplitTextParams(Article currentArticle, boolean displayHeatmap, int index) {
+        this.currentArticle = currentArticle;
+        this.displayHeatmap = displayHeatmap;
+        this.index = index;
+    }
+
+    public Article getCurrentArticle() {
+        return this.currentArticle;
+    }
+
+    public boolean getDisplayHeatmap() {
+        return this.displayHeatmap;
+    }
+
+    public int getIndex() {
+        return this.index;
+    }
+}
+
+private static class SplitTextResults {
+    private int index;
+    private SpannableString firstSection;
+    private SpannableString secondSection;
+
+    SplitTextResults(int index, SpannableString firstSection, SpannableString secondSection) {
+        this.index = index;
+        this.firstSection = firstSection;
+        this.secondSection = secondSection;
+    }
+
+    public int getIndex() {
+        return this.index;
+    }
+
+    public SpannableString getFirstSection() {
+        return this.firstSection;
+    }
+
+    public SpannableString getSecondSection() {
+        return this.secondSection;
+    }
+}
+
+private class AnnotationPagerAdapter extends PagerAdapter {
+    private ArrayList<Annotation> annotations;
+    private String type;
+    private int startIndex;
+    private int endIndex;
+
+    AnnotationPagerAdapter(ArrayList<Annotation> annotations, String type, int startIndex, int endIndex) {
+        super();
+
+        this.annotations = annotations;
+        this.type = type;
+        this.startIndex = startIndex;
+        this.endIndex = endIndex;
+    }
+
+    @Override
+    public Object instantiateItem(ViewGroup container, int position) {
+        Context context = getContext();
+        int rawSize = this.annotations.size();
+        int size = this.getCount();
+
+        if (this.hasOverflow(rawSize) && position == size - 1) {
+            AnnotationMoreCardView annotationMoreCardView = new AnnotationMoreCardView(context);
+            annotationMoreCardView.setNumMore(rawSize - MAX_NUM_INLINE_ANNOTATION_TILES - 1);
+            annotationMoreCardView.setOnMoreClickListener(new AnnotationMoreCardView.OnMoreClick() {
                 @Override
-                public void onTextViewClick(String quote, int startIndex, int endIndex) {
-                    activity.handleTextViewClick(quote, startIndex, endIndex);
+                public void onClick() {
+                    onMoreAnnotations(type, startIndex, endIndex);
                 }
+            });
 
+            container.addView(annotationMoreCardView);
+            return annotationMoreCardView;
+        } else {
+            AnnotationCardView annotationCardView = new AnnotationCardView(getContext());
+            annotationCardView.setData(this.annotations.get(position), user);
+
+            annotationCardView.setOnUserClickListener(new AnnotationCardView.OnUserClickListener() {
                 @Override
-                public void onTextViewLongClick(String quote, int startIndex, int endIndex) {
-                    activity.handleTextViewLongClick(quote, startIndex, endIndex);
+                public void onClick(User user) {
+                    onRouteToProfile(user.getUid());
                 }
-            };
+            });
 
-            activity.body.setTextWithClickableSentences(firstSection, cb, 0);
-
-            activity.bodyOverflow.setTextWithClickableSentences(secondSection, cb, index);
-            activity.bodyOverflow.setVisibility(View.VISIBLE);
-        }
-    }
-
-    private static class SplitTextParams {
-        private Article currentArticle;
-        private boolean displayHeatmap;
-        private int index;
-
-        SplitTextParams(Article currentArticle, boolean displayHeatmap, int index) {
-            this.currentArticle = currentArticle;
-            this.displayHeatmap = displayHeatmap;
-            this.index = index;
-        }
-
-        public Article getCurrentArticle() {
-            return this.currentArticle;
-        }
-
-        public boolean getDisplayHeatmap() {
-            return this.displayHeatmap;
-        }
-
-        public int getIndex() {
-            return this.index;
-        }
-    }
-
-    private static class SplitTextResults {
-        private int index;
-        private SpannableString firstSection;
-        private SpannableString secondSection;
-
-        SplitTextResults(int index, SpannableString firstSection, SpannableString secondSection) {
-            this.index = index;
-            this.firstSection = firstSection;
-            this.secondSection = secondSection;
-        }
-
-        public int getIndex() {
-            return this.index;
-        }
-
-        public SpannableString getFirstSection() {
-            return this.firstSection;
-        }
-
-        public SpannableString getSecondSection() {
-            return this.secondSection;
-        }
-    }
-
-    private class AnnotationPagerAdapter extends PagerAdapter {
-        private ArrayList<Annotation> annotations;
-        private String type;
-        private int startIndex;
-        private int endIndex;
-
-        AnnotationPagerAdapter(ArrayList<Annotation> annotations, String type, int startIndex, int endIndex) {
-            super();
-
-            this.annotations = annotations;
-            this.type = type;
-            this.startIndex = startIndex;
-            this.endIndex = endIndex;
-        }
-
-        @Override
-        public Object instantiateItem(ViewGroup container, int position) {
-            Context context = getContext();
-            int rawSize = this.annotations.size();
-            int size = this.getCount();
-
-            if (this.hasOverflow(rawSize) && position == size - 1) {
-                AnnotationMoreCardView annotationMoreCardView = new AnnotationMoreCardView(context);
-                annotationMoreCardView.setNumMore(rawSize - MAX_NUM_INLINE_ANNOTATION_TILES - 1);
-                annotationMoreCardView.setOnMoreClickListener(new AnnotationMoreCardView.OnMoreClick() {
-                    @Override
-                    public void onClick() {
-                        onMoreAnnotations(type, startIndex, endIndex);
-                    }
-                });
-
-                container.addView(annotationMoreCardView);
-                return annotationMoreCardView;
-            } else {
-                AnnotationCardView annotationCardView = new AnnotationCardView(getContext());
-                annotationCardView.setData(this.annotations.get(position), user);
-
-                annotationCardView.setOnUserClickListener(new AnnotationCardView.OnUserClickListener() {
-                    @Override
-                    public void onClick(User user) {
-                        onRouteToProfile(user.getUid());
-                    }
-                });
-
-                annotationCardView.setOnVoteListener(new AnnotationCardView.OnVoteListener() {
-                    @Override
-                    public void onVote(Annotation annotation) {
-                        onAnnotationVote(annotation);
-                    }
-                });
-
-                container.addView(annotationCardView);
-                return annotationCardView;
-            }
-        }
-
-        @Override
-        public void destroyItem(ViewGroup container, int position, Object object) {
-            container.removeView((View) object);
-        }
-
-        @Override
-        public boolean isViewFromObject(View view, Object object) {
-            return view == object;
-        }
-
-        private boolean hasOverflow(int size) {
-            return size - MAX_NUM_INLINE_ANNOTATION_TILES > 1;
-        }
-
-        @Override
-        public int getCount() {
-            int size = this.annotations.size();
-
-            return this.hasOverflow(size) ?
-                    Math.min(size, MAX_NUM_INLINE_ANNOTATION_TILES) : size;
-        }
-    }
-
-    private class ZoomOutPageTransformer implements ViewPager.PageTransformer {
-        private static final float MIN_SCALE = 0.85f;
-        private static final float MIN_ALPHA = 0.75f;
-
-        public void transformPage(View view, float position) {
-            int pageWidth = view.getWidth();
-            int pageHeight = view.getHeight();
-
-            if (position < -1) {
-                view.setAlpha(0f);
-            } else if (position <= 1) {
-                float scaleFactor = Math.max(MIN_SCALE, 1 - Math.abs(position));
-                float vertMargin = pageHeight * (1 - scaleFactor) / 2;
-                float horzMargin = pageWidth * (1 - scaleFactor) / 2;
-
-                if (position < 0) {
-                    view.setTranslationX(horzMargin - vertMargin / 2);
-                } else {
-                    view.setTranslationX(-horzMargin + vertMargin / 2);
+            annotationCardView.setOnVoteListener(new AnnotationCardView.OnVoteListener() {
+                @Override
+                public void onVote(Annotation annotation) {
+                    onAnnotationVote(annotation);
                 }
+            });
 
-                view.setScaleX(scaleFactor);
-                view.setScaleY(scaleFactor);
-
-                view.setAlpha(MIN_ALPHA + (scaleFactor - MIN_SCALE) / (1 - MIN_SCALE) * (1 - MIN_ALPHA));
-            } else {
-                view.setAlpha(0f);
-            }
+            container.addView(annotationCardView);
+            return annotationCardView;
         }
     }
 
-    public interface ArticleFragmentInteractionListener {
-        void onAnnotationInput(String quote, String type, int startIndex, int endIndex, int value);
-        void onMoreAnnotations(String type, int startIndex, int endIndex);
-        void onRouteToProfile(String userId);
+    @Override
+    public void destroyItem(ViewGroup container, int position, Object object) {
+        container.removeView((View) object);
     }
+
+    @Override
+    public boolean isViewFromObject(View view, Object object) {
+        return view == object;
+    }
+
+    private boolean hasOverflow(int size) {
+        return size - MAX_NUM_INLINE_ANNOTATION_TILES > 1;
+    }
+
+    @Override
+    public int getCount() {
+        int size = this.annotations.size();
+
+        return this.hasOverflow(size) ?
+                Math.min(size, MAX_NUM_INLINE_ANNOTATION_TILES) : size;
+    }
+}
+
+private class ZoomOutPageTransformer implements ViewPager.PageTransformer {
+    private static final float MIN_SCALE = 0.85f;
+    private static final float MIN_ALPHA = 0.75f;
+
+    public void transformPage(View view, float position) {
+        int pageWidth = view.getWidth();
+        int pageHeight = view.getHeight();
+
+        if (position < -1) {
+            view.setAlpha(0f);
+        } else if (position <= 1) {
+            float scaleFactor = Math.max(MIN_SCALE, 1 - Math.abs(position));
+            float vertMargin = pageHeight * (1 - scaleFactor) / 2;
+            float horzMargin = pageWidth * (1 - scaleFactor) / 2;
+
+            if (position < 0) {
+                view.setTranslationX(horzMargin - vertMargin / 2);
+            } else {
+                view.setTranslationX(-horzMargin + vertMargin / 2);
+            }
+
+            view.setScaleX(scaleFactor);
+            view.setScaleY(scaleFactor);
+
+            view.setAlpha(MIN_ALPHA + (scaleFactor - MIN_SCALE) / (1 - MIN_SCALE) * (1 - MIN_ALPHA));
+        } else {
+            view.setAlpha(0f);
+        }
+    }
+
+}
+
+
+public interface ArticleFragmentInteractionListener {
+    void onAnnotationInput(String quote, String type, int startIndex, int endIndex, int value);
+
+    void onMoreAnnotations(String type, int startIndex, int endIndex);
+
+    void onRouteToProfile(String userId);
+}
 }
