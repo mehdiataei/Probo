@@ -84,6 +84,26 @@ public class Article {
         return combined;
     }
 
+    public void updateAnnotation(Annotation newAnnotation) {
+        int index = 0;
+        for (Annotation annotation : this.headlineAnnotations) {
+            if (annotation.getId().equals(newAnnotation.getId())) {
+                this.headlineAnnotations.set(index, newAnnotation);
+            }
+
+            index++;
+        }
+
+        index = 0;
+        for (Annotation annotation : this.bodyAnnotations) {
+            if (annotation.getId().equals(newAnnotation.getId())) {
+                this.bodyAnnotations.set(index, newAnnotation);
+            }
+
+            index++;
+        }
+    }
+
     public SpannableString getHeadline(boolean showHeatmap) {
         return showHeatmap ? this.getAnnotatedText(
                 this.headline,
@@ -503,15 +523,15 @@ public class Article {
 
         return Color.HSVToColor((int) alpha_output, hsv_output);
     }
-}
 
-interface ArticleCallback {
-    void onLoad();
-    void onArticleError(int errorCode);
-    void onError(Exception e);
-}
+    public interface ArticleCallback {
+        void onLoad();
+        void onArticleError(int errorCode);
+        void onError(Exception e);
+    }
 
-interface ArticleAnnotationCallback {
-    void onLoad();
-    void onError(Exception e);
+    public interface ArticleAnnotationCallback {
+        void onLoad();
+        void onError(Exception e);
+    }
 }

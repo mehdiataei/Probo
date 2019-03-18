@@ -9,6 +9,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.text.SpannableString;
@@ -44,8 +45,7 @@ import java.util.ArrayList;
 import java.util.Locale;
 
 public class ArticleFragment extends Fragment
-        implements AnnotationFragment.AnnotationFragmentInteractionListener,
-                    AnnotationMoreFragment.AnnotationMoreFragmentInteractionListener {
+        implements AnnotationsFragment.AnnotationsFragmentInteractionListener {
 
     private static final String ARG_ARTICLE_ID = "articleId";
 
@@ -116,7 +116,7 @@ public class ArticleFragment extends Fragment
 
         user = new User();
 
-        ArticleCallback cb = new ArticleCallback() {
+        Article.ArticleCallback cb = new Article.ArticleCallback() {
             @Override
             public void onLoad() {
                 populateArticle();
@@ -177,7 +177,7 @@ public class ArticleFragment extends Fragment
     private SwipeRefreshLayout.OnRefreshListener handleRefresh = new SwipeRefreshLayout.OnRefreshListener() {
         @Override
         public void onRefresh() {
-            ArticleCallback cb = new ArticleCallback() {
+            Article.ArticleCallback cb = new Article.ArticleCallback() {
                 @Override
                 public void onLoad() {
                     populateArticle();
@@ -229,7 +229,6 @@ public class ArticleFragment extends Fragment
         annotationsContainer.setPageTransformer(true, new ArticleFragment.ZoomOutPageTransformer());
 
         ArticleFragment.AnnotationPagerAdapter adapter = new ArticleFragment.AnnotationPagerAdapter(
-                getChildFragmentManager(),
                 annotations,
                 type,
                 startIndex,
@@ -299,16 +298,10 @@ public class ArticleFragment extends Fragment
     }
 
     @Override
-    public void onAnnotationVote(AnnotationVote.AnnotationVoteCallback cb, String id, boolean value) {
-        for (Annotation annotation : article.getAnnotations()) {
-            if (annotation.getId().equals(id)) {
-                annotation.vote(cb, user, value);
-                return;
-            }
-        }
+    public void onAnnotationVote(Annotation annotation) {
+        article.updateAnnotation(annotation);
     }
 
-    @Override
     public void onMoreAnnotations(String type, int startIndex, int endIndex) {
         if (interactionListener != null) {
             interactionListener.onMoreAnnotations(type, startIndex, endIndex);
@@ -561,16 +554,15 @@ public class ArticleFragment extends Fragment
         }
     }
 
-    private class AnnotationPagerAdapter extends FragmentStatePagerAdapter {
+    private class AnnotationPagerAdapter extends PagerAdapter {
         private ArrayList<Annotation> annotations;
         private String type;
         private int startIndex;
         private int endIndex;
 
-        AnnotationPagerAdapter(FragmentManager fm, ArrayList<Annotation> annotations,
-                               String type, int startIndex, int endIndex) {
+        AnnotationPagerAdapter(ArrayList<Annotation> annotations, String type, int startIndex, int endIndex) {
+            super();
 
-            super(fm);
             this.annotations = annotations;
             this.type = type;
             this.startIndex = startIndex;
@@ -578,34 +570,57 @@ public class ArticleFragment extends Fragment
         }
 
         @Override
-        public Fragment getItem(int position) {
+        public Object instantiateItem(ViewGroup container, int position) {
+            Context context = getContext();
             int rawSize = this.annotations.size();
             int size = this.getCount();
 
             if (this.hasOverflow(rawSize) && position == size - 1) {
-                return AnnotationMoreFragment.newInstance(
-                        rawSize - MAX_NUM_INLINE_ANNOTATION_TILES + 1,
-                        this.type,
-                        this.startIndex,
-                        this.endIndex
-                );
+                AnnotationMoreCardView annotationMoreCardView = new AnnotationMoreCardView(context);
+                annotationMoreCardView.setNumMore(rawSize - MAX_NUM_INLINE_ANNOTATION_TILES - 1);
+                annotationMoreCardView.setOnMoreClickListener(new AnnotationMoreCardView.OnMoreClick() {
+                    @Override
+                    public void onClick() {
+                        onMoreAnnotations(type, startIndex, endIndex);
+                    }
+                });
+
+                container.addView(annotationMoreCardView);
+                return annotationMoreCardView;
+            } else {
+                AnnotationCardView annotationCardView = new AnnotationCardView(getContext());
+                annotationCardView.setData(this.annotations.get(position), user);
+
+                annotationCardView.setOnUserClickListener(new AnnotationCardView.OnUserClickListener() {
+                    @Override
+                    public void onClick(User user) {
+                        onRouteToProfile(user.getUid());
+                    }
+                });
+
+                annotationCardView.setOnVoteListener(new AnnotationCardView.OnVoteListener() {
+                    @Override
+                    public void onVote(Annotation annotation) {
+                        onAnnotationVote(annotation);
+                    }
+                });
+
+                container.addView(annotationCardView);
+                return annotationCardView;
             }
-
-            Annotation annotation = this.annotations.get(position);
-
-            return AnnotationFragment.newInstance(
-                    annotation.getId(),
-                    annotation.getUser().getUid(),
-                    annotation.getComment(),
-                    annotation.getValue(),
-                    annotation.getUpvoteCount(),
-                    annotation.getDownvoteCount(),
-                    annotation.userHasUpvoted(user),
-                    annotation.userHasDownvoted(user)
-            );
         }
 
-        public boolean hasOverflow(int size) {
+        @Override
+        public void destroyItem(ViewGroup container, int position, Object object) {
+            container.removeView((View) object);
+        }
+
+        @Override
+        public boolean isViewFromObject(View view, Object object) {
+            return view == object;
+        }
+
+        private boolean hasOverflow(int size) {
             return size - MAX_NUM_INLINE_ANNOTATION_TILES > 1;
         }
 

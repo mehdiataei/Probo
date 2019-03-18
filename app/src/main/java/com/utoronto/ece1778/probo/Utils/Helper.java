@@ -2,9 +2,11 @@ package com.utoronto.ece1778.probo.Utils;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.res.Resources;
 import android.os.Build;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
+import android.util.TypedValue;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 
@@ -32,5 +34,15 @@ public class Helper {
         } else {
             vibrator.vibrate(ms);
         }
+    }
+
+    public static int dpToPx(Context context, int dp) {
+        Resources resources = context.getResources();
+
+        return (int) TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_DIP,
+                dp,
+                resources.getDisplayMetrics()
+        );
     }
 }

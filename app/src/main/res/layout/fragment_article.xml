@@ -96,8 +96,9 @@
                         android:id="@+id/annotations_container"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:paddingStart="8dp"
-                        android:paddingEnd="8dp"
+                        android:layout_marginStart="16dp"
+                        android:layout_marginEnd="16dp"
+                        android:overScrollMode="never"
                         android:visibility="gone" />
 
                     <com.utoronto.ece1778.probo.Utils.ClickableTextView

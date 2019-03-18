@@ -51,6 +51,7 @@ public class User {
 
     private String uid, profileImagePath, name, title;
     private ArrayList<Annotation> annotations;
+    private boolean loaded;
 
     public User() {
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
@@ -60,10 +61,12 @@ public class User {
         }
 
         this.annotations = new ArrayList<>();
+        this.loaded = false;
     }
 
     public User(String uid) {
         this.uid = uid;
+        this.loaded = false;
     }
 
     public String getUid() {
@@ -86,6 +89,10 @@ public class User {
         return this.annotations;
     }
 
+    public boolean hasLoaded() {
+        return this.loaded;
+    }
+
     public void load(final UserCallback cb) {
         if (this.uid == null) {
             cb.onError(new Exception("No user uid was supplied and no user is currently logged in."));
@@ -93,6 +100,8 @@ public class User {
         }
 
         FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        this.loaded = false;
 
         db.collection("users")
                 .document(this.uid)
@@ -103,6 +112,8 @@ public class User {
                         profileImagePath = documentSnapshot.getString("profileImagePath");
                         name = documentSnapshot.getString("name");
                         title = documentSnapshot.getString("title");
+
+                        loaded = true;
 
                         cb.onLoad();
                     }
@@ -197,6 +208,17 @@ public class User {
                         cb.onError(e);
                     }
                 });
+    }
+
+    public void updateAnnotation(Annotation newAnnotation) {
+        int index = 0;
+        for (Annotation annotation : this.annotations) {
+            if (annotation.getId().equals(newAnnotation.getId())) {
+                this.annotations.set(index, newAnnotation);
+            }
+
+            index++;
+        }
     }
 
     public static boolean isSignedIn() {
@@ -397,22 +419,22 @@ public class User {
         void onLoad();
         void onError(Exception error);
     }
-}
 
-interface UserSignInCallback {
-    void onSignedIn(User user);
-    void onSignInError(int errorCode);
-    void onError(Exception error);
-}
+    public interface UserSignInCallback {
+        void onSignedIn(User user);
+        void onSignInError(int errorCode);
+        void onError(Exception error);
+    }
 
-interface UserSignUpCallback {
-    void onSignedUp(User user);
-    void onSignUpError(int errorCode);
-    void onProgress(int progressCode);
-    void onError(Exception error);
-}
+    public interface UserSignUpCallback {
+        void onSignedUp(User user);
+        void onSignUpError(int errorCode);
+        void onProgress(int progressCode);
+        void onError(Exception error);
+    }
 
-interface UserUploadProfileImageCallback {
-    void onUploaded(String path);
-    void onError(Exception error);
+    public interface UserUploadProfileImageCallback {
+        void onUploaded(String path);
+        void onError(Exception error);
+    }
 }

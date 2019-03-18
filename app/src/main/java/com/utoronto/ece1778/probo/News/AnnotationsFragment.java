@@ -1,28 +1,25 @@
 package com.utoronto.ece1778.probo.News;
 
 import android.content.Context;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.widget.SwipeRefreshLayout;
-import android.util.Log;
+import android.support.v7.widget.DefaultItemAnimator;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.LinearLayout;
 import android.widget.ProgressBar;
-import android.widget.ScrollView;
 
 import com.utoronto.ece1778.probo.R;
 import com.utoronto.ece1778.probo.User.User;
 
 import java.util.ArrayList;
 
-public class AnnotationsFragment extends Fragment
-        implements AnnotationFragment.AnnotationFragmentInteractionListener {
-
+public class AnnotationsFragment extends Fragment {
     private static final String
             ARG_ARTICLE_ID = "articleId",
             ARG_TYPE = "type",
@@ -38,8 +35,7 @@ public class AnnotationsFragment extends Fragment
 
     private SwipeRefreshLayout swipeRefreshLayout;
     private ProgressBar spinner;
-    private ScrollView scrollView;
-    private LinearLayout linearLayout;
+    private RecyclerView annotationsContainer;
 
     private AnnotationsFragmentInteractionListener interactionListener;
 
@@ -78,10 +74,8 @@ public class AnnotationsFragment extends Fragment
 
         swipeRefreshLayout = v.findViewById(R.id.refresh);
         spinner = v.findViewById(R.id.progress_spinner);
-        scrollView = v.findViewById(R.id.scroll);
-        linearLayout = v.findViewById(R.id.annotations_container);
-
         swipeRefreshLayout.setOnRefreshListener(handleRefresh);
+        annotationsContainer = v.findViewById(R.id.annotations_container);
 
         user = new User();
 
@@ -93,7 +87,7 @@ public class AnnotationsFragment extends Fragment
     private SwipeRefreshLayout.OnRefreshListener handleRefresh = new SwipeRefreshLayout.OnRefreshListener() {
         @Override
         public void onRefresh() {
-            ArticleCallback cb = new ArticleCallback() {
+            Article.ArticleCallback cb = new Article.ArticleCallback() {
                 @Override
                 public void onLoad() {
                     populate();
@@ -115,12 +109,12 @@ public class AnnotationsFragment extends Fragment
     };
 
     private void load() {
-        ArticleCallback cb = new ArticleCallback() {
+        Article.ArticleCallback cb = new Article.ArticleCallback() {
             @Override
             public void onLoad() {
                 populate();
 
-                scrollView.setVisibility(View.VISIBLE);
+                annotationsContainer.setVisibility(View.VISIBLE);
                 spinner.setVisibility(View.INVISIBLE);
             }
 
@@ -137,44 +131,35 @@ public class AnnotationsFragment extends Fragment
     }
 
     private void populate() {
-        ArrayList<Annotation> annotations = article.getLocatedAnnotations(type, startIndex, endIndex);
-        FragmentManager manager = getChildFragmentManager();
-        FragmentTransaction transaction = manager.beginTransaction();
-
-        linearLayout.removeAllViews();
-
-        for (Annotation annotation : annotations) {
-            AnnotationFragment annotationFragment = AnnotationFragment.newInstance(
-                    annotation.getId(),
-                    annotation.getUser().getUid(),
-                    annotation.getComment(),
-                    annotation.getValue(),
-                    annotation.getUpvoteCount(),
-                    annotation.getDownvoteCount(),
-                    annotation.userHasUpvoted(user),
-                    annotation.userHasDownvoted(user)
-            );
-
-            transaction.add(R.id.annotations_container, annotationFragment);
-        }
-
-        transaction.commit();
-    }
-
-    public void onAnnotationVote(AnnotationVote.AnnotationVoteCallback cb, String id, boolean value) {
-        for (Annotation annotation : article.getAnnotations()) {
-            if (annotation.getId().equals(id)) {
-                annotation.vote(cb, user, value);
-                return;
+        AnnotationCardView.OnUserClickListener onUserClickListener = new AnnotationCardView.OnUserClickListener() {
+            @Override
+            public void onClick(User user) {
+                if (interactionListener != null) {
+                    interactionListener.onRouteToProfile(user.getUid());
+                }
             }
-        }
-    }
+        };
 
-    @Override
-    public void onRouteToProfile(String userId) {
-        if (interactionListener != null) {
-            interactionListener.onRouteToProfile(userId);
-        }
+        AnnotationCardView.OnVoteListener onVoteListener = new AnnotationCardView.OnVoteListener() {
+            @Override
+            public void onVote(Annotation annotation) {
+                if (interactionListener != null) {
+                    interactionListener.onAnnotationVote(annotation);
+                }
+            }
+        };
+
+        AnnotationsRecyclerAdapter adapter = new AnnotationsRecyclerAdapter(
+                article.getLocatedAnnotations(type, startIndex, endIndex),
+                user,
+                onUserClickListener,
+                onVoteListener
+        );
+
+        RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(this.getContext());
+        annotationsContainer.setLayoutManager(layoutManager);
+        annotationsContainer.setItemAnimator(new DefaultItemAnimator());
+        annotationsContainer.setAdapter(adapter);
     }
 
     @Override
@@ -192,6 +177,7 @@ public class AnnotationsFragment extends Fragment
     }
 
     public interface AnnotationsFragmentInteractionListener {
+        void onAnnotationVote(Annotation annotation);
         void onRouteToProfile(String userId);
     }
 }

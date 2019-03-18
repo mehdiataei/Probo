@@ -2,37 +2,34 @@ package com.utoronto.ece1778.probo.User;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
 import android.support.v4.graphics.drawable.RoundedBitmapDrawable;
 import android.support.v4.widget.SwipeRefreshLayout;
+import android.support.v7.widget.DefaultItemAnimator;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.utoronto.ece1778.probo.News.Annotation;
-import com.utoronto.ece1778.probo.News.AnnotationFragment;
-import com.utoronto.ece1778.probo.News.AnnotationVote;
+import com.utoronto.ece1778.probo.News.AnnotationCardView;
+import com.utoronto.ece1778.probo.News.AnnotationsRecyclerAdapter;
 import com.utoronto.ece1778.probo.R;
 import com.utoronto.ece1778.probo.Utils.ImageBitmap;
 import com.utoronto.ece1778.probo.Utils.ImageLoader;
 
-public class ProfileFragment extends Fragment
-        implements AnnotationFragment.AnnotationFragmentInteractionListener {
-
+public class ProfileFragment extends Fragment {
     private static final String ARG_USER_ID = "userId";
 
     private SwipeRefreshLayout refreshLayout;
     private ProgressBar annotationsProgress;
-    private LinearLayout annotationsContainer;
+    private RecyclerView annotationsContainer;
     private RelativeLayout profileImageProgressContainer;
     private ImageView profileImage;
     private TextView nameText;
@@ -176,42 +173,33 @@ public class ProfileFragment extends Fragment
     }
 
     private void populateAnnotations() {
-        FragmentManager manager = getChildFragmentManager();
-        FragmentTransaction transaction = manager.beginTransaction();
-
-        for (Annotation annotation : user.getAnnotations()) {
-            AnnotationFragment annotationFragment = AnnotationFragment.newInstance(
-                    annotation.getId(),
-                    annotation.getUser().getUid(),
-                    annotation.getComment(),
-                    annotation.getValue(),
-                    annotation.getUpvoteCount(),
-                    annotation.getDownvoteCount(),
-                    annotation.userHasUpvoted(user),
-                    annotation.userHasDownvoted(user)
-            );
-
-            transaction.add(R.id.annotations_container, annotationFragment);
-        }
-
-        transaction.commit();
-    }
-
-    @Override
-    public void onAnnotationVote(AnnotationVote.AnnotationVoteCallback cb, String id, boolean value) {
-        for (Annotation annotation : user.getAnnotations()) {
-            if (annotation.getId().equals(id)) {
-                annotation.vote(cb, user, value);
-                return;
+        AnnotationCardView.OnUserClickListener onUserClickListener = new AnnotationCardView.OnUserClickListener() {
+            @Override
+            public void onClick(User user) {
+                if (interactionListener != null) {
+                    interactionListener.onRouteToProfile(user.getUid());
+                }
             }
-        }
-    }
+        };
 
-    @Override
-    public void onRouteToProfile(String userId) {
-        if (interactionListener != null) {
-            interactionListener.onRouteToProfile(userId);
-        }
+        AnnotationCardView.OnVoteListener onVoteListener = new AnnotationCardView.OnVoteListener() {
+            @Override
+            public void onVote(Annotation annotation) {
+                user.updateAnnotation(annotation);
+            }
+        };
+
+        AnnotationsRecyclerAdapter adapter = new AnnotationsRecyclerAdapter(
+                user.getAnnotations(),
+                user,
+                onUserClickListener,
+                onVoteListener
+        );
+
+        RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(this.getContext());
+        annotationsContainer.setLayoutManager(layoutManager);
+        annotationsContainer.setItemAnimator(new DefaultItemAnimator());
+        annotationsContainer.setAdapter(adapter);
     }
 
     @Override

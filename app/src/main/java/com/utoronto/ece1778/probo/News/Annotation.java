@@ -6,7 +6,9 @@ import android.util.Log;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QuerySnapshot;
 import com.utoronto.ece1778.probo.User.User;
 
 import java.util.HashMap;
@@ -28,6 +30,12 @@ public class Annotation {
     private HashMap<String, AnnotationVote> votes;
     private int upvoteCount;
     private int downvoteCount;
+    private boolean loaded;
+
+    public Annotation(String id) {
+        this.id = id;
+        this.loaded = false;
+    }
 
     public Annotation(String id, Article article, User user, String type, int startIndex, int endIndex, int value,
                       String comment, HashMap<String, AnnotationVote> upvotes,
@@ -48,6 +56,8 @@ public class Annotation {
 
         this.upvoteCount = upvotes.size();
         this.downvoteCount = downvotes.size();
+
+        this.loaded = true;
     }
 
     public String getId() {
@@ -94,6 +104,90 @@ public class Annotation {
         return this.votes.containsKey(user.getUid()) && !this.votes.get(user.getUid()).getValue();
     }
 
+    public boolean hasLoaded() {
+        return this.loaded;
+    }
+
+    public void load(final AnnotationCallback cb) {
+        final FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        this.loaded = false;
+
+        Log.d("PROBO_APP", id + ": starting load");
+
+        db.collection("annotations")
+                .document(this.id)
+                .get()
+                .addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
+                    @Override
+                    public void onSuccess(final DocumentSnapshot annotationDocumentSnapshot) {
+                        db.collection("annotation_votes")
+                                .whereEqualTo("annotationId", id)
+                                .get()
+                                .addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
+                                    @Override
+                                    public void onSuccess(QuerySnapshot votesDocumentSnapshots) {
+                                        Long longStartIndex = annotationDocumentSnapshot.getLong("startIndex");
+                                        Long longEndIndex = annotationDocumentSnapshot.getLong("endIndex");
+                                        Long longValue = annotationDocumentSnapshot.getLong("value");
+
+                                        article = new Article(annotationDocumentSnapshot.getString("articleId"));
+                                        user = new User(annotationDocumentSnapshot.getString("userId"));
+                                        type = annotationDocumentSnapshot.getString("type");
+                                        startIndex = longStartIndex.intValue();
+                                        endIndex = longEndIndex.intValue();
+                                        value = longValue.intValue();
+                                        comment = annotationDocumentSnapshot.getString("comment");
+
+                                        votes = new HashMap<>();
+                                        HashMap<String, AnnotationVote> upvotes = new HashMap<>();
+                                        HashMap<String, AnnotationVote> downvotes = new HashMap<>();
+
+                                        for (DocumentSnapshot votesDocumentSnapshot : votesDocumentSnapshots) {
+                                            AnnotationVote vote = new AnnotationVote(
+                                                    votesDocumentSnapshot.getId(),
+                                                    new User(votesDocumentSnapshot.getString("userId")),
+                                                    votesDocumentSnapshot.getBoolean("value")
+                                            );
+
+                                            if (vote.getValue()) {
+                                                upvotes.put(
+                                                        votesDocumentSnapshot.getString("userId"),
+                                                        vote
+                                                );
+                                            } else {
+                                                downvotes.put(
+                                                        votesDocumentSnapshot.getString("userId"),
+                                                        vote
+                                                );
+                                            }
+                                        }
+
+                                        votes.putAll(upvotes);
+                                        votes.putAll(downvotes);
+
+                                        upvoteCount = upvotes.size();
+                                        downvoteCount = downvotes.size();
+
+                                        cb.onLoad();
+                                    }
+                                })
+                                .addOnFailureListener(new OnFailureListener() {
+                                    @Override
+                                    public void onFailure(@NonNull Exception e) {
+                                        cb.onError(e);
+                                    }
+                                });
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        cb.onError(e);
+                    }
+                });
+    }
+
     public void save(final AnnotationSubmitCallback cb, Article article) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
@@ -114,14 +208,12 @@ public class Annotation {
                     @Override
                     public void onSuccess(DocumentReference documentReference) {
                         cb.onSubmit();
-                        Log.d("PROBO_APP", "added annotation");
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull Exception e) {
                         cb.onError(e);
-                        Log.d("PROBO_APP", "err", e);
                     }
                 });
     }
@@ -217,6 +309,11 @@ public class Annotation {
                         cb.onError(e);
                     }
                 });
+    }
+
+    public interface AnnotationCallback {
+        void onLoad();
+        void onError(Exception e);
     }
 
     public interface AnnotationSubmitCallback {

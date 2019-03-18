@@ -34,6 +34,8 @@ public class NewsFragment extends Fragment
     private boolean articleUpdated = false;
     private boolean articleExtensionUpdated = false;
 
+    private int currentPageIndex;
+
     private NewsFragmentInteractionListener interactionListener;
 
     public NewsFragment() {
@@ -44,17 +46,39 @@ public class NewsFragment extends Fragment
                              Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_news, container, false);
 
+        currentPageIndex = 0;
+
         fragments = new ArrayList<>();
         fragments.add(new ArticlesFragment());
 
         viewPager = v.findViewById(R.id.view_pager);
         pagerAdapter = new ScreenSlidePagerAdapter(getChildFragmentManager());
 
+        viewPager.addOnPageChangeListener(handlePageChange);
+
         viewPager.setPageTransformer(true, new DepthPageTransformer());
         viewPager.setAdapter(pagerAdapter);
 
         return v;
     }
+
+    private ViewPager.OnPageChangeListener handlePageChange = new ViewPager.OnPageChangeListener() {
+        @Override
+        public void onPageScrolled(int i, float v, int i1) {}
+
+        @Override
+        public void onPageSelected(int i) {
+            if (i < currentPageIndex && fragments.size() > i + 1) {
+                fragments.subList(i + 1, fragments.size()).clear();
+                pagerAdapter.notifyDataSetChanged();
+            }
+
+            currentPageIndex = i;
+        }
+
+        @Override
+        public void onPageScrollStateChanged(int i) {}
+    };
 
     @Override
     public void onRouteToArticle(String articleId) {
@@ -134,6 +158,10 @@ public class NewsFragment extends Fragment
             fragments.subList(2, fragments.size()).clear();
             pagerAdapter.notifyDataSetChanged();
         }
+    }
+
+    @Override
+    public void onAnnotationVote(Annotation annotation) {
     }
 
     @Override

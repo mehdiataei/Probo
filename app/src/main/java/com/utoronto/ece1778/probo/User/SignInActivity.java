@@ -56,7 +56,7 @@ public class SignInActivity extends AppCompatActivity {
     };
 
     private void signIn() {
-        UserSignInCallback cb = new UserSignInCallback() {
+        User.UserSignInCallback cb = new User.UserSignInCallback() {
             @Override
             public void onSignedIn(User user) {
                 hideProgress();

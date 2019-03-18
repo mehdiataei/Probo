@@ -98,7 +98,7 @@ public class SignUpActivity extends AppCompatActivity {
     }
 
     private void signUp() {
-        UserSignUpCallback cb = new UserSignUpCallback() {
+        User.UserSignUpCallback cb = new User.UserSignUpCallback() {
             @Override
             public void onSignedUp(User user) {
                 hideProgress();
