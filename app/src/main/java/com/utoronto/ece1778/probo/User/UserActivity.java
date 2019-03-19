@@ -1,5 +1,7 @@
 package com.utoronto.ece1778.probo.User;
 
+import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Bundle;
@@ -23,6 +25,7 @@ import android.widget.TextView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.utoronto.ece1778.probo.News.NewsFragment;
 import com.utoronto.ece1778.probo.R;
+import com.utoronto.ece1778.probo.Utils.Helper;
 import com.utoronto.ece1778.probo.Utils.ImageBitmap;
 import com.utoronto.ece1778.probo.Utils.ImageLoader;
 
@@ -54,7 +57,6 @@ public class UserActivity extends AppCompatActivity
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        // check if user is not signed in
         loadUser();
 
         currentRoute = -1;
@@ -62,7 +64,13 @@ public class UserActivity extends AppCompatActivity
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
 
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, drawer, toolbar,
-                R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+                R.string.navigation_drawer_open, R.string.navigation_drawer_close) {
+
+            public void onDrawerOpened(View drawerView) {
+                Helper.hideKeyboard(getApplicationContext(), drawerView);
+                super.onDrawerOpened(drawerView);
+            }
+        };
 
         drawer.addDrawerListener(toggle);
         toggle.syncState();
@@ -171,7 +179,6 @@ public class UserActivity extends AppCompatActivity
         frameLayout.removeAllViews();
 
         transaction.add(R.id.content_container, fragment);
-        //transaction.addToBackStack(null);
         transaction.commit();
 
         manager.executePendingTransactions();
@@ -197,6 +204,11 @@ public class UserActivity extends AppCompatActivity
     }
 
     private void loadUser() {
+        if (!User.isSignedIn()) {
+            routeToSignIn();
+            return;
+        }
+
         User.UserCallback cb = new User.UserCallback() {
             @Override
             public void onLoad() {
@@ -256,10 +268,8 @@ public class UserActivity extends AppCompatActivity
     }
 
     private void signOut() {
-        Intent intent = new Intent(this, SignInActivity.class);
         FirebaseAuth.getInstance().signOut();
-        startActivity(intent);
-        finish();
+        routeToSignIn();
     }
 
     private void enableUserNavigation() {
@@ -279,5 +289,11 @@ public class UserActivity extends AppCompatActivity
     @Override
     public void onRouteToProfile(String userId) {
         routeToProfile(userId);
+    }
+
+    private void routeToSignIn() {
+        Intent intent = new Intent(this, SignInActivity.class);
+        startActivity(intent);
+        finish();
     }
 }

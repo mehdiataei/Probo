@@ -38,6 +38,7 @@ public class ProfileFragment extends Fragment {
     private TextView titleText;
 
     private User user;
+    private User profileUser;
 
     private ProfileFragmentInteractionListener interactionListener;
 
@@ -56,7 +57,7 @@ public class ProfileFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
-            user = new User(getArguments().getString(ARG_USER_ID));
+            profileUser = new User(getArguments().getString(ARG_USER_ID));
         }
     }
 
@@ -78,6 +79,17 @@ public class ProfileFragment extends Fragment {
         User.UserCallback cb = new User.UserCallback() {
             @Override
             public void onLoad() {
+                loadAnnotations();
+            }
+
+            @Override
+            public void onError(Exception error) {
+            }
+        };
+
+        User.UserCallback profileCb = new User.UserCallback() {
+            @Override
+            public void onLoad() {
                 populate();
             }
 
@@ -86,8 +98,9 @@ public class ProfileFragment extends Fragment {
             }
         };
 
+        user = new User();
         user.load(cb);
-        loadAnnotations();
+        profileUser.load(profileCb);
 
         refreshLayout.setOnRefreshListener(handleRefresh);
 
@@ -110,7 +123,7 @@ public class ProfileFragment extends Fragment {
                 }
             };
 
-            user.load(cb);
+            profileUser.load(cb);
         }
     };
 
@@ -134,9 +147,9 @@ public class ProfileFragment extends Fragment {
             }
         };
 
-        if (user.getProfileImagePath() != null) {
+        if (profileUser.getProfileImagePath() != null) {
             ImageLoader imageLoader = new ImageLoader(
-                    user.getProfileImagePath(),
+                    profileUser.getProfileImagePath(),
                     getActivity().getApplicationContext()
             );
 
@@ -146,10 +159,10 @@ public class ProfileFragment extends Fragment {
             profileImageProgressContainer.setVisibility(View.INVISIBLE);
         }
 
-        nameText.setText(user.getName());
+        nameText.setText(profileUser.getName());
 
-        if (user.getTitle() != null) {
-            titleText.setText(user.getTitle());
+        if (profileUser.getTitle() != null) {
+            titleText.setText(profileUser.getTitle());
             titleText.setVisibility(View.VISIBLE);
         } else {
             titleText.setVisibility(View.GONE);
@@ -160,7 +173,7 @@ public class ProfileFragment extends Fragment {
         User.UserAnnotationsCallback cb = new User.UserAnnotationsCallback() {
             @Override
             public void onLoad() {
-                if (user.getAnnotations().size() > 0) {
+                if (profileUser.getAnnotations().size() > 0) {
                     populateAnnotations();
                 } else {
                     noAnnotationsContainer.setVisibility(View.VISIBLE);
@@ -176,7 +189,7 @@ public class ProfileFragment extends Fragment {
 
         annotationsContainer.removeAllViews();
 
-        user.loadAnnotations(cb);
+        profileUser.loadAnnotations(cb);
     }
 
     private void populateAnnotations() {
@@ -192,12 +205,12 @@ public class ProfileFragment extends Fragment {
         AnnotationCardView.OnVoteListener onVoteListener = new AnnotationCardView.OnVoteListener() {
             @Override
             public void onVote(Annotation annotation) {
-                user.updateAnnotation(annotation);
+                profileUser.updateAnnotation(annotation);
             }
         };
 
         AnnotationsRecyclerAdapter adapter = new AnnotationsRecyclerAdapter(
-                user.getAnnotations(),
+                profileUser.getAnnotations(),
                 user,
                 onUserClickListener,
                 onVoteListener
