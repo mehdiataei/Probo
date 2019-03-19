@@ -46,6 +46,7 @@
             android:layout_height="32dp"
             android:layout_marginTop="8dp"
             android:src="@drawable/profile_image_default_dark"
+            android:background="@drawable/oval_border_light"
             android:layout_centerVertical="true"
             android:visibility="invisible" />
 
