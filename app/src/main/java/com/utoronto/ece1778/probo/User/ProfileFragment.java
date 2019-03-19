@@ -13,6 +13,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -29,6 +30,7 @@ public class ProfileFragment extends Fragment {
 
     private SwipeRefreshLayout refreshLayout;
     private ProgressBar annotationsProgress;
+    private LinearLayout noAnnotationsContainer;
     private RecyclerView annotationsContainer;
     private RelativeLayout profileImageProgressContainer;
     private ImageView profileImage;
@@ -66,6 +68,7 @@ public class ProfileFragment extends Fragment {
 
         refreshLayout = v.findViewById(R.id.refresh);
         annotationsProgress = v.findViewById(R.id.annotations_progress);
+        noAnnotationsContainer = v.findViewById(R.id.no_annotations_container);
         annotationsContainer = v.findViewById(R.id.annotations_container);
         profileImageProgressContainer = v.findViewById(R.id.profile_image_progress_container);
         profileImage = v.findViewById(R.id.profile_image);
@@ -157,7 +160,12 @@ public class ProfileFragment extends Fragment {
         User.UserAnnotationsCallback cb = new User.UserAnnotationsCallback() {
             @Override
             public void onLoad() {
-                populateAnnotations();
+                if (user.getAnnotations().size() > 0) {
+                    populateAnnotations();
+                } else {
+                    noAnnotationsContainer.setVisibility(View.VISIBLE);
+                }
+
                 annotationsProgress.setVisibility(View.GONE);
             }
 
@@ -167,7 +175,6 @@ public class ProfileFragment extends Fragment {
         };
 
         annotationsContainer.removeAllViews();
-        annotationsProgress.setVisibility(View.VISIBLE);
 
         user.loadAnnotations(cb);
     }

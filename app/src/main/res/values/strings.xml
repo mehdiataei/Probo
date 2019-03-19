@@ -75,6 +75,8 @@
 
     <string name="annotation_more_fragment_button">+%d MORE</string>
 
+    <string name="profile_no_annottions_message">No annotations were found.</string>
+
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>

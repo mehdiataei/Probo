@@ -95,8 +95,18 @@ public class NewsFragment extends Fragment
         viewPager.setCurrentItem(1);
     }
 
+    public boolean onBackPressed() {
+        if (currentPageIndex == 0) {
+            return false;
+        }
+
+        goToViewPage(currentPageIndex - 1);
+        return true;
+    }
+
     public void goToViewPage(int pageIndex) {
-        viewPager.setCurrentItem(pageIndex);
+        viewPager.setCurrentItem(pageIndex, true);
+        currentPageIndex = pageIndex;
     }
 
     public void onRouteToArticleExtension(Fragment fragment) {

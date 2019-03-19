@@ -26,6 +26,8 @@ import com.utoronto.ece1778.probo.R;
 import com.utoronto.ece1778.probo.Utils.ImageBitmap;
 import com.utoronto.ece1778.probo.Utils.ImageLoader;
 
+import java.lang.reflect.Method;
+
 public class UserActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener,
                     NewsFragment.NewsFragmentInteractionListener,
@@ -76,9 +78,17 @@ public class UserActivity extends AppCompatActivity
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
-        } else {
-            super.onBackPressed();
+            return;
+        } else if (currentFragment instanceof NewsFragment &&
+                    ((NewsFragment) currentFragment).onBackPressed()) {
+
+            return;
+        } else if (!(currentFragment instanceof NewsFragment)) {
+            routeToNews();
+            return;
         }
+
+        super.onBackPressed();
     }
 
     @Override
@@ -161,7 +171,7 @@ public class UserActivity extends AppCompatActivity
         frameLayout.removeAllViews();
 
         transaction.add(R.id.content_container, fragment);
-        transaction.addToBackStack(null);
+        //transaction.addToBackStack(null);
         transaction.commit();
 
         manager.executePendingTransactions();
