@@ -1,15 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<android.support.v7.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:card_view="http://schemas.android.com/tools"
     android:layoutAnimation="@anim/layout_animation_fall_down"
-    android:padding="10dp">
+    android:padding="0dp"
+    app:cardElevation="10dp"
+    app:cardUseCompatPadding="true"
+    app:cardBackgroundColor="@color/white"
+    app:cardCornerRadius="10dp"
+    android:background="@drawable/bg_rounded_top"
+
+
+
+    >
+    <RelativeLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:layoutAnimation="@anim/layout_animation_fall_down"
+        android:padding="10dp">
+
 
     <com.utoronto.ece1778.probo.Utils.SquareImageView
         android:id="@+id/images"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:scaleType="centerCrop" />
+        android:scaleType="centerCrop"
+        android:src="@drawable/bg_rounded_top"
+        android:layout_margin="20dp"
+        />
 
     <ProgressBar
         android:id="@+id/gridImageProgressbar"
@@ -38,4 +59,6 @@
         android:textSize="12sp"
         android:textStyle="normal" />
 
-</RelativeLayout>
+    </RelativeLayout>
+
+</android.support.v7.widget.CardView>
