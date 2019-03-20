@@ -361,10 +361,20 @@ public class Article {
             float interpolation = total > 0 ? counts.getX() / (float) total : 0;
             float alpha = 0;
 
+            float modifier;
+
+            if (totalBodyAnnotations < 10) {
+
+                modifier = totalBodyAnnotations / (float) 10;
+            } else {
+
+                modifier = 1;
+            }
+
             if (annotation.getType().equals(Annotation.TYPE_HEADLINE) && totalHeadlineAnnotations > 0) {
                 alpha = total / (float) totalHeadlineAnnotations;
             } else if (annotation.getType().equals(Annotation.TYPE_BODY) && totalBodyAnnotations > 0) {
-                alpha = total / (float) totalBodyAnnotations;
+                alpha = total / (float) totalBodyAnnotations * modifier;
             }
 
             int color = interpolateColor(Color.RED, Color.GREEN, interpolation);
