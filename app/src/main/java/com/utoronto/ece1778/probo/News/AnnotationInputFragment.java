@@ -236,7 +236,8 @@ public class AnnotationInputFragment extends Fragment {
                     annotationStartIndex,
                     annotationEndIndex,
                     annotationValue,
-                    commentText.getText().toString()
+                    comment,
+                    source
             );
         }
     }
@@ -294,7 +295,7 @@ public class AnnotationInputFragment extends Fragment {
     }
 
     public interface AnnotationInputFragmentInteractionListener {
-        void onAnnotationSubmit(Annotation.AnnotationSubmitCallback cb, String type, int startIndex, int endIndex, int value, String comment);
+        void onAnnotationSubmit(Annotation.AnnotationSubmitCallback cb, String type, int startIndex, int endIndex, int value, String comment, String source);
         void onAnnotationClose();
     }
 }

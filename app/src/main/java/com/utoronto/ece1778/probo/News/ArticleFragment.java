@@ -279,7 +279,7 @@ public class ArticleFragment extends Fragment
         updateArticleText();
     }
 
-    public void onAnnotationSubmit(final Annotation.AnnotationSubmitCallback cb, String type, int startIndex, int endIndex, int value, String comment) {
+    public void onAnnotationSubmit(final Annotation.AnnotationSubmitCallback cb, String type, int startIndex, int endIndex, int value, String comment, String source) {
         Annotation.AnnotationSubmitCallback submitCb = new Annotation.AnnotationSubmitCallback() {
             @Override
             public void onSubmit(Annotation annotation) {
@@ -305,7 +305,8 @@ public class ArticleFragment extends Fragment
                     startIndex,
                     endIndex,
                     value,
-                    comment
+                    comment,
+                    source
             );
         } else {
             article.addBodyAnnotation(
@@ -314,7 +315,8 @@ public class ArticleFragment extends Fragment
                     startIndex,
                     endIndex,
                     value,
-                    comment
+                    comment,
+                    source
             );
         }
     }
