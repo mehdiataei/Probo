@@ -258,7 +258,7 @@ public class Article {
         annotation.save(cb, this);
     }
 
-    public void addBodyAnnotation(Annotation.AnnotationSubmitCallback cb, User user, int startIndex, int endIndex, int value, String comment) {
+    public void addBodyAnnotation(final Annotation.AnnotationSubmitCallback cb, User user, int startIndex, int endIndex, int value, String comment) {
         int errorCode = this.checkNewAnnotation(user, Annotation.TYPE_BODY, startIndex, endIndex);
 
         if (errorCode != Article.ARTICLE_ANNOTATION_VALID) {
@@ -266,7 +266,28 @@ public class Article {
             return;
         }
 
-        Annotation annotation = new Annotation(
+        Annotation.AnnotationSubmitCallback submitCb = new Annotation.AnnotationSubmitCallback() {
+            @Override
+            public void onSubmit(Annotation annotation) {
+                bodyAnnotations.add(annotation);
+                addAnnotationMap(annotation);
+                updateAnnotationCounts(annotation);
+
+                cb.onSubmit(annotation);
+            }
+
+            @Override
+            public void onAnnotationError(int errorCode) {
+                cb.onAnnotationError(errorCode);
+            }
+
+            @Override
+            public void onError(Exception e) {
+                cb.onError(e);
+            }
+        };
+
+        Annotation newAnnotation = new Annotation(
                 null,
                 this,
                 user,
@@ -279,12 +300,7 @@ public class Article {
                 new HashMap<String, AnnotationVote>()
         );
 
-        this.bodyAnnotations.add(annotation);
-        this.addAnnotationMap(annotation);
-
-        this.updateAnnotationCounts(annotation);
-
-        annotation.save(cb, this);
+        newAnnotation.save(submitCb, this);
     }
 
     public void addAnnotationMap(Annotation annotation) {

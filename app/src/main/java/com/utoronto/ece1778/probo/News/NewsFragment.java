@@ -126,6 +126,7 @@ public class NewsFragment extends Fragment
     public void onAnnotationInput(String quote, String type, int startIndex, int endIndex, int value) {
         if (fragments.size() > 1 && fragments.get(1) instanceof ArticleFragment) {
             AnnotationInputFragment annotationInputFragment = AnnotationInputFragment.newInstance(
+                    true,
                     quote,
                     type,
                     startIndex,

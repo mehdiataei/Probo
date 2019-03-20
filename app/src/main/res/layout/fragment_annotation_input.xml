@@ -15,16 +15,17 @@
 
         <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical">
+            android:layout_height="wrap_content">
 
-            <Switch
-                android:id="@+id/type"
+            <TextView
+                android:id="@+id/fragment_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:layout_marginEnd="8dp"
-                android:layout_centerVertical="true" />
+                android:layout_centerVertical="true"
+                android:textColor="@color/colorPrimary"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:text="@string/annotation_input_title_fact" />
 
             <ImageButton
                 android:id="@+id/close"
@@ -44,7 +45,7 @@
             android:layout_marginTop="32dp">
 
             <TextView
-                android:id="@+id/falseText"
+                android:id="@+id/negative"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerVertical="true"
@@ -52,17 +53,18 @@
                 android:text="@string/annotation_input_false" />
 
             <SeekBar
+                android:id="@+id/value_seekbar"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:thumbTint="@color/colorPrimary"
                 android:progressDrawable="@drawable/seekbar_progress"
                 android:progress="50"
                 android:layout_centerVertical="true"
-                android:layout_toEndOf="@id/falseText"
-                android:layout_toStartOf="@id/trueText" />
+                android:layout_toEndOf="@id/negative"
+                android:layout_toStartOf="@id/positive" />
 
             <TextView
-                android:id="@+id/trueText"
+                android:id="@+id/positive"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerVertical="true"
@@ -94,6 +96,16 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="32dp"
             android:hint="@string/annotation_input_edit_text_hint"
+            android:inputType="textLongMessage"
+            android:importantForAutofill="no"
+            tools:targetApi="o" />
+
+        <EditText
+            android:id="@+id/source"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:hint="@string/annotation_input_source_hint"
             android:inputType="textLongMessage"
             android:importantForAutofill="no"
             tools:targetApi="o" />

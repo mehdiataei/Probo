@@ -189,6 +189,7 @@ public class Annotation {
     }
 
     public void save(final AnnotationSubmitCallback cb, Article article) {
+        final Annotation currentAnnotation = this;
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
         Map<String, Object> newAnnotation = new HashMap<>();
@@ -207,7 +208,8 @@ public class Annotation {
                 .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
                     @Override
                     public void onSuccess(DocumentReference documentReference) {
-                        cb.onSubmit();
+                        currentAnnotation.id = documentReference.getId();
+                        cb.onSubmit(currentAnnotation);
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {
@@ -317,7 +319,7 @@ public class Annotation {
     }
 
     public interface AnnotationSubmitCallback {
-        void onSubmit();
+        void onSubmit(Annotation annotation);
         void onAnnotationError(int errorCode);
         void onError(Exception e);
     }

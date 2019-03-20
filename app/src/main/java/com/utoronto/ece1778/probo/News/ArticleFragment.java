@@ -282,8 +282,8 @@ public class ArticleFragment extends Fragment
     public void onAnnotationSubmit(final Annotation.AnnotationSubmitCallback cb, String type, int startIndex, int endIndex, int value, String comment) {
         Annotation.AnnotationSubmitCallback submitCb = new Annotation.AnnotationSubmitCallback() {
             @Override
-            public void onSubmit() {
-                cb.onSubmit();
+            public void onSubmit(Annotation annotation) {
+                cb.onSubmit(annotation);
                 updateArticleText();
             }
 

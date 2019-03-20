@@ -3,17 +3,14 @@ package com.utoronto.ece1778.probo.News;
 import android.content.Context;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
-import android.text.style.BackgroundColorSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
-import android.widget.Switch;
+import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.utoronto.ece1778.probo.R;
@@ -21,11 +18,14 @@ import com.utoronto.ece1778.probo.Utils.Helper;
 
 public class AnnotationInputFragment extends Fragment {
     private static final String
+            ARG_IS_FACT = "isFact",
             ARG_QUOTE = "quote",
             ARG_TYPE = "type",
             ARG_START_INDEX = "startIndex",
             ARG_END_INDEX = "endIndex",
             ARG_VALUE = "value";
+
+    private boolean isFact;
 
     private String
             annotationQuote,
@@ -39,7 +39,8 @@ public class AnnotationInputFragment extends Fragment {
     private AnnotationInputFragmentInteractionListener interactionListener;
     private ImageButton closeButton;
     private TextView title;
-    private EditText input;
+    private EditText commentText;
+    private EditText sourceText;
     private RelativeLayout errorContainer;
     private TextView errorText;
     private Button submitButton;
@@ -47,10 +48,13 @@ public class AnnotationInputFragment extends Fragment {
 
     public AnnotationInputFragment() {}
 
-    public static AnnotationInputFragment newInstance(String quote, String type, int startIndex, int endIndex, int value) {
+    public static AnnotationInputFragment newInstance(boolean isFact, String quote, String type,
+                                                      int startIndex, int endIndex, int value) {
+
         AnnotationInputFragment fragment = new AnnotationInputFragment();
         Bundle args = new Bundle();
 
+        args.putBoolean(ARG_IS_FACT, isFact);
         args.putString(ARG_QUOTE, quote);
         args.putString(ARG_TYPE, type);
         args.putInt(ARG_START_INDEX, startIndex);
@@ -65,6 +69,7 @@ public class AnnotationInputFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
+            isFact = getArguments().getBoolean(ARG_IS_FACT);
             annotationQuote = getArguments().getString(ARG_QUOTE);
             annotationType = getArguments().getString(ARG_TYPE);
             annotationStartIndex = getArguments().getInt(ARG_START_INDEX);
@@ -79,41 +84,54 @@ public class AnnotationInputFragment extends Fragment {
 
         View v = inflater.inflate(R.layout.fragment_annotation_input, container, false);
 
-        Switch typeSwitch = v.findViewById(R.id.type);
+        TextView fragmentTitle = v.findViewById(R.id.fragment_title);
         closeButton = v.findViewById(R.id.close);
+        TextView negativeText = v.findViewById(R.id.negative);
+        TextView positiveText = v.findViewById(R.id.positive);
+        SeekBar valueSeekBar = v.findViewById(R.id.value_seekbar);
         TextView quote = v.findViewById(R.id.quote);
         title = v.findViewById(R.id.title);
-        input = v.findViewById(R.id.input);
+        commentText = v.findViewById(R.id.input);
+        sourceText = v.findViewById(R.id.source);
         errorContainer = v.findViewById(R.id.error_container);
         errorText = v.findViewById(R.id.error_text);
         submitButton = v.findViewById(R.id.submit);
         progressContainer = v.findViewById(R.id.progress_container);
 
+        if (isFact) {
+            fragmentTitle.setText(getString(R.string.annotation_input_title_fact));
+            negativeText.setText(getString(R.string.annotation_input_false));
+            positiveText.setText(getString(R.string.annotation_input_true));
+        } else {
+            fragmentTitle.setText(getString(R.string.annotation_input_title_opinion));
+            negativeText.setText(getString(R.string.annotation_input_biased));
+            positiveText.setText(getString(R.string.annotation_input_unbiased));
+        }
+
+        annotationValue = 0;
+        setTitleText(annotationValue);
         quote.setText(annotationQuote);
 
-        int titleStringId = annotationValue == 1 ?
-                R.string.annotation_input_title_true :
-                R.string.annotation_input_title_false;
-
-        title.setText(getString(titleStringId));
-
-        typeSwitch.setOnCheckedChangeListener(handleTypeSwitch);
+        valueSeekBar.setOnSeekBarChangeListener(handleSeekBarChange);
         closeButton.setOnClickListener(handleCloseClick);
         submitButton.setOnClickListener(handleSubmitClick);
 
         return v;
     }
 
-    private CompoundButton.OnCheckedChangeListener handleTypeSwitch = new CompoundButton.OnCheckedChangeListener() {
+    private SeekBar.OnSeekBarChangeListener handleSeekBarChange = new SeekBar.OnSeekBarChangeListener() {
         @Override
-        public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-            if (isChecked) {
-                annotationValue = 0;
-                title.setText(getString(R.string.annotation_input_title_false));
-            } else {
-                annotationValue = 1;
-                title.setText(getString(R.string.annotation_input_title_true));
-            }
+        public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+            annotationValue = progress - 50;
+            setTitleText(annotationValue);
+        }
+
+        @Override
+        public void onStartTrackingTouch(SeekBar seekBar) {
+        }
+
+        @Override
+        public void onStopTrackingTouch(SeekBar seekBar) {
         }
     };
 
@@ -135,11 +153,49 @@ public class AnnotationInputFragment extends Fragment {
         }
     };
 
+    private void setTitleText(int value) {
+        int
+                veryNegative = isFact ? R.string.annotation_input_title_false_very :
+                                        R.string.annotation_input_title_biased_very,
+                negative = isFact ? R.string.annotation_input_title_false :
+                                    R.string.annotation_input_title_biased,
+                somewhatNegative = isFact ? R.string.annotation_input_title_false_somewhat :
+                                            R.string.annotation_input_title_biased_somewhat,
+                somewhatPositive = isFact ? R.string.annotation_input_title_true_somewhat :
+                                            R.string.annotation_input_title_unbiased_somewhat,
+                positive = isFact ? R.string.annotation_input_title_true :
+                                    R.string.annotation_input_title_unbiased,
+                veryPositive = isFact ? R.string.annotation_input_title_true_very :
+                                        R.string.annotation_input_title_unbiased_very;
+
+        if (value < -35) {
+            title.setText(getString(veryNegative));
+        } else if (value < -20) {
+            title.setText(getString(negative));
+        } else if (value < -5) {
+            title.setText(getString(somewhatNegative));
+        } else if (value <= 5) {
+            title.setText(getString(R.string.annotation_input_title_neutral));
+        } else if (value < 20) {
+            title.setText(getString(somewhatPositive));
+        } else if (value < 35) {
+            title.setText(getString(positive));
+        } else {
+            title.setText(getString(veryPositive));
+        }
+    }
+
     public void submit() {
-        String comment = input.getText().toString();
+        String comment = commentText.getText().toString();
+        String source = sourceText.getText().toString();
 
         if (comment.length() == 0) {
             showError(getString(R.string.annotation_input_error_no_comment));
+            return;
+        }
+
+        if (isFact && source.length() == 0) {
+            showError(getString(R.string.annotation_input_error_no_source));
             return;
         }
 
@@ -150,7 +206,7 @@ public class AnnotationInputFragment extends Fragment {
         if (interactionListener != null) {
             Annotation.AnnotationSubmitCallback cb = new Annotation.AnnotationSubmitCallback() {
                 @Override
-                public void onSubmit() {
+                public void onSubmit(Annotation annotation) {
                     hideProgress();
                     interactionListener.onAnnotationClose();
                 }
@@ -180,7 +236,7 @@ public class AnnotationInputFragment extends Fragment {
                     annotationStartIndex,
                     annotationEndIndex,
                     annotationValue,
-                    input.getText().toString()
+                    commentText.getText().toString()
             );
         }
     }
@@ -219,13 +275,13 @@ public class AnnotationInputFragment extends Fragment {
 
     public void enable() {
         closeButton.setEnabled(true);
-        input.setEnabled(true);
+        commentText.setEnabled(true);
         submitButton.setEnabled(true);
     }
 
     public void disable() {
         closeButton.setEnabled(false);
-        input.setEnabled(false);
+        commentText.setEnabled(false);
         submitButton.setEnabled(false);
     }
 
