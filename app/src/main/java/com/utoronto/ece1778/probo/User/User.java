@@ -203,6 +203,7 @@ public class User {
                                                     endIndex.intValue(),
                                                     value.intValue(),
                                                     documentSnapshot.getString("comment"),
+                                                    documentSnapshot.getString("source"),
                                                     upvotes,
                                                     downvotes
                                             );

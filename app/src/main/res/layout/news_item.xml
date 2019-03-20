@@ -10,9 +10,6 @@
     app:cardUseCompatPadding="true"
     app:cardBackgroundColor="@color/white"
     app:cardCornerRadius="10dp"
-    android:background="@drawable/bg_rounded_top"
-
-
 
     >
     <RelativeLayout

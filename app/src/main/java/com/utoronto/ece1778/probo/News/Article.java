@@ -64,6 +64,8 @@ public class Article {
     private String body;
     private Date datetime;
 
+    private boolean loaded;
+
     private ArrayList<Annotation> headlineAnnotations;
     private ArrayList<Annotation> bodyAnnotations;
     private ArrayList<Sentence> sentences;
@@ -71,7 +73,6 @@ public class Article {
     private HashMap<String, ArrayList<Annotation>> annotationsMap;
     private HashMap<String, Tuple<Integer, Integer>> annotationStats;
 
-    private boolean loaded;
     private String analysed;
     private Thread mThread;
 
@@ -80,6 +81,8 @@ public class Article {
 
     public Article(String id) {
         this.id = id;
+
+        this.loaded = false;
 
         this.annotationsMap = new HashMap<>();
         this.annotationStats = new HashMap<>();
@@ -226,7 +229,7 @@ public class Article {
         return Article.ARTICLE_ANNOTATION_VALID;
     }
 
-    public void addHeadlineAnnotation(Annotation.AnnotationSubmitCallback cb, User user, int startIndex, int endIndex, int value, String comment) {
+    public void addHeadlineAnnotation(Annotation.AnnotationSubmitCallback cb, User user, int startIndex, int endIndex, int value, String comment, String source) {
         int errorCode = this.checkNewAnnotation(user, Annotation.TYPE_HEADLINE, startIndex, endIndex);
 
         if (errorCode != Article.ARTICLE_ANNOTATION_VALID) {
@@ -243,6 +246,7 @@ public class Article {
                 endIndex,
                 value,
                 comment,
+                source,
                 new HashMap<String, AnnotationVote>(),
                 new HashMap<String, AnnotationVote>()
         );
@@ -255,7 +259,7 @@ public class Article {
         annotation.save(cb, this);
     }
 
-    public void addBodyAnnotation(Annotation.AnnotationSubmitCallback cb, User user, int startIndex, int endIndex, int value, String comment) {
+    public void addBodyAnnotation(final Annotation.AnnotationSubmitCallback cb, User user, int startIndex, int endIndex, int value, String comment, String source) {
         int errorCode = this.checkNewAnnotation(user, Annotation.TYPE_BODY, startIndex, endIndex);
 
         if (errorCode != Article.ARTICLE_ANNOTATION_VALID) {
@@ -263,7 +267,28 @@ public class Article {
             return;
         }
 
-        Annotation annotation = new Annotation(
+        Annotation.AnnotationSubmitCallback submitCb = new Annotation.AnnotationSubmitCallback() {
+            @Override
+            public void onSubmit(Annotation annotation) {
+                bodyAnnotations.add(annotation);
+                addAnnotationMap(annotation);
+                updateAnnotationCounts(annotation);
+
+                cb.onSubmit(annotation);
+            }
+
+            @Override
+            public void onAnnotationError(int errorCode) {
+                cb.onAnnotationError(errorCode);
+            }
+
+            @Override
+            public void onError(Exception e) {
+                cb.onError(e);
+            }
+        };
+
+        Annotation newAnnotation = new Annotation(
                 null,
                 this,
                 user,
@@ -272,16 +297,12 @@ public class Article {
                 endIndex,
                 value,
                 comment,
+                source,
                 new HashMap<String, AnnotationVote>(),
                 new HashMap<String, AnnotationVote>()
         );
 
-        this.bodyAnnotations.add(annotation);
-        this.addAnnotationMap(annotation);
-
-        this.updateAnnotationCounts(annotation);
-
-        annotation.save(cb, this);
+        newAnnotation.save(submitCb, this);
     }
 
     public void addAnnotationMap(Annotation annotation) {
@@ -306,8 +327,8 @@ public class Article {
                 this.annotationStats.get(key) :
                 new Tuple<>(0, 0);
 
-        int numTrue = annotation.getValue() == 1 ? counts.getX() + 1 : counts.getX();
-        int numFalse = annotation.getValue() == 0 ? counts.getY() + 1 : counts.getY();
+        int numTrue = annotation.getValue() > 0 ? counts.getX() + 1 : counts.getX();
+        int numFalse = annotation.getValue() < 0 ? counts.getY() + 1 : counts.getY();
 
         this.annotationStats.put(key, new Tuple<>(numTrue, numFalse));
     }
@@ -464,6 +485,7 @@ public class Article {
                                             Object valueObj = snapshot.get("value");
                                             String userId = snapshot.getString("userId");
                                             String comment = snapshot.getString("comment");
+                                            String source = snapshot.getString("source");
                                             HashMap<String, AnnotationVote> upvotes = new HashMap<>();
                                             HashMap<String, AnnotationVote> downvotes = new HashMap<>();
 
@@ -483,8 +505,8 @@ public class Article {
                                                         annotationStats.get(annotationKey) :
                                                         new Tuple<>(0, 0);
 
-                                                int numTrue = value == 1 ? stats.getX() + 1 : stats.getX();
-                                                int numFalse = value == 0 ? stats.getY() + 1 : stats.getY();
+                                                int numTrue = value > 0 ? stats.getX() + 1 : stats.getX();
+                                                int numFalse = value < 0 ? stats.getY() + 1 : stats.getY();
 
                                                 annotationStats.put(annotationKey, new Tuple<>(numTrue, numFalse));
 
@@ -519,6 +541,7 @@ public class Article {
                                                         end.intValue(),
                                                         value.intValue(),
                                                         comment,
+                                                        source,
                                                         upvotes,
                                                         downvotes
                                                 );

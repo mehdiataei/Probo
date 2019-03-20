@@ -126,6 +126,7 @@ public class NewsFragment extends Fragment
     public void onAnnotationInput(String quote, String type, int startIndex, int endIndex, int value) {
         if (fragments.size() > 1 && fragments.get(1) instanceof ArticleFragment) {
             AnnotationInputFragment annotationInputFragment = AnnotationInputFragment.newInstance(
+                    true,
                     quote,
                     type,
                     startIndex,
@@ -138,9 +139,9 @@ public class NewsFragment extends Fragment
     }
 
     @Override
-    public void onAnnotationSubmit(Annotation.AnnotationSubmitCallback cb, String type, int startIndex, int endIndex, int value, String comment) {
+    public void onAnnotationSubmit(Annotation.AnnotationSubmitCallback cb, String type, int startIndex, int endIndex, int value, String comment, String source) {
         if (fragments.size() > 1 && fragments.get(1) instanceof ArticleFragment) {
-            ((ArticleFragment) fragments.get(1)).onAnnotationSubmit(cb, type, startIndex, endIndex, value, comment);
+            ((ArticleFragment) fragments.get(1)).onAnnotationSubmit(cb, type, startIndex, endIndex, value, comment, source);
         }
     }
 

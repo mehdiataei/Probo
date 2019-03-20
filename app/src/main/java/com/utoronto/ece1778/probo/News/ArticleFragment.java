@@ -230,7 +230,7 @@ public class ArticleFragment extends Fragment
 
         DateFormat dateFormat = DateFormat.getDateTimeInstance(
                 DateFormat.SHORT,
-                DateFormat.MEDIUM,
+                DateFormat.SHORT,
                 Locale.getDefault()
         );
 
@@ -279,11 +279,11 @@ public class ArticleFragment extends Fragment
         updateArticleText();
     }
 
-    public void onAnnotationSubmit(final Annotation.AnnotationSubmitCallback cb, String type, int startIndex, int endIndex, int value, String comment) {
+    public void onAnnotationSubmit(final Annotation.AnnotationSubmitCallback cb, String type, int startIndex, int endIndex, int value, String comment, String source) {
         Annotation.AnnotationSubmitCallback submitCb = new Annotation.AnnotationSubmitCallback() {
             @Override
-            public void onSubmit() {
-                cb.onSubmit();
+            public void onSubmit(Annotation annotation) {
+                cb.onSubmit(annotation);
                 updateArticleText();
             }
 
@@ -305,7 +305,8 @@ public class ArticleFragment extends Fragment
                     startIndex,
                     endIndex,
                     value,
-                    comment
+                    comment,
+                    source
             );
         } else {
             article.addBodyAnnotation(
@@ -314,7 +315,8 @@ public class ArticleFragment extends Fragment
                     startIndex,
                     endIndex,
                     value,
-                    comment
+                    comment,
+                    source
             );
         }
     }

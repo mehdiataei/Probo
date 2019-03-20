@@ -27,6 +27,7 @@ public class Annotation {
     private int endIndex;
     private int value;
     private String comment;
+    private String source;
     private HashMap<String, AnnotationVote> votes;
     private int upvoteCount;
     private int downvoteCount;
@@ -38,7 +39,7 @@ public class Annotation {
     }
 
     public Annotation(String id, Article article, User user, String type, int startIndex, int endIndex, int value,
-                      String comment, HashMap<String, AnnotationVote> upvotes,
+                      String comment, String source, HashMap<String, AnnotationVote> upvotes,
                       HashMap<String, AnnotationVote> downvotes) {
 
         this.id = id;
@@ -49,6 +50,7 @@ public class Annotation {
         this.endIndex = endIndex;
         this.value = value;
         this.comment = comment;
+        this.source = source;
 
         this.votes = new HashMap<>();
         this.votes.putAll(upvotes);
@@ -86,6 +88,10 @@ public class Annotation {
 
     public String getComment() {
         return this.comment;
+    }
+
+    public String getSource() {
+        return this.source;
     }
 
     public int getUpvoteCount() {
@@ -138,6 +144,7 @@ public class Annotation {
                                         endIndex = longEndIndex.intValue();
                                         value = longValue.intValue();
                                         comment = annotationDocumentSnapshot.getString("comment");
+                                        source = annotationDocumentSnapshot.getString("source");
 
                                         votes = new HashMap<>();
                                         HashMap<String, AnnotationVote> upvotes = new HashMap<>();
@@ -189,6 +196,7 @@ public class Annotation {
     }
 
     public void save(final AnnotationSubmitCallback cb, Article article) {
+        final Annotation currentAnnotation = this;
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
         Map<String, Object> newAnnotation = new HashMap<>();
@@ -200,6 +208,7 @@ public class Annotation {
         newAnnotation.put("value", this.value);
         newAnnotation.put("type", this.type);
         newAnnotation.put("comment", this.comment);
+        newAnnotation.put("source", this.source);
         newAnnotation.put("timestamp", System.currentTimeMillis());
 
         db.collection("annotations")
@@ -207,7 +216,8 @@ public class Annotation {
                 .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
                     @Override
                     public void onSuccess(DocumentReference documentReference) {
-                        cb.onSubmit();
+                        currentAnnotation.id = documentReference.getId();
+                        cb.onSubmit(currentAnnotation);
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {
@@ -317,7 +327,7 @@ public class Annotation {
     }
 
     public interface AnnotationSubmitCallback {
-        void onSubmit();
+        void onSubmit(Annotation annotation);
         void onAnnotationError(int errorCode);
         void onError(Exception e);
     }
