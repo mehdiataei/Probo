@@ -1,27 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<RelativeLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent"
     android:layout_height="match_parent"
     android:paddingStart="8dp"
     android:paddingEnd="8dp"
-    android:orientation="horizontal">
+    android:gravity="end">
 
     <TextView
-        android:layout_width="0dp"
-        android:layout_weight="6"
-        android:layout_height="match_parent"
-        android:text="Annotation mode"
-        android:gravity="center"
-        />
-
-    <Switch
-        android:id="@+id/heatmap_switch"
-        android:layout_weight="1"
+        android:id="@+id/heatmap_switch_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerVertical="true"
-        android:enabled="false"
-        android:gravity="center"
-        />
-</LinearLayout>
+        android:text="@string/article_heatmap_toggle_title" />
+
+    <Switch
+        android:id="@+id/heatmap_switch"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_centerVertical="true"
+        android:layout_toEndOf="@id/heatmap_switch_title"
+        android:enabled="false" />
+</RelativeLayout>

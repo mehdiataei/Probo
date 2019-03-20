@@ -54,6 +54,7 @@
     <string name="dbname_news">news</string>
     <string name="news_fragment">News</string>
 
+    <string name="article_heatmap_toggle_title">Annotations</string>
     <string name="article_menu_true">True</string>
     <string name="article_menu_false">False</string>
     <string name="article_add_annotation_error">An error has occurred. Please try again later.</string>
