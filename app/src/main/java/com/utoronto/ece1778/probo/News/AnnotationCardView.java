@@ -90,8 +90,9 @@ public class AnnotationCardView extends CardView {
         );
 
         this.setLayoutParams(params);
-        this.setCardElevation(Helper.dpToPx(this.context, 1));
-        this.setRadius(Helper.dpToPx(this.context, 16));
+        this.setCardElevation(Helper.dpToPx(this.context, 10));
+        this.setRadius(Helper.dpToPx(this.context, 15));
+        this.setUseCompatPadding(true);
     }
 
     private View.OnClickListener handleUserClick = new View.OnClickListener() {
@@ -112,9 +113,9 @@ public class AnnotationCardView extends CardView {
         this.progress.setVisibility(View.GONE);
         this.commentTextView.setVisibility(View.VISIBLE);
 
-        int color = this.annotation.getValue() == 1 ? Color.GREEN : Color.RED;
-        int formattedColor = ColorUtils.setAlphaComponent(color, 125);
-        this.setCardBackgroundColor(formattedColor);
+        int color = this.annotation.getValue() == 1 ? Color.parseColor("#4dff88")
+                                                    : Color.parseColor("#ffb3b3");
+        this.setCardBackgroundColor(color);
 
         this.commentTextView.setText(annotation.getComment());
 

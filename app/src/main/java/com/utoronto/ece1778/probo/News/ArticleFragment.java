@@ -230,7 +230,7 @@ public class ArticleFragment extends Fragment
 
         DateFormat dateFormat = DateFormat.getDateTimeInstance(
                 DateFormat.SHORT,
-                DateFormat.MEDIUM,
+                DateFormat.SHORT,
                 Locale.getDefault()
         );
 
