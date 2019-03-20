@@ -515,8 +515,9 @@ public class Article {
                                                         annotationStats.get(annotationKey) :
                                                         new Tuple<>(0, 0);
 
-                                                int numTrue = value > 0 ? stats.getX() + 1 : stats.getX();
-                                                int numFalse = value < 0 ? stats.getY() + 1 : stats.getY();
+                                                int numTrue = value >= 0 ? stats.getX() + 1 : stats.getX();
+                                                int numFalse = value <= 0 ? stats.getY() + 1 : stats.getY();
+
 
                                                 annotationStats.put(annotationKey, new Tuple<>(numTrue, numFalse));
 
