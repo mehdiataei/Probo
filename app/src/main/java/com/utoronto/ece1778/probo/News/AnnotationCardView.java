@@ -113,8 +113,13 @@ public class AnnotationCardView extends CardView {
         this.progress.setVisibility(View.GONE);
         this.commentTextView.setVisibility(View.VISIBLE);
 
-        int color = this.annotation.getValue() == 1 ? Color.parseColor("#4dff88")
-                                                    : Color.parseColor("#ffb3b3");
+        int color = Color.parseColor("#ffd633");
+        if (this.annotation.getValue() > 0) {
+            color = Color.parseColor("#4dff88");
+        } else if (this.annotation.getValue() < 0) {
+            color = Color.parseColor("#ffb3b3");
+        }
+                                  ;
         this.setCardBackgroundColor(color);
 
         this.commentTextView.setText(annotation.getComment());

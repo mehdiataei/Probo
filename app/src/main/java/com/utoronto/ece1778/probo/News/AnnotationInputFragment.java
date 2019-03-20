@@ -3,6 +3,7 @@ package com.utoronto.ece1778.probo.News;
 import android.content.Context;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -38,6 +39,7 @@ public class AnnotationInputFragment extends Fragment {
 
     private AnnotationInputFragmentInteractionListener interactionListener;
     private ImageButton closeButton;
+    private SeekBar valueSeekBar;
     private TextView title;
     private EditText commentText;
     private EditText sourceText;
@@ -88,7 +90,7 @@ public class AnnotationInputFragment extends Fragment {
         closeButton = v.findViewById(R.id.close);
         TextView negativeText = v.findViewById(R.id.negative);
         TextView positiveText = v.findViewById(R.id.positive);
-        SeekBar valueSeekBar = v.findViewById(R.id.value_seekbar);
+        valueSeekBar = v.findViewById(R.id.value_seekbar);
         TextView quote = v.findViewById(R.id.quote);
         title = v.findViewById(R.id.title);
         commentText = v.findViewById(R.id.input);
@@ -108,8 +110,6 @@ public class AnnotationInputFragment extends Fragment {
             positiveText.setText(getString(R.string.annotation_input_unbiased));
         }
 
-        annotationValue = 0;
-        setTitleText(annotationValue);
         quote.setText(annotationQuote);
 
         valueSeekBar.setOnSeekBarChangeListener(handleSeekBarChange);
@@ -117,6 +117,18 @@ public class AnnotationInputFragment extends Fragment {
         submitButton.setOnClickListener(handleSubmitClick);
 
         return v;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        valueSeekBar.setProgress(50);
+        commentText.setText("");
+        sourceText.setText("");
+
+        annotationValue = 0;
+        setTitleText(annotationValue);
     }
 
     private SeekBar.OnSeekBarChangeListener handleSeekBarChange = new SeekBar.OnSeekBarChangeListener() {

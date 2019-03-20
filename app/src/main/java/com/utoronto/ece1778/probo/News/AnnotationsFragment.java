@@ -84,6 +84,12 @@ public class AnnotationsFragment extends Fragment {
         return v;
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        load();
+    }
+
     private SwipeRefreshLayout.OnRefreshListener handleRefresh = new SwipeRefreshLayout.OnRefreshListener() {
         @Override
         public void onRefresh() {
@@ -126,6 +132,9 @@ public class AnnotationsFragment extends Fragment {
             public void onError(Exception e) {
             }
         };
+
+        annotationsContainer.setVisibility(View.INVISIBLE);
+        spinner.setVisibility(View.VISIBLE);
 
         article.load(cb);
     }

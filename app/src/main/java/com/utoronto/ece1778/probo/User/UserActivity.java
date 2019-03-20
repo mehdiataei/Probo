@@ -228,13 +228,12 @@ public class UserActivity extends AppCompatActivity
     }
 
     private void populateUser() {
+        final ProgressBar progressBar = findViewById(R.id.nav_header_profile_image_progress);
         final ImageView profileImage = findViewById(R.id.nav_header_profile_image);
         TextView nameText = findViewById(R.id.nav_header_name);
         TextView titleText = findViewById(R.id.nav_header_title);
 
         if (user.getProfileImagePath() != null) {
-            final ProgressBar progressBar = findViewById(R.id.nav_header_profile_image_progress);
-
             ImageLoader.ImageLoaderCallback imageCb = new ImageLoader.ImageLoaderCallback() {
                 @Override
                 public void onSuccess(Bitmap image) {
@@ -257,6 +256,9 @@ public class UserActivity extends AppCompatActivity
 
             ImageLoader imageLoader = new ImageLoader(user.getProfileImagePath(), getApplicationContext());
             imageLoader.load(imageCb);
+        } else {
+            profileImage.setVisibility(View.VISIBLE);
+            progressBar.setVisibility(View.GONE);
         }
 
         nameText.setText(user.getName());
