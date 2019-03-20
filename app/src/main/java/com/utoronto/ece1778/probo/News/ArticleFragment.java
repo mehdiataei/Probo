@@ -391,7 +391,7 @@ public class ArticleFragment extends Fragment
         protected ArrayList<Sentence> doInBackground(SentimentParams... sentimentParams) {
 
 
-            final String body = sentimentParams[0].getBody();
+            final String body = sentimentParams[0].getBody().replaceAll("\n\n", " ");
             final String articleId = sentimentParams[0].getArticleId();
 
 
