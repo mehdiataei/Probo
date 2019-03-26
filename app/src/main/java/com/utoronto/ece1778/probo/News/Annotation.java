@@ -3,12 +3,17 @@ package com.utoronto.ece1778.probo.News;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
+import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.iid.FirebaseInstanceId;
+import com.google.firebase.iid.InstanceIdResult;
+import com.google.firebase.messaging.RemoteMessage;
 import com.utoronto.ece1778.probo.User.User;
 
 import java.util.HashMap;
@@ -31,6 +36,7 @@ public class Annotation {
     private HashMap<String, AnnotationVote> votes;
     private int upvoteCount;
     private int downvoteCount;
+
     private boolean loaded;
 
     public Annotation(String id) {
@@ -118,8 +124,6 @@ public class Annotation {
         final FirebaseFirestore db = FirebaseFirestore.getInstance();
 
         this.loaded = false;
-
-        Log.d("PROBO_APP", id + ": starting load");
 
         db.collection("annotations")
                 .document(this.id)
@@ -321,6 +325,25 @@ public class Annotation {
                 });
     }
 
+    public String getNotificationTopic() {
+        return this.article.getId() + ":" + this.startIndex + ":" + this.endIndex;
+    }
+
+    public void notifyListeners(final NotificationCallback cb) {
+        FirebaseInstanceId.getInstance().getInstanceId()
+                .addOnCompleteListener(new OnCompleteListener<InstanceIdResult>() {
+                    @Override
+                    public void onComplete(@NonNull Task<InstanceIdResult> task) {
+                        if (!task.isSuccessful()) {
+                            cb.onError(task.getException());
+                            return;
+                        }
+
+                        String token = task.getResult().getToken();
+                    }
+                });
+    }
+
     public interface AnnotationCallback {
         void onLoad();
         void onError(Exception e);
@@ -329,6 +352,16 @@ public class Annotation {
     public interface AnnotationSubmitCallback {
         void onSubmit(Annotation annotation);
         void onAnnotationError(int errorCode);
+        void onError(Exception e);
+    }
+
+    public interface SubscribeCallback {
+        void onSubscribe();
+        void onUnsubscribe();
+    }
+
+    public interface NotificationCallback {
+        void onNotified();
         void onError(Exception e);
     }
 }

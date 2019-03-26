@@ -9,6 +9,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.graphics.drawable.RoundedBitmapDrawable;
+import android.util.Log;
 import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -23,6 +24,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.google.firebase.auth.FirebaseAuth;
+import com.utoronto.ece1778.probo.News.Annotation;
 import com.utoronto.ece1778.probo.News.NewsFragment;
 import com.utoronto.ece1778.probo.R;
 import com.utoronto.ece1778.probo.Utils.Helper;
@@ -35,12 +37,14 @@ public class UserActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener,
                     NewsFragment.NewsFragmentInteractionListener,
                     ProfileFragment.ProfileFragmentInteractionListener,
+                    NotificationsFragment.NotificationsFragmentInteractionListener,
                     AccountFragment.AccountFragmentInteractionListener {
 
     public static final int
             ROUTE_NEWS = 0,
             ROUTE_PROFILE = 1,
-            ROUTE_ACCOUNT = 2;
+            ROUTE_NOTIFICATIONS = 2,
+            ROUTE_ACCOUNT = 3;
 
     private User user;
 
@@ -108,6 +112,9 @@ public class UserActivity extends AppCompatActivity
             case R.id.nav_profile:
                 routeToProfile(user.getUid());
                 break;
+            case R.id.nav_notifications:
+                routeToNotifications();
+                break;
             case R.id.nav_account:
                 routeToAccount();
                 break;
@@ -152,6 +159,19 @@ public class UserActivity extends AppCompatActivity
         currentRoute = UserActivity.ROUTE_PROFILE;
         currentFragment = ProfileFragment.newInstance(userId);
         currentProfileUserId = userId;
+
+        displayFragment(currentFragment);
+    }
+
+    private void routeToNotifications() {
+        if (currentRoute == UserActivity.ROUTE_NOTIFICATIONS) {
+            return;
+        }
+
+        removeCurrentFragment();
+
+        currentRoute = UserActivity.ROUTE_NOTIFICATIONS;
+        currentFragment = new NotificationsFragment();
 
         displayFragment(currentFragment);
     }
@@ -212,6 +232,8 @@ public class UserActivity extends AppCompatActivity
         User.UserCallback cb = new User.UserCallback() {
             @Override
             public void onLoad() {
+                user.subscribeToAnnotations();
+
                 populateUser();
                 enableUserNavigation();
             }
@@ -286,6 +308,10 @@ public class UserActivity extends AppCompatActivity
     public void onAccountUpdated(User user) {
         this.user = user;
         populateUser();
+    }
+
+    @Override
+    public void onAnnotationVote(Annotation annotation) {
     }
 
     @Override

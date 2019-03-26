@@ -174,6 +174,7 @@ public class ProfileFragment extends Fragment {
             @Override
             public void onLoad() {
                 if (profileUser.getAnnotations().size() > 0) {
+                    noAnnotationsContainer.setVisibility(View.GONE);
                     populateAnnotations();
                 } else {
                     noAnnotationsContainer.setVisibility(View.VISIBLE);

@@ -72,7 +72,7 @@ public class ArticleFragment extends Fragment
 
     private final int MAX_NUM_INLINE_ANNOTATION_TILES = 5;
 
-    private boolean showHeatmap = false;
+    private boolean showHeatmap = true;
 
     int currentAnnotationStartIndex = -1;
     int currentAnnotationEndIndex = -1;
@@ -137,11 +137,10 @@ public class ArticleFragment extends Fragment
 
         user = new User();
 
-        Article.ArticleCallback cb = new Article.ArticleCallback() {
+        final Article.ArticleCallback cb = new Article.ArticleCallback() {
             @Override
             public void onLoad() {
                 populateArticle();
-
 
                 if (heatmapSwitch != null) {
                     heatmapSwitch.setEnabled(true);
@@ -159,7 +158,18 @@ public class ArticleFragment extends Fragment
             }
         };
 
-        article.load(cb);
+        User.UserCallback userCb = new User.UserCallback() {
+            @Override
+            public void onLoad() {
+                article.load(cb);
+            }
+
+            @Override
+            public void onError(Exception error) {
+            }
+        };
+
+        user.load(userCb);
 
         refresh.setOnRefreshListener(handleRefresh);
 
@@ -324,6 +334,10 @@ public class ArticleFragment extends Fragment
     @Override
     public void onAnnotationVote(Annotation annotation) {
         article.updateAnnotation(annotation);
+    }
+
+    public void onFollow(User updatedUser) {
+        user = updatedUser;
     }
 
     public void onMoreAnnotations(String type, int startIndex, int endIndex) {
@@ -757,7 +771,7 @@ public class ArticleFragment extends Fragment
 
             if (this.hasOverflow(rawSize) && position == size - 1) {
                 AnnotationMoreCardView annotationMoreCardView = new AnnotationMoreCardView(context);
-                annotationMoreCardView.setNumMore(rawSize - MAX_NUM_INLINE_ANNOTATION_TILES - 1);
+                annotationMoreCardView.setNumMore(rawSize - MAX_NUM_INLINE_ANNOTATION_TILES + 1);
                 annotationMoreCardView.setOnMoreClickListener(new AnnotationMoreCardView.OnMoreClick() {
                     @Override
                     public void onClick() {
@@ -782,6 +796,13 @@ public class ArticleFragment extends Fragment
                     @Override
                     public void onVote(Annotation annotation) {
                         onAnnotationVote(annotation);
+                    }
+                });
+
+                annotationCardView.setOnFollowListener(new AnnotationCardView.OnFollowListener() {
+                    @Override
+                    public void onUpdate(User updatedUser) {
+                        onFollow(updatedUser);
                     }
                 });
 

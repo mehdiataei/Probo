@@ -69,6 +69,10 @@ public class NewsFragment extends Fragment
         @Override
         public void onPageSelected(int i) {
             if (i < currentPageIndex && fragments.size() > i + 1) {
+                if (i == 0) {
+                    articleUpdated = true;
+                }
+
                 fragments.subList(i + 1, fragments.size()).clear();
                 pagerAdapter.notifyDataSetChanged();
             }
@@ -223,6 +227,11 @@ public class NewsFragment extends Fragment
         @Override
         public int getCount() {
             return fragments.size();
+        }
+
+        @Override
+        public void destroyItem(ViewGroup container, int position, Object object) {
+            super.destroyItem(container, position, object);
         }
     }
 

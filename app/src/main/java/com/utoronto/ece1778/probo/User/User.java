@@ -16,6 +16,7 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
@@ -25,6 +26,7 @@ import com.utoronto.ece1778.probo.News.Article;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -58,6 +60,9 @@ public class User {
 
     private String uid, profileImagePath, name, title;
     private ArrayList<Annotation> annotations;
+    private ArrayList<Annotation> subscriptions;
+    private ArrayList<User> following;
+
     private boolean loaded;
 
     public User() {
@@ -68,6 +73,9 @@ public class User {
         }
 
         this.annotations = new ArrayList<>();
+        this.subscriptions = new ArrayList<>();
+        this.following = new ArrayList<>();
+
         this.loaded = false;
     }
 
@@ -96,6 +104,14 @@ public class User {
         return this.annotations;
     }
 
+    public ArrayList<Annotation> getSubscriptions() {
+        return this.subscriptions;
+    }
+
+    public ArrayList<User> getFollowing() {
+        return this.following;
+    }
+
     public void setName(String name) {
         this.name = name;
     }
@@ -106,6 +122,10 @@ public class User {
 
     public void setProfileImagePath(String profileImagePath) {
         this.profileImagePath = profileImagePath;
+    }
+
+    public boolean isFollowing(User checkUser) {
+        return this.following.contains(checkUser);
     }
 
     public boolean hasLoaded() {
@@ -131,6 +151,33 @@ public class User {
                         profileImagePath = documentSnapshot.getString("profileImagePath");
                         name = documentSnapshot.getString("name");
                         title = documentSnapshot.getString("title");
+
+                        loadFollowing(cb);
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        cb.onError(e);
+                    }
+                });
+    }
+
+    private void loadFollowing(final UserCallback cb) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        this.following = new ArrayList<>();
+
+        db.collection("users")
+                .document(this.uid)
+                .collection("following")
+                .get()
+                .addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
+                    @Override
+                    public void onSuccess(QuerySnapshot queryDocumentSnapshots) {
+                        for (DocumentSnapshot documentSnapshot : queryDocumentSnapshots) {
+                            following.add(new User(documentSnapshot.getString("userId")));
+                        }
 
                         loaded = true;
 
@@ -209,6 +256,91 @@ public class User {
                                             );
 
                                             annotations.add(annotation);
+                                        }
+
+                                        cb.onLoad();
+                                    }
+                                })
+                                .addOnFailureListener(new OnFailureListener() {
+                                    @Override
+                                    public void onFailure(@NonNull Exception e) {
+                                        cb.onError(e);
+                                    }
+                                });
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        cb.onError(e);
+                    }
+                });
+    }
+
+    public void loadSubscriptions(final UserAnnotationsCallback cb) {
+        final User currentUser = this;
+        final FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        this.subscriptions = new ArrayList<>();
+
+        db.collection("annotations")
+                .whereArrayContains("subscribers", currentUser.uid)
+                .get()
+                .addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
+                    @Override
+                    public void onSuccess(final QuerySnapshot queryDocumentSnapshots) {
+                        db.collection("annotation_votes")
+                                .get()
+                                .addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
+                                    @Override
+                                    public void onSuccess(QuerySnapshot queryVotesDocumentSnapshots) {
+                                        for (DocumentSnapshot documentSnapshot : queryDocumentSnapshots) {
+                                            String annotationId = documentSnapshot.getId();
+                                            Article article = new Article(documentSnapshot.getString("articleId"));
+                                            String type = documentSnapshot.getString("type");
+                                            Long startIndex = documentSnapshot.getLong("startIndex");
+                                            Long endIndex = documentSnapshot.getLong("endIndex");
+                                            Long value = documentSnapshot.getLong("value");
+                                            HashMap<String, AnnotationVote> upvotes = new HashMap<>();
+                                            HashMap<String, AnnotationVote> downvotes = new HashMap<>();
+
+                                            for (DocumentSnapshot votesDocumentSnapshot : queryVotesDocumentSnapshots) {
+                                                if (votesDocumentSnapshot.getString("annotationId").equals(annotationId)) {
+                                                    AnnotationVote vote = new AnnotationVote(
+                                                            votesDocumentSnapshot.getId(),
+                                                            new User(votesDocumentSnapshot.getString("userId")),
+                                                            votesDocumentSnapshot.getBoolean("value")
+                                                    );
+
+                                                    if (vote.getValue()) {
+                                                        upvotes.put(
+                                                                votesDocumentSnapshot.getString("userId"),
+                                                                vote
+                                                        );
+                                                    } else {
+                                                        downvotes.put(
+                                                                votesDocumentSnapshot.getString("userId"),
+                                                                vote
+                                                        );
+                                                    }
+                                                }
+                                            }
+
+                                            Annotation annotation = new Annotation(
+                                                    annotationId,
+                                                    article,
+                                                    currentUser,
+                                                    type,
+                                                    startIndex.intValue(),
+                                                    endIndex.intValue(),
+                                                    value.intValue(),
+                                                    documentSnapshot.getString("comment"),
+                                                    documentSnapshot.getString("source"),
+                                                    upvotes,
+                                                    downvotes
+                                            );
+
+                                            subscriptions.add(annotation);
                                         }
 
                                         cb.onLoad();
@@ -454,6 +586,14 @@ public class User {
         User.uploadProfileImage(uploadCb, this.uid, profileImage);
     }
 
+    public void subscribeToAnnotations() {
+        FirebaseMessaging firebaseMessaging = FirebaseMessaging.getInstance();
+
+        for (Annotation annotation : this.subscriptions) {
+            firebaseMessaging.subscribeToTopic(annotation.getNotificationTopic());
+        }
+    }
+
     public static void uploadProfileImage(final UserUploadProfileImageCallback cb, String userUid, Bitmap image) {
         if (image == null) {
             cb.onUploaded(null);
@@ -484,6 +624,84 @@ public class User {
                 cb.onError(e);
             }
         });
+    }
+
+    public void follow(UserFollowCallback cb, User userToFollow) {
+        if (this.equals(userToFollow)) {
+            cb.onUpdate();
+            return;
+        }
+
+        if (!this.following.contains(userToFollow)) {
+            this.following.add(userToFollow);
+            this.addFollowing(cb, userToFollow);
+        }
+    }
+
+    public void unfollow(UserFollowCallback cb, User userToUnfollow) {
+        if (this.following.contains(userToUnfollow)) {
+            this.following.remove(userToUnfollow);
+            this.removeFollowing(cb, userToUnfollow);
+        }
+    }
+
+    private void addFollowing(final UserFollowCallback cb, User userToAdd) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        Map<String, Object> updatedFollowing = new HashMap<>();
+
+        updatedFollowing.put("userId", userToAdd.getUid());
+        updatedFollowing.put("timestamp", new Date().getTime());
+
+        db.collection("users")
+                .document(this.uid)
+                .collection("following")
+                .document(this.uid + ":" + userToAdd.getUid())
+                .set(updatedFollowing)
+                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void aVoid) {
+                        cb.onUpdate();
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        cb.onError(e);
+                    }
+                });
+    }
+
+    private void removeFollowing(final UserFollowCallback cb, User userToRemove) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        db.collection("users")
+                .document(this.uid)
+                .collection("following")
+                .document(this.uid + ":" + userToRemove.getUid())
+                .delete()
+                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void aVoid) {
+                        cb.onUpdate();
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        cb.onError(e);
+                    }
+                });
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        if (!(object instanceof User)) {
+            return false;
+        }
+
+        User otherUser = (User) object;
+
+        return this.uid.equals(otherUser.getUid());
     }
 
     public interface UserCallback {
@@ -518,6 +736,11 @@ public class User {
 
     public interface UserUploadProfileImageCallback {
         void onUploaded(String path);
+        void onError(Exception error);
+    }
+
+    public interface UserFollowCallback {
+        void onUpdate();
         void onError(Exception error);
     }
 }

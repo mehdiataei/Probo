@@ -16,6 +16,11 @@
             android:id="@+id/nav_profile"
             android:icon="@drawable/profile_image_default"
             android:title="@string/user_nav_profile" />
+
+        <item
+            android:id="@+id/nav_notifications"
+            android:icon="@drawable/notification_icon"
+            android:title="@string/user_nav_notifications" />
     </group>
 
     <group
