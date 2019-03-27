@@ -26,8 +26,6 @@ public class AnnotationsFragment extends Fragment {
             ARG_START_INDEX = "startIndex",
             ARG_END_INDEX = "endIndex";
 
-    private User user;
-
     private Article article;
     private String type;
     private int startIndex;
@@ -37,6 +35,7 @@ public class AnnotationsFragment extends Fragment {
     private ProgressBar spinner;
     private RecyclerView annotationsContainer;
 
+    private User.UserFragmentInteractionListener userInteractionListener;
     private AnnotationsFragmentInteractionListener interactionListener;
 
     public AnnotationsFragment() {
@@ -76,8 +75,6 @@ public class AnnotationsFragment extends Fragment {
         spinner = v.findViewById(R.id.progress_spinner);
         swipeRefreshLayout.setOnRefreshListener(handleRefresh);
         annotationsContainer = v.findViewById(R.id.annotations_container);
-
-        user = new User();
 
         load();
 
@@ -160,7 +157,7 @@ public class AnnotationsFragment extends Fragment {
 
         AnnotationsRecyclerAdapter adapter = new AnnotationsRecyclerAdapter(
                 article.getLocatedAnnotations(type, startIndex, endIndex),
-                user,
+                userInteractionListener.getUser(),
                 onUserClickListener,
                 onVoteListener
         );
@@ -174,6 +171,13 @@ public class AnnotationsFragment extends Fragment {
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
+
+        if (context instanceof User.UserFragmentInteractionListener) {
+            userInteractionListener = (User.UserFragmentInteractionListener) context;
+        } else {
+            throw new RuntimeException(context.toString()
+                    + " must implement User.UserFragmentInteractionListener");
+        }
 
         Fragment parentFragment = getParentFragment();
 

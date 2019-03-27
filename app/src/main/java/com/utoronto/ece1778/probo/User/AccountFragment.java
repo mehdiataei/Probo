@@ -36,10 +36,10 @@ public class AccountFragment extends Fragment {
     private TextView errorText, progressText;
     private Button submitButton;
 
-    private User user;
     private ImageCapture imageCapture;
     private boolean profileImageChanged;
 
+    private User.UserFragmentInteractionListener userInteractionListener;
     private AccountFragmentInteractionListener interactionListener;
 
     public AccountFragment() {
@@ -57,7 +57,6 @@ public class AccountFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
-            user = new User(getArguments().getString(ARG_USER_ID));
         }
     }
 
@@ -83,7 +82,7 @@ public class AccountFragment extends Fragment {
         profileImageView.setOnClickListener(handleProfileImageClick);
         submitButton.setOnClickListener(handleSubmitClick);
 
-        load();
+        populate();
 
         return v;
     }
@@ -101,25 +100,6 @@ public class AccountFragment extends Fragment {
             submit();
         }
     };
-
-    private void load() {
-        User.UserCallback cb = new User.UserCallback() {
-            @Override
-            public void onLoad() {
-                populate();
-                hideProgress();
-                enable();
-            }
-
-            @Override
-            public void onError(Exception error) {
-            }
-        };
-
-        disable();
-        showProgress(getString(R.string.account_loading));
-        user.load(cb);
-    }
 
     private void populate() {
         ImageLoader.ImageLoaderCallback cb = new ImageLoader.ImageLoaderCallback() {
@@ -141,9 +121,9 @@ public class AccountFragment extends Fragment {
             }
         };
 
-        if (user.getProfileImagePath() != null) {
+        if (userInteractionListener.getUser().getProfileImagePath() != null) {
             ImageLoader imageLoader = new ImageLoader(
-                    user.getProfileImagePath(),
+                    userInteractionListener.getUser().getProfileImagePath(),
                     getActivity().getApplicationContext()
             );
 
@@ -153,10 +133,10 @@ public class AccountFragment extends Fragment {
             profileImageProgress.setVisibility(View.INVISIBLE);
         }
 
-        nameText.setText(user.getName());
+        nameText.setText(userInteractionListener.getUser().getName());
 
-        if (user.getTitle() != null) {
-            titleText.setText(user.getTitle());
+        if (userInteractionListener.getUser().getTitle() != null) {
+            titleText.setText(userInteractionListener.getUser().getTitle());
         }
     }
 
@@ -230,13 +210,17 @@ public class AccountFragment extends Fragment {
         profileImageBitmap.centerCrop();
         profileImageBitmap.resizeSquare(1024);
 
-        user.update(
+        User updatedUser = userInteractionListener.getUser();
+
+        updatedUser.update(
                 cb,
                 profileImageChanged ? profileImageBitmap.getBitmap() : null,
                 nameText.getText().toString(),
                 titleText.getText().toString(),
                 profileImageChanged
         );
+
+        userInteractionListener.updateUser(updatedUser);
     }
 
     private void captureImage() {
@@ -294,6 +278,14 @@ public class AccountFragment extends Fragment {
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
+
+        if (context instanceof User.UserFragmentInteractionListener) {
+            userInteractionListener = (User.UserFragmentInteractionListener) context;
+        } else {
+            throw new RuntimeException(context.toString()
+                    + " must implement User.UserFragmentInteractionListener");
+        }
+
         if (context instanceof AccountFragmentInteractionListener) {
             interactionListener = (AccountFragmentInteractionListener) context;
         } else {

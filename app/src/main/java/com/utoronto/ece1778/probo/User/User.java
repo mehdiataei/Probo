@@ -743,4 +743,9 @@ public class User {
         void onUpdate();
         void onError(Exception error);
     }
+
+    public interface UserFragmentInteractionListener {
+        User getUser();
+        void updateUser(User updatedUser);
+    }
 }

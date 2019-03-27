@@ -37,9 +37,9 @@ public class ProfileFragment extends Fragment {
     private TextView nameText;
     private TextView titleText;
 
-    private User user;
     private User profileUser;
 
+    private User.UserFragmentInteractionListener userInteractionListener;
     private ProfileFragmentInteractionListener interactionListener;
 
     public ProfileFragment() {
@@ -76,17 +76,6 @@ public class ProfileFragment extends Fragment {
         nameText = v.findViewById(R.id.name);
         titleText = v.findViewById(R.id.title);
 
-        User.UserCallback cb = new User.UserCallback() {
-            @Override
-            public void onLoad() {
-                loadAnnotations();
-            }
-
-            @Override
-            public void onError(Exception error) {
-            }
-        };
-
         User.UserCallback profileCb = new User.UserCallback() {
             @Override
             public void onLoad() {
@@ -98,9 +87,8 @@ public class ProfileFragment extends Fragment {
             }
         };
 
-        user = new User();
-        user.load(cb);
         profileUser.load(profileCb);
+        loadAnnotations();
 
         refreshLayout.setOnRefreshListener(handleRefresh);
 
@@ -212,7 +200,7 @@ public class ProfileFragment extends Fragment {
 
         AnnotationsRecyclerAdapter adapter = new AnnotationsRecyclerAdapter(
                 profileUser.getAnnotations(),
-                user,
+                userInteractionListener.getUser(),
                 onUserClickListener,
                 onVoteListener
         );
@@ -226,6 +214,13 @@ public class ProfileFragment extends Fragment {
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
+
+        if (context instanceof User.UserFragmentInteractionListener) {
+            userInteractionListener = (User.UserFragmentInteractionListener) context;
+        } else {
+            throw new RuntimeException(context.toString()
+                    + " must implement User.UserFragmentInteractionListener");
+        }
 
         if (context instanceof ProfileFragmentInteractionListener) {
             interactionListener = (ProfileFragmentInteractionListener) context;

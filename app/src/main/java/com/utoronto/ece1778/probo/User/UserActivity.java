@@ -35,6 +35,7 @@ import java.lang.reflect.Method;
 
 public class UserActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener,
+                    User.UserFragmentInteractionListener,
                     NewsFragment.NewsFragmentInteractionListener,
                     ProfileFragment.ProfileFragmentInteractionListener,
                     NotificationsFragment.NotificationsFragmentInteractionListener,
@@ -317,6 +318,16 @@ public class UserActivity extends AppCompatActivity
     @Override
     public void onRouteToProfile(String userId) {
         routeToProfile(userId);
+    }
+
+    @Override
+    public User getUser() {
+        return user;
+    }
+
+    @Override
+    public void updateUser(User updatedUser) {
+        user = updatedUser;
     }
 
     private void routeToSignIn() {

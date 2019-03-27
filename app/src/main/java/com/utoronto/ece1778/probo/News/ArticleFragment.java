@@ -89,8 +89,7 @@ public class ArticleFragment extends Fragment
     private TextView author;
     private TextView datetime;
 
-    private User user;
-
+    private User.UserFragmentInteractionListener userInteractionListener;
     private ArticleFragmentInteractionListener interactionListener;
 
     public ArticleFragment() {
@@ -135,8 +134,6 @@ public class ArticleFragment extends Fragment
         author = v.findViewById(R.id.author);
         datetime = v.findViewById(R.id.datetime);
 
-        user = new User();
-
         final Article.ArticleCallback cb = new Article.ArticleCallback() {
             @Override
             public void onLoad() {
@@ -158,18 +155,7 @@ public class ArticleFragment extends Fragment
             }
         };
 
-        User.UserCallback userCb = new User.UserCallback() {
-            @Override
-            public void onLoad() {
-                article.load(cb);
-            }
-
-            @Override
-            public void onError(Exception error) {
-            }
-        };
-
-        user.load(userCb);
+        article.load(cb);
 
         refresh.setOnRefreshListener(handleRefresh);
 
@@ -311,7 +297,7 @@ public class ArticleFragment extends Fragment
         if (type.equals(Annotation.TYPE_HEADLINE)) {
             article.addHeadlineAnnotation(
                     submitCb,
-                    user,
+                    userInteractionListener.getUser(),
                     startIndex,
                     endIndex,
                     value,
@@ -321,7 +307,7 @@ public class ArticleFragment extends Fragment
         } else {
             article.addBodyAnnotation(
                     submitCb,
-                    user,
+                    userInteractionListener.getUser(),
                     startIndex,
                     endIndex,
                     value,
@@ -337,7 +323,7 @@ public class ArticleFragment extends Fragment
     }
 
     public void onFollow(User updatedUser) {
-        user = updatedUser;
+        userInteractionListener.updateUser(updatedUser);
     }
 
     public void onMoreAnnotations(String type, int startIndex, int endIndex) {
@@ -382,6 +368,13 @@ public class ArticleFragment extends Fragment
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
+
+        if (context instanceof User.UserFragmentInteractionListener) {
+            userInteractionListener = (User.UserFragmentInteractionListener) context;
+        } else {
+            throw new RuntimeException(context.toString()
+                    + " must implement User.UserFragmentInteractionListener");
+        }
 
         Fragment parentFragment = getParentFragment();
 
@@ -783,7 +776,7 @@ public class ArticleFragment extends Fragment
                 return annotationMoreCardView;
             } else {
                 AnnotationCardView annotationCardView = new AnnotationCardView(getContext());
-                annotationCardView.setData(this.annotations.get(position), user);
+                annotationCardView.setData(this.annotations.get(position), userInteractionListener.getUser());
 
                 annotationCardView.setOnUserClickListener(new AnnotationCardView.OnUserClickListener() {
                     @Override
@@ -863,15 +856,11 @@ public class ArticleFragment extends Fragment
                 view.setAlpha(0f);
             }
         }
-
     }
-
 
     public interface ArticleFragmentInteractionListener {
         void onAnnotationInput(String quote, String type, int startIndex, int endIndex, int value);
-
         void onMoreAnnotations(String type, int startIndex, int endIndex);
-
         void onRouteToProfile(String userId);
     }
 }

@@ -47,7 +47,6 @@
     <string name="account_title_hint">Title</string>
     <string name="account_submit_button">SAVE</string>
     <string name="account_error_empty_name">Please enter your name.</string>
-    <string name="account_loading">Loading your account.</string>
     <string name="account_progress_uploading_profile_image">Uploading your profile image.</string>
     <string name="account_progress_saving">Saving.</string>
     <string name="account_error_general">An error has occurred. Please try again later.</string>
@@ -73,7 +72,8 @@
     <string name="annotation_input_title_biased_very">Why is this very biased?</string>
     <string name="annotation_input_title_biased">Why is this biased?</string>
     <string name="annotation_input_title_biased_somewhat">Why is this somewhat biased?</string>
-    <string name="annotation_input_title_neutral">Why is this neutral?</string>
+    <string name="annotation_input_title_default_fact">Is this fact true or false?</string>
+    <string name="annotation_input_title_default_opinion">Is this opinion unbiased or biased?</string>
     <string name="annotation_input_title_true_somewhat">Why is this somewhat true?</string>
     <string name="annotation_input_title_true">Why is this true?</string>
     <string name="annotation_input_title_true_very">Why is this very true?</string>
@@ -82,8 +82,11 @@
     <string name="annotation_input_title_unbiased_very">Why is this very unbiased?</string>
     <string name="annotation_input_edit_text_hint">Enter your comment</string>
     <string name="annotation_input_source_hint">Enter your source</string>
+    <string name="annotation_input_primary_source_text">I am a source in this article.</string>
     <string name="annotation_input_error_icon_description">Error icon</string>
     <string name="annotation_input_submit">SUBMIT</string>
+    <string name="annotation_input_error_no_value_fact">Please indicate whether the fact is true or false.</string>
+    <string name="annotation_input_error_no_value_opinion">Please indicate whether the opinion is unbiased or biased.</string>
     <string name="annotation_input_error_no_comment">Please enter your comment.</string>
     <string name="annotation_input_error_no_source">You must provide a source when annotating a fact.</string>
     <string name="annotation_input_error_already_submitted">You have already annotated this sentence.</string>

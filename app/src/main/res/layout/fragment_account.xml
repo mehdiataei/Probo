@@ -101,7 +101,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="32dp"
                 android:padding="16dp"
-                android:background="@drawable/rectangle_border_light">
+                android:background="@drawable/rectangle_border_light"
+                android:visibility="gone">
 
                 <ProgressBar
                     android:id="@+id/progress_spinner"
@@ -116,8 +117,7 @@
                     android:layout_marginStart="8dp"
                     android:textColor="@color/colorPrimary"
                     android:layout_toEndOf="@+id/progress_spinner"
-                    android:layout_centerVertical="true"
-                    android:text="@string/account_loading" />
+                    android:layout_centerVertical="true" />
             </RelativeLayout>
 
             <Button
