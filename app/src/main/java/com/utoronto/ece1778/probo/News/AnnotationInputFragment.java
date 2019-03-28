@@ -268,21 +268,14 @@ public class AnnotationInputFragment extends Fragment {
 
         hideError();
         disable();
-        showProgress(getString(R.string.annotation_input_checking_source));
-
 
         if (interactionListener != null) {
-
-
             Annotation.AnnotationSourceCheckerCallback sourceCb = new Annotation.AnnotationSourceCheckerCallback() {
                 @Override
                 public void onChecked() {
-
-
                     hideError();
                     disable();
                     showProgress(getString(R.string.annotation_input_progress));
-
 
                     Annotation.AnnotationSubmitCallback cb = new Annotation.AnnotationSubmitCallback() {
                         @Override
@@ -340,13 +333,17 @@ public class AnnotationInputFragment extends Fragment {
                 }
             };
 
-            interactionListener.onAnnotationSourceChecker(
-                    sourceCb,
-                    source
-            );
+            if (primarySource.isChecked()) {
+                sourceCb.onChecked();
+            } else {
+                showProgress(getString(R.string.annotation_input_checking_source));
+
+                interactionListener.onAnnotationSourceChecker(
+                        sourceCb,
+                        source
+                );
+            }
         }
-
-
     }
 
     public void showError(String errorMessage) {
@@ -383,13 +380,21 @@ public class AnnotationInputFragment extends Fragment {
 
     public void enable() {
         closeButton.setEnabled(true);
+        valueSeekBar.setEnabled(true);
         commentText.setEnabled(true);
+        sourceText.setEnabled(true);
+        primarySource.setEnabled(true);
+        subscribe.setEnabled(true);
         submitButton.setEnabled(true);
     }
 
     public void disable() {
         closeButton.setEnabled(false);
+        valueSeekBar.setEnabled(false);
         commentText.setEnabled(false);
+        sourceText.setEnabled(false);
+        primarySource.setEnabled(false);
+        subscribe.setEnabled(false);
         submitButton.setEnabled(false);
     }
 
