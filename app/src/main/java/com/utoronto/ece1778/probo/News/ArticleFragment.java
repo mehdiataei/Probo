@@ -1,12 +1,10 @@
 package com.utoronto.ece1778.probo.News;
 
 import android.content.Context;
-
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
-
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -18,10 +16,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
 import android.widget.CompoundButton;
-import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.Switch;
@@ -29,15 +24,21 @@ import android.widget.TextView;
 
 import com.bumptech.glide.Priority;
 import com.bumptech.glide.request.RequestOptions;
+import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
 import com.ibm.watson.developer_cloud.http.ServiceCallback;
 import com.ibm.watson.developer_cloud.natural_language_understanding.v1.NaturalLanguageUnderstanding;
 import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.AnalysisResults;
 import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.AnalyzeOptions;
 import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.Features;
+import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.KeywordsOptions;
+import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.KeywordsResult;
 import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.SentimentOptions;
 import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.TargetedSentimentResults;
 import com.ibm.watson.developer_cloud.service.security.IamOptions;
@@ -52,10 +53,14 @@ import com.utoronto.ece1778.probo.Utils.SentimentParams;
 import com.utoronto.ece1778.probo.Utils.SquareImageView;
 import com.utoronto.ece1778.probo.Utils.WrapHeightViewPager;
 
+import net.ricecode.similarity.JaroWinklerStrategy;
+import net.ricecode.similarity.SimilarityStrategy;
+import net.ricecode.similarity.StringSimilarityService;
+import net.ricecode.similarity.StringSimilarityServiceImpl;
+
 import java.lang.ref.WeakReference;
 import java.text.DateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -317,6 +322,14 @@ public class ArticleFragment extends Fragment
         }
     }
 
+
+    public void onAnnotationSourceChecker(final Annotation.AnnotationSourceCheckerCallback cb, String source) {
+
+        startSourceChecker(source, cb);
+
+
+    }
+
     @Override
     public void onAnnotationVote(Annotation annotation) {
         article.updateAnnotation(annotation);
@@ -430,8 +443,15 @@ public class ArticleFragment extends Fragment
             SentimentOptions sentiment = new SentimentOptions.Builder().targets(sentencesList)
                     .build();
 
+            KeywordsOptions keywords = new KeywordsOptions.Builder()
+                    .sentiment(true)
+                    .emotion(true)
+                    .limit(20)
+                    .build();
+
             Features features = new Features.Builder()
                     .sentiment(sentiment)
+                    .keywords(keywords)
                     .build();
 
 
@@ -446,9 +466,9 @@ public class ArticleFragment extends Fragment
 
 
                     List<TargetedSentimentResults> listOfSentiments = response.getSentiment().getTargets();
+                    List<KeywordsResult> listOfKeywords = response.getKeywords();
 
-
-//                    Log.d(TAG, "onResponse: response of the whole doc: " + response.getSentiment().getTargets().get(5).getText() + " score is: " + response.getSentiment().getTargets().get(5).getScore());
+                    Log.d(TAG, "onResponse: response of the whole doc: " + response);
 
                     Log.d(TAG, "onResponse: Size of the sentiment list: " + listOfSentiments.size());
 
@@ -476,10 +496,9 @@ public class ArticleFragment extends Fragment
                     docData.put("analysed", "true");
 
 
-                    Log.d(TAG, "onResponse: size of sTemp:" + sTemp.size());
                     for (Sentence s : sTemp) {
 
-                        Log.d(TAG, "onPostExecute: Adding sentences...");
+                        Log.d(TAG, "onPostExecute: Adding NLP results to the database...");
 
 
                         db.collection("news").document(article.getId()).collection("sentences").add(s).addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
@@ -496,8 +515,35 @@ public class ArticleFragment extends Fragment
 
                     }
 
-                    db.collection("news").document(article.getId()).update(docData);
+                    for (KeywordsResult k : listOfKeywords) {
 
+                        Map<String, Object> keywordsInfo = new HashMap<>();
+                        keywordsInfo.put("text", k.getText());
+                        keywordsInfo.put("relevance", k.getRelevance());
+                        keywordsInfo.put("sentiment", k.getSentiment());
+                        keywordsInfo.put("emotion", k.getEmotion());
+
+
+                        db.collection("news").document(article.getId()).collection("keywords").add(keywordsInfo).addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
+                            @Override
+                            public void onSuccess(DocumentReference documentReference) {
+
+                                Log.d(TAG, "onSuccess: Added keyword.");
+
+                            }
+                        }).addOnFailureListener(new OnFailureListener() {
+                            @Override
+                            public void onFailure(@NonNull Exception e) {
+
+                                Log.d(TAG, "onFailure: Failed adding keyword.");
+
+                            }
+                        });
+
+                    }
+
+
+                    db.collection("news").document(article.getId()).update(docData);
 
                 }
 
@@ -530,6 +576,138 @@ public class ArticleFragment extends Fragment
         SentimentParams params = new SentimentParams(article.getRawBody(), article.getId());
 
         SentimentAnalysis task = new SentimentAnalysis(this);
+        task.execute(params);
+
+    }
+
+
+    private class SourceChecker extends AsyncTask<SourceCheckerParams, Void, Void> {
+
+
+        @Override
+        protected Void doInBackground(SourceCheckerParams... SourceCheckerParams) {
+
+            final Annotation.AnnotationSourceCheckerCallback cb = SourceCheckerParams[0].getCb();
+            final String source = SourceCheckerParams[0].getSource();
+
+            IamOptions options = new IamOptions.Builder()
+                    .apiKey("48kgp2fHd9HVz6fe3f0TsQjTWysYNx9iKc2eyh2aUoQ-")
+                    .build();
+
+            NaturalLanguageUnderstanding naturalLanguageUnderstanding = new NaturalLanguageUnderstanding("2018-11-16", options);
+            naturalLanguageUnderstanding.setEndPoint("https://gateway.watsonplatform.net/natural-language-understanding/api");
+
+
+            final KeywordsOptions keywords = new KeywordsOptions.Builder()
+                    .sentiment(false)
+                    .emotion(false)
+                    .limit(20)
+                    .build();
+
+            Features features = new Features.Builder()
+                    .keywords(keywords)
+                    .build();
+
+
+            AnalyzeOptions parameters = new AnalyzeOptions.Builder().url(source)
+                    .features(features)
+                    .build();
+
+            naturalLanguageUnderstanding
+                    .analyze(parameters).enqueue(new ServiceCallback<AnalysisResults>() {
+                @Override
+                public void onResponse(AnalysisResults response) {
+
+                    List<KeywordsResult> listOfKeywords = response.getKeywords();
+                    final List<String> listOfArticlesKeywords = new ArrayList<>();
+                    final List<String> listOfSourceKeywords = new ArrayList<>();
+
+                    Log.d(TAG, "onResponse: response of the source checking: " + response);
+
+
+                    for (KeywordsResult k : listOfKeywords) {
+
+                        listOfSourceKeywords.add(k.getText());
+
+                    }
+
+                    FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+                    db.collection("news").document(article.getId()).collection("keywords").get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                        @Override
+                        public void onComplete(@NonNull Task<QuerySnapshot> task) {
+
+                            for (QueryDocumentSnapshot document : task.getResult()) {
+
+                                listOfArticlesKeywords.add(document.getString("text"));
+
+                            }
+
+                            boolean checked = false;
+
+                            for (String sourceStr : listOfArticlesKeywords) {
+
+                                for (String targetStr : listOfSourceKeywords) {
+
+
+                                    SimilarityStrategy strategy = new JaroWinklerStrategy();
+
+                                    StringSimilarityService service = new StringSimilarityServiceImpl(strategy);
+                                    double score = service.score(sourceStr, targetStr);
+
+                                    Log.d(TAG, "onComplete: source: " + sourceStr + " target: " + targetStr + " Jaro score: " + score);
+
+
+                                    if (score > 0.9) {
+
+                                        cb.onChecked();
+                                        checked = true;
+
+                                    }
+
+                                }
+
+                            }
+
+                            if (!checked) {
+
+                                cb.onSourceError();
+                            }
+
+
+                        }
+                    });
+
+
+                }
+
+
+                @Override
+                public void onFailure(Exception e) {
+
+                    cb.onError(e);
+
+                }
+
+
+            });
+
+
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+        }
+    }
+
+
+    private void startSourceChecker(String source, Annotation.AnnotationSourceCheckerCallback cb) {
+
+        SourceCheckerParams params = new SourceCheckerParams(cb, source);
+
+        SourceChecker task = new SourceChecker();
         task.execute(params);
 
     }
@@ -858,9 +1036,41 @@ public class ArticleFragment extends Fragment
         }
     }
 
+
+    public class SourceCheckerParams {
+
+        Annotation.AnnotationSourceCheckerCallback cb;
+        String source;
+
+        public SourceCheckerParams(Annotation.AnnotationSourceCheckerCallback cb, String source) {
+            this.cb = cb;
+            this.source = source;
+        }
+
+
+        public Annotation.AnnotationSourceCheckerCallback getCb() {
+            return cb;
+        }
+
+        public void setCb(Annotation.AnnotationSourceCheckerCallback cb) {
+            this.cb = cb;
+        }
+
+        public String getSource() {
+            return source;
+        }
+
+        public void setSource(String source) {
+            this.source = source;
+        }
+    }
+
+
     public interface ArticleFragmentInteractionListener {
         void onAnnotationInput(String quote, String type, int startIndex, int endIndex, int value);
+
         void onMoreAnnotations(String type, int startIndex, int endIndex);
+
         void onRouteToProfile(String userId);
     }
 }

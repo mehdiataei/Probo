@@ -10,7 +10,6 @@ import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
-
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -22,10 +21,10 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
-import com.utoronto.ece1778.probo.User.SignInActivity;
-import com.utoronto.ece1778.probo.R;
-import com.utoronto.ece1778.probo.Utils.MyRecyclerViewAdapter;
 import com.utoronto.ece1778.probo.Models.NewsItem;
+import com.utoronto.ece1778.probo.R;
+import com.utoronto.ece1778.probo.User.SignInActivity;
+import com.utoronto.ece1778.probo.Utils.MyRecyclerViewAdapter;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;

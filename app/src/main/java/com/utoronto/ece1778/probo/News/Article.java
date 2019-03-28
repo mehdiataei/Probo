@@ -1,52 +1,25 @@
 package com.utoronto.ece1778.probo.News;
 
-import android.content.Context;
 import android.graphics.Color;
-import android.os.AsyncTask;
-import android.provider.Telephony;
 import android.support.annotation.NonNull;
 import android.support.v4.graphics.ColorUtils;
 import android.text.SpannableString;
 import android.text.style.BackgroundColorSpan;
-import android.util.Log;
 
-import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
-
-
-import com.google.android.gms.tasks.Task;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
-import com.ibm.watson.developer_cloud.natural_language_understanding.v1.NaturalLanguageUnderstanding;
-import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.AnalysisResults;
-import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.AnalyzeOptions;
-import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.CategoriesOptions;
-import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.Features;
-import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.SentimentOptions;
-import com.ibm.watson.developer_cloud.service.security.IamOptions;
-import com.utoronto.ece1778.probo.Models.NewsItem;
-import com.utoronto.ece1778.probo.R;
-import com.utoronto.ece1778.probo.User.User;
-import com.utoronto.ece1778.probo.Utils.ExtractSentences;
-import com.utoronto.ece1778.probo.Utils.Tuple;
 import com.utoronto.ece1778.probo.Models.Sentence;
+import com.utoronto.ece1778.probo.User.User;
+import com.utoronto.ece1778.probo.Utils.Tuple;
 
-import java.io.IOException;
-import java.lang.ref.WeakReference;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Locale;
-import java.util.Map;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
 
 public class Article {
     public static final String TAG = "ARTICLE";
@@ -425,15 +398,6 @@ public class Article {
                                 }
 
 
-//                                if (analysed.equals("false") && body !=null) {
-//
-//                                    AsyncTaskParams params = new AsyncTaskParams(body, id);
-//
-//                                    SentencesAttributes task = new SentencesAttributes();
-//                                    task.execute(params);
-//
-//                                }
-
                                 try {
                                     datetime = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.CANADA).parse(documentSnapshot.getString("date_created"));
                                 } catch (Exception e) {
@@ -624,12 +588,17 @@ public class Article {
 
     public interface ArticleCallback {
         void onLoad();
+
         void onArticleError(int errorCode);
+
         void onError(Exception e);
     }
 
     public interface ArticleAnnotationCallback {
         void onLoad();
+
         void onError(Exception e);
     }
+
+
 }

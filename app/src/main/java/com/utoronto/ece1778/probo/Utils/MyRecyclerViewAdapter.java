@@ -16,7 +16,6 @@ import com.bumptech.glide.request.RequestOptions;
 import com.utoronto.ece1778.probo.Models.NewsItem;
 import com.utoronto.ece1778.probo.R;
 
-
 import java.util.List;
 
 import static android.support.constraint.Constraints.TAG;

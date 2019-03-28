@@ -1,6 +1,5 @@
 package com.utoronto.ece1778.probo.Utils;
 
-import android.content.Context;
 import android.text.style.ClickableSpan;
 import android.view.View;
 

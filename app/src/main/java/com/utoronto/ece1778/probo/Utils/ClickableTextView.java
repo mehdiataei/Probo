@@ -1,27 +1,18 @@
 package com.utoronto.ece1778.probo.Utils;
 
-import java.lang.ref.WeakReference;
-import java.util.List;
-
 import android.content.Context;
 import android.graphics.Color;
 import android.os.AsyncTask;
-import android.os.Bundle;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.TextPaint;
-import android.text.method.LinkMovementMethod;
-import android.text.style.ClickableSpan;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.View;
-import android.widget.TextView;
 
+import java.lang.ref.WeakReference;
+import java.util.List;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-
-import static android.support.constraint.Constraints.TAG;
 
 /**
  * Defines a TextView widget where user can click on different words to see different actions

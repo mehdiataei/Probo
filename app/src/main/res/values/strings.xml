@@ -113,4 +113,6 @@
     <string name="nav_header_subtitle">android.studio@android.com</string>
     <string name="nav_header_desc">Navigation header</string>
     <string name="action_settings">Settings</string>
+    <string name="annotation_input_error_source_invalid">Please provide a valid source.</string>
+    <string name="annotation_input_checking_source">Checking validity of the source&#8230;</string>
 </resources>

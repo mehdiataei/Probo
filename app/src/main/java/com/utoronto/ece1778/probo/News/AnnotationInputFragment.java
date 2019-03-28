@@ -14,12 +14,13 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.RelativeLayout;
-import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.utoronto.ece1778.probo.R;
 import com.utoronto.ece1778.probo.Utils.Helper;
 import com.xw.repo.BubbleSeekBar;
+
+import static android.support.constraint.Constraints.TAG;
 
 public class AnnotationInputFragment extends Fragment {
     private static final String
@@ -52,8 +53,10 @@ public class AnnotationInputFragment extends Fragment {
     private TextView errorText;
     private Button submitButton;
     private RelativeLayout progressContainer;
+    private TextView progressText;
 
-    public AnnotationInputFragment() {}
+    public AnnotationInputFragment() {
+    }
 
     public static AnnotationInputFragment newInstance(boolean isFact, String quote, String type,
                                                       int startIndex, int endIndex, int value) {
@@ -102,6 +105,7 @@ public class AnnotationInputFragment extends Fragment {
         errorContainer = v.findViewById(R.id.error_container);
         errorText = v.findViewById(R.id.error_text);
         submitButton = v.findViewById(R.id.submit);
+        progressText = v.findViewById(R.id.progress_textview);
         progressContainer = v.findViewById(R.id.progress_container);
 
         if (isFact) {
@@ -189,8 +193,8 @@ public class AnnotationInputFragment extends Fragment {
     private void setTitleText(int value) {
         int
                 veryNegative = isFact ?
-                        R.string.annotation_input_title_false_very :
-                        R.string.annotation_input_title_biased_very,
+                R.string.annotation_input_title_false_very :
+                R.string.annotation_input_title_biased_very,
                 negative = isFact ?
                         R.string.annotation_input_title_false :
                         R.string.annotation_input_title_biased,
@@ -236,8 +240,8 @@ public class AnnotationInputFragment extends Fragment {
     }
 
     public void submit() {
-        String comment = commentText.getText().toString();
-        String source = sourceText.getText().toString();
+        final String comment = commentText.getText().toString();
+        final String source = sourceText.getText().toString();
 
         if (annotationValue == 0) {
             String valueErrorText = isFact ?
@@ -260,45 +264,85 @@ public class AnnotationInputFragment extends Fragment {
 
         hideError();
         disable();
-        showProgress();
+        showProgress(getString(R.string.annotation_input_checking_source));
+
 
         if (interactionListener != null) {
-            Annotation.AnnotationSubmitCallback cb = new Annotation.AnnotationSubmitCallback() {
+
+
+            Annotation.AnnotationSourceCheckerCallback sourceCb = new Annotation.AnnotationSourceCheckerCallback() {
                 @Override
-                public void onSubmit(Annotation annotation) {
-                    hideProgress();
-                    interactionListener.onAnnotationClose();
+                public void onChecked() {
+
+
+                    hideError();
+                    disable();
+                    showProgress(getString(R.string.annotation_input_progress));
+
+
+                    Annotation.AnnotationSubmitCallback cb = new Annotation.AnnotationSubmitCallback() {
+                        @Override
+                        public void onSubmit(Annotation annotation) {
+                            hideProgress();
+                            interactionListener.onAnnotationClose();
+                        }
+
+                        @Override
+                        public void onAnnotationError(int errorCode) {
+                            switch (errorCode) {
+                                case Article.ARTICLE_ANNOTATION_ERROR_ALREADY_SUBMITTED:
+                                    showError(getString(R.string.annotation_input_error_already_submitted));
+                                    break;
+                                case Article.ARTICLE_ANNOTATION_ERROR_INTERNAL:
+                                    showError(getString(R.string.annotation_input_error_general));
+                                default:
+                                    showError(getString(R.string.annotation_input_error_general));
+                            }
+                        }
+
+                        @Override
+                        public void onError(Exception e) {
+                            showError(getString(R.string.article_add_annotation_error));
+                        }
+                    };
+
+
+                    interactionListener.onAnnotationSubmit(
+                            cb,
+                            annotationType,
+                            annotationStartIndex,
+                            annotationEndIndex,
+                            annotationValue,
+                            comment,
+                            source
+                    );
+
+
                 }
 
                 @Override
-                public void onAnnotationError(int errorCode) {
-                    switch (errorCode) {
-                        case Article.ARTICLE_ANNOTATION_ERROR_ALREADY_SUBMITTED:
-                            showError(getString(R.string.annotation_input_error_already_submitted));
-                            break;
-                        case Article.ARTICLE_ANNOTATION_ERROR_INTERNAL:
-                            showError(getString(R.string.annotation_input_error_general));
-                        default:
-                            showError(getString(R.string.annotation_input_error_general));
-                    }
+                public void onSourceError() {
+
+                    showError(getString(R.string.annotation_input_error_source_invalid));
+
                 }
 
                 @Override
                 public void onError(Exception e) {
-                    showError(getString(R.string.article_add_annotation_error));
+
+                    Log.d(TAG, "onError: " + e);
+
                 }
             };
 
-            interactionListener.onAnnotationSubmit(
-                    cb,
-                    annotationType,
-                    annotationStartIndex,
-                    annotationEndIndex,
-                    annotationValue,
-                    comment,
+
+            interactionListener.onAnnotationSourceChecker(sourceCb,
                     source
             );
+
         }
+
+
     }
 
     public void showError(String errorMessage) {
@@ -345,7 +389,10 @@ public class AnnotationInputFragment extends Fragment {
         submitButton.setEnabled(false);
     }
 
-    public void showProgress() {
+    public void showProgress(String s) {
+
+        progressText.setText(s);
+
         progressContainer.setVisibility(View.VISIBLE);
     }
 
@@ -355,6 +402,10 @@ public class AnnotationInputFragment extends Fragment {
 
     public interface AnnotationInputFragmentInteractionListener {
         void onAnnotationSubmit(Annotation.AnnotationSubmitCallback cb, String type, int startIndex, int endIndex, int value, String comment, String source);
+
         void onAnnotationClose();
+
+        void onAnnotationSourceChecker(Annotation.AnnotationSourceCheckerCallback cb, String source);
+
     }
 }

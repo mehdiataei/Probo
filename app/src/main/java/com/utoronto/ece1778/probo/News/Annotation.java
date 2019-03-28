@@ -1,7 +1,6 @@
 package com.utoronto.ece1778.probo.News;
 
 import android.support.annotation.NonNull;
-import android.util.Log;
 
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
@@ -13,7 +12,6 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.firebase.iid.InstanceIdResult;
-import com.google.firebase.messaging.RemoteMessage;
 import com.utoronto.ece1778.probo.User.User;
 
 import java.util.HashMap;
@@ -347,6 +345,16 @@ public class Annotation {
     public interface AnnotationCallback {
         void onLoad();
         void onError(Exception e);
+    }
+
+    public interface AnnotationSourceCheckerCallback {
+
+        void onChecked();
+
+        void onSourceError();
+
+        void onError(Exception e);
+
     }
 
     public interface AnnotationSubmitCallback {

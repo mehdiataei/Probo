@@ -1,14 +1,12 @@
 package com.utoronto.ece1778.probo.News;
 
 import android.content.Context;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -19,11 +17,12 @@ import java.util.ArrayList;
 
 import javax.annotation.Nullable;
 
+
 public class NewsFragment extends Fragment
         implements ArticlesFragment.ArticlesFragmentInteractionListener,
-                    ArticleFragment.ArticleFragmentInteractionListener,
-                    AnnotationInputFragment.AnnotationInputFragmentInteractionListener,
-                    AnnotationsFragment.AnnotationsFragmentInteractionListener {
+        ArticleFragment.ArticleFragmentInteractionListener,
+        AnnotationInputFragment.AnnotationInputFragmentInteractionListener,
+        AnnotationsFragment.AnnotationsFragmentInteractionListener {
 
     private ArrayList<Fragment> fragments;
     private ViewPager viewPager;
@@ -64,7 +63,8 @@ public class NewsFragment extends Fragment
 
     private ViewPager.OnPageChangeListener handlePageChange = new ViewPager.OnPageChangeListener() {
         @Override
-        public void onPageScrolled(int i, float v, int i1) {}
+        public void onPageScrolled(int i, float v, int i1) {
+        }
 
         @Override
         public void onPageSelected(int i) {
@@ -81,7 +81,8 @@ public class NewsFragment extends Fragment
         }
 
         @Override
-        public void onPageScrollStateChanged(int i) {}
+        public void onPageScrollStateChanged(int i) {
+        }
     };
 
     @Override
@@ -144,9 +145,25 @@ public class NewsFragment extends Fragment
 
     @Override
     public void onAnnotationSubmit(Annotation.AnnotationSubmitCallback cb, String type, int startIndex, int endIndex, int value, String comment, String source) {
+
+
         if (fragments.size() > 1 && fragments.get(1) instanceof ArticleFragment) {
             ((ArticleFragment) fragments.get(1)).onAnnotationSubmit(cb, type, startIndex, endIndex, value, comment, source);
         }
+    }
+
+
+    @Override
+    public void onAnnotationSourceChecker(Annotation.AnnotationSourceCheckerCallback cb, String source) {
+
+
+        if (fragments.size() > 1 && fragments.get(1) instanceof ArticleFragment) {
+
+            ((ArticleFragment) fragments.get(1)).onAnnotationSourceChecker(cb, source);
+
+        }
+
+
     }
 
     @Override

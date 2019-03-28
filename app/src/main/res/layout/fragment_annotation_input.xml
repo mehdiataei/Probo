@@ -128,6 +128,7 @@
                 android:textColor="@color/colorPrimary"
                 android:layout_toEndOf="@+id/progress_spinner"
                 android:layout_centerVertical="true"
+                android:id="@+id/progress_textview"
                 android:text="@string/annotation_input_progress" />
         </RelativeLayout>
 

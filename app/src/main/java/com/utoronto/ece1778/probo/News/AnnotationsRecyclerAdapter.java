@@ -4,13 +4,10 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
 
 import com.utoronto.ece1778.probo.R;
-import com.utoronto.ece1778.probo.User.ProfileFragment;
 import com.utoronto.ece1778.probo.User.User;
 
-import java.security.acl.AclNotFoundException;
 import java.util.ArrayList;
 
 public class AnnotationsRecyclerAdapter extends RecyclerView.Adapter<AnnotationsRecyclerAdapter.AnnotationViewHolder> {

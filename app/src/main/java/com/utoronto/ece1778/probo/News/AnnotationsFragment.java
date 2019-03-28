@@ -3,8 +3,6 @@ package com.utoronto.ece1778.probo.News;
 import android.content.Context;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
@@ -16,8 +14,6 @@ import android.widget.ProgressBar;
 
 import com.utoronto.ece1778.probo.R;
 import com.utoronto.ece1778.probo.User.User;
-
-import java.util.ArrayList;
 
 public class AnnotationsFragment extends Fragment {
     private static final String

@@ -1,8 +1,5 @@
 package com.utoronto.ece1778.probo.Utils;
 
-import android.text.TextPaint;
-import android.text.style.ClickableSpan;
-
 import java.text.BreakIterator;
 import java.util.ArrayList;
 import java.util.List;
