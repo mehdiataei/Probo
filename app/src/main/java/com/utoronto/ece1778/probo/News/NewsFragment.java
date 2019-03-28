@@ -24,6 +24,16 @@ public class NewsFragment extends Fragment
         AnnotationInputFragment.AnnotationInputFragmentInteractionListener,
         AnnotationsFragment.AnnotationsFragmentInteractionListener {
 
+    private static final String
+            ARG_ARTICLE_ID = "articleId",
+            ARG_ANNOTATION_ID = "annotationId",
+            ARG_ANNOTATION_TYPE = "annotationType",
+            ARG_ANNOTATION_START_INDEX = "annotationStartIndex",
+            ARG_ANNOTATION_END_INDEX = "annotationEndIndex";
+
+    private String intentArticleId, intentAnnotationId, intentAnnotationType;
+    private int intentAnnotationStartIndex, intentAnnotationEndIndex;
+
     private ArrayList<Fragment> fragments;
     private ViewPager viewPager;
     private PagerAdapter pagerAdapter;
@@ -38,6 +48,36 @@ public class NewsFragment extends Fragment
     private NewsFragmentInteractionListener interactionListener;
 
     public NewsFragment() {
+    }
+
+    public static NewsFragment newInstance(String articleId, String annotationId, String annotationType,
+                                           int annotationStartIndex, int annotationEndIndex) {
+
+        NewsFragment fragment = new NewsFragment();
+        Bundle args = new Bundle();
+
+        args.putString(ARG_ARTICLE_ID, articleId);
+        args.putString(ARG_ANNOTATION_ID, annotationId);
+        args.putString(ARG_ANNOTATION_TYPE, annotationType);
+        args.putInt(ARG_ANNOTATION_START_INDEX, annotationStartIndex);
+        args.putInt(ARG_ANNOTATION_END_INDEX, annotationEndIndex);
+
+        fragment.setArguments(args);
+        return fragment;
+    }
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setHasOptionsMenu(true);
+
+        if (getArguments() != null) {
+            intentArticleId = getArguments().getString(ARG_ARTICLE_ID);
+            intentAnnotationId = getArguments().getString(ARG_ANNOTATION_ID);
+            intentAnnotationType = getArguments().getString(ARG_ANNOTATION_TYPE);
+            intentAnnotationStartIndex = getArguments().getInt(ARG_ANNOTATION_START_INDEX);
+            intentAnnotationEndIndex = getArguments().getInt(ARG_ANNOTATION_END_INDEX);
+        }
     }
 
     @Override
@@ -57,6 +97,21 @@ public class NewsFragment extends Fragment
 
         viewPager.setPageTransformer(true, new DepthPageTransformer());
         viewPager.setAdapter(pagerAdapter);
+
+        if (intentArticleId != null &&
+                intentAnnotationId != null &&
+                intentAnnotationType != null &&
+                intentAnnotationStartIndex >= 0 &&
+                intentAnnotationEndIndex >= 0) {
+
+            onRouteToArticleAnnotation(
+                    intentArticleId,
+                    intentAnnotationId,
+                    intentAnnotationType,
+                    intentAnnotationStartIndex,
+                    intentAnnotationEndIndex
+            );
+        }
 
         return v;
     }
@@ -95,6 +150,29 @@ public class NewsFragment extends Fragment
         currentArticleId = articleId;
 
         fragments.add(ArticleFragment.newInstance(articleId));
+        pagerAdapter.notifyDataSetChanged();
+
+        viewPager.setCurrentItem(1);
+    }
+
+    public void onRouteToArticleAnnotation(String articleId, String annotationId, String annotationType,
+                                 int annotationStartIndex, int annotationEndIndex) {
+
+        if (fragments.size() > 1) {
+            fragments.subList(1, fragments.size()).clear();
+        }
+
+        articleUpdated = !articleId.equals(currentArticleId);
+        currentArticleId = articleId;
+
+        fragments.add(ArticleFragment.newInstance(
+                articleId,
+                annotationId,
+                annotationType,
+                annotationStartIndex,
+                annotationEndIndex
+        ));
+
         pagerAdapter.notifyDataSetChanged();
 
         viewPager.setCurrentItem(1);
@@ -144,11 +222,21 @@ public class NewsFragment extends Fragment
     }
 
     @Override
-    public void onAnnotationSubmit(Annotation.AnnotationSubmitCallback cb, String type, int startIndex, int endIndex, int value, String comment, String source) {
-
+    public void onAnnotationSubmit(Annotation.AnnotationSubmitCallback cb, String type,
+                                   int startIndex, int endIndex, int value, String comment,
+                                   String source, boolean subscribe) {
 
         if (fragments.size() > 1 && fragments.get(1) instanceof ArticleFragment) {
-            ((ArticleFragment) fragments.get(1)).onAnnotationSubmit(cb, type, startIndex, endIndex, value, comment, source);
+            ((ArticleFragment) fragments.get(1)).onAnnotationSubmit(
+                    cb,
+                    type,
+                    startIndex,
+                    endIndex,
+                    value,
+                    comment,
+                    source,
+                    subscribe
+            );
         }
     }
 

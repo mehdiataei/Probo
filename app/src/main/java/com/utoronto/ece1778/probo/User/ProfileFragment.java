@@ -87,7 +87,13 @@ public class ProfileFragment extends Fragment {
             }
         };
 
-        profileUser.load(profileCb);
+        if (profileUser.equals(userInteractionListener.getUser())) {
+            profileUser = userInteractionListener.getUser();
+            profileCb.onLoad();
+        } else {
+            profileUser.load(profileCb);
+        }
+
         loadAnnotations();
 
         refreshLayout.setOnRefreshListener(handleRefresh);
@@ -101,6 +107,10 @@ public class ProfileFragment extends Fragment {
             User.UserCallback cb = new User.UserCallback() {
                 @Override
                 public void onLoad() {
+                    if (profileUser.equals(userInteractionListener.getUser())) {
+                        userInteractionListener.updateUser(profileUser);
+                    }
+
                     populate();
                     loadAnnotations();
                     refreshLayout.setRefreshing(false);

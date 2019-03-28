@@ -258,6 +258,11 @@ public class AnnotationCardView extends CardView {
         }
     }
 
+    private void hideProfileMenu() {
+        this.profileMenuContainer.setVisibility(View.GONE);
+        this.profileMenuVisible = false;
+    }
+
     private void toggleFollow() {
         User.UserFollowCallback cb = new User.UserFollowCallback() {
             @Override
@@ -332,6 +337,8 @@ public class AnnotationCardView extends CardView {
     }
 
     public void setData(Annotation annotation, User user) {
+        hideProfileMenu();
+
         this.annotation = annotation;
         this.user = user;
 

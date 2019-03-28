@@ -60,7 +60,7 @@ public class User {
 
     private String uid, profileImagePath, name, title;
     private ArrayList<Annotation> annotations;
-    private ArrayList<Annotation> subscriptions;
+    private ArrayList<Subscription> subscriptions;
     private ArrayList<User> following;
 
     private boolean loaded;
@@ -104,7 +104,7 @@ public class User {
         return this.annotations;
     }
 
-    public ArrayList<Annotation> getSubscriptions() {
+    public ArrayList<Subscription> getSubscriptions() {
         return this.subscriptions;
     }
 
@@ -178,6 +178,46 @@ public class User {
                         for (DocumentSnapshot documentSnapshot : queryDocumentSnapshots) {
                             following.add(new User(documentSnapshot.getString("userId")));
                         }
+
+                        loadSubscriptions(cb);
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        cb.onError(e);
+                    }
+                });
+    }
+
+    public void loadSubscriptions(final UserCallback cb) {
+        final FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        this.subscriptions = new ArrayList<>();
+
+        db.collection("users")
+                .document(this.uid)
+                .collection("subscriptions")
+                .get()
+                .addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
+                    @Override
+                    public void onSuccess(QuerySnapshot queryDocumentSnapshots) {
+                        for (DocumentSnapshot documentSnapshot : queryDocumentSnapshots) {
+                            Long startIndex = documentSnapshot.getLong("startIndex");
+                            Long endIndex = documentSnapshot.getLong("endIndex");
+
+                            Subscription subscription = new Subscription(
+                                    new Article(documentSnapshot.getString("articleId")),
+                                    documentSnapshot.getString("type"),
+                                    startIndex.intValue(),
+                                    endIndex.intValue(),
+                                    documentSnapshot.getDate("date")
+                            );
+
+                            subscriptions.add(subscription);
+                        }
+
+                        subscribeToAnnotations();
 
                         loaded = true;
 
@@ -256,91 +296,6 @@ public class User {
                                             );
 
                                             annotations.add(annotation);
-                                        }
-
-                                        cb.onLoad();
-                                    }
-                                })
-                                .addOnFailureListener(new OnFailureListener() {
-                                    @Override
-                                    public void onFailure(@NonNull Exception e) {
-                                        cb.onError(e);
-                                    }
-                                });
-                    }
-                })
-                .addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        cb.onError(e);
-                    }
-                });
-    }
-
-    public void loadSubscriptions(final UserAnnotationsCallback cb) {
-        final User currentUser = this;
-        final FirebaseFirestore db = FirebaseFirestore.getInstance();
-
-        this.subscriptions = new ArrayList<>();
-
-        db.collection("annotations")
-                .whereArrayContains("subscribers", currentUser.uid)
-                .get()
-                .addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
-                    @Override
-                    public void onSuccess(final QuerySnapshot queryDocumentSnapshots) {
-                        db.collection("annotation_votes")
-                                .get()
-                                .addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
-                                    @Override
-                                    public void onSuccess(QuerySnapshot queryVotesDocumentSnapshots) {
-                                        for (DocumentSnapshot documentSnapshot : queryDocumentSnapshots) {
-                                            String annotationId = documentSnapshot.getId();
-                                            Article article = new Article(documentSnapshot.getString("articleId"));
-                                            String type = documentSnapshot.getString("type");
-                                            Long startIndex = documentSnapshot.getLong("startIndex");
-                                            Long endIndex = documentSnapshot.getLong("endIndex");
-                                            Long value = documentSnapshot.getLong("value");
-                                            HashMap<String, AnnotationVote> upvotes = new HashMap<>();
-                                            HashMap<String, AnnotationVote> downvotes = new HashMap<>();
-
-                                            for (DocumentSnapshot votesDocumentSnapshot : queryVotesDocumentSnapshots) {
-                                                if (votesDocumentSnapshot.getString("annotationId").equals(annotationId)) {
-                                                    AnnotationVote vote = new AnnotationVote(
-                                                            votesDocumentSnapshot.getId(),
-                                                            new User(votesDocumentSnapshot.getString("userId")),
-                                                            votesDocumentSnapshot.getBoolean("value")
-                                                    );
-
-                                                    if (vote.getValue()) {
-                                                        upvotes.put(
-                                                                votesDocumentSnapshot.getString("userId"),
-                                                                vote
-                                                        );
-                                                    } else {
-                                                        downvotes.put(
-                                                                votesDocumentSnapshot.getString("userId"),
-                                                                vote
-                                                        );
-                                                    }
-                                                }
-                                            }
-
-                                            Annotation annotation = new Annotation(
-                                                    annotationId,
-                                                    article,
-                                                    currentUser,
-                                                    type,
-                                                    startIndex.intValue(),
-                                                    endIndex.intValue(),
-                                                    value.intValue(),
-                                                    documentSnapshot.getString("comment"),
-                                                    documentSnapshot.getString("source"),
-                                                    upvotes,
-                                                    downvotes
-                                            );
-
-                                            subscriptions.add(annotation);
                                         }
 
                                         cb.onLoad();
@@ -586,11 +541,11 @@ public class User {
         User.uploadProfileImage(uploadCb, this.uid, profileImage);
     }
 
-    public void subscribeToAnnotations() {
+    private void subscribeToAnnotations() {
         FirebaseMessaging firebaseMessaging = FirebaseMessaging.getInstance();
 
-        for (Annotation annotation : this.subscriptions) {
-            firebaseMessaging.subscribeToTopic(annotation.getNotificationTopic());
+        for (Subscription subscription : this.subscriptions) {
+            firebaseMessaging.subscribeToTopic(subscription.getTopic());
         }
     }
 
@@ -647,16 +602,16 @@ public class User {
 
     private void addFollowing(final UserFollowCallback cb, User userToAdd) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
-        Map<String, Object> updatedFollowing = new HashMap<>();
+        Map<String, Object> data = new HashMap<>();
 
-        updatedFollowing.put("userId", userToAdd.getUid());
-        updatedFollowing.put("timestamp", new Date().getTime());
+        data.put("userId", userToAdd.getUid());
+        data.put("timestamp", new Date().getTime());
 
         db.collection("users")
                 .document(this.uid)
                 .collection("following")
                 .document(this.uid + ":" + userToAdd.getUid())
-                .set(updatedFollowing)
+                .set(data)
                 .addOnSuccessListener(new OnSuccessListener<Void>() {
                     @Override
                     public void onSuccess(Void aVoid) {
@@ -682,6 +637,87 @@ public class User {
                 .addOnSuccessListener(new OnSuccessListener<Void>() {
                     @Override
                     public void onSuccess(Void aVoid) {
+                        cb.onUpdate();
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        cb.onError(e);
+                    }
+                });
+    }
+
+    public void subscribe(final UserSubscribeCallback cb, Article article, String type,
+                                 int startIndex, int endIndex) {
+
+        final Subscription subscription = new Subscription(
+                article,
+                type,
+                startIndex,
+                endIndex,
+                new Date()
+        );
+
+        if (this.subscriptions.contains(subscription)) {
+            cb.onUpdate();
+            return;
+        }
+
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        final FirebaseMessaging firebaseMessaging = FirebaseMessaging.getInstance();
+
+        Map<String, Object> data = new HashMap<>();
+
+        data.put("articleId", subscription.getArticle().getId());
+        data.put("type", subscription.getType());
+        data.put("startIndex", subscription.getStartIndex());
+        data.put("endIndex", subscription.getEndIndex());
+        data.put("date", subscription.getDate());
+
+        db.collection("users")
+                .document(this.uid)
+                .collection("subscriptions")
+                .document(subscription.getTopic())
+                .set(data)
+                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void aVoid) {
+                        subscriptions.add(subscription);
+
+                        firebaseMessaging.subscribeToTopic(subscription.getTopic());
+
+                        cb.onUpdate();
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        cb.onError(e);
+                    }
+                });
+    }
+
+    public void unsubscribe(final UserSubscribeCallback cb, final Subscription subscription) {
+        if (!this.subscriptions.contains(subscription)) {
+            cb.onUpdate();
+            return;
+        }
+
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        final FirebaseMessaging firebaseMessaging = FirebaseMessaging.getInstance();
+
+        db.collection("users")
+                .document(this.uid)
+                .collection("subscriptions")
+                .document(subscription.getTopic())
+                .delete()
+                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void aVoid) {
+                        subscriptions.remove(subscription);
+                        firebaseMessaging.unsubscribeFromTopic(subscription.getTopic());
+
                         cb.onUpdate();
                     }
                 })
@@ -740,6 +776,11 @@ public class User {
     }
 
     public interface UserFollowCallback {
+        void onUpdate();
+        void onError(Exception error);
+    }
+
+    public interface UserSubscribeCallback {
         void onUpdate();
         void onError(Exception error);
     }

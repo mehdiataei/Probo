@@ -106,6 +106,12 @@
             android:layout_marginTop="32dp"
             android:text="@string/annotation_input_primary_source_text" />
 
+        <CheckBox
+            android:id="@+id/subscribe"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/annotation_input_subscribe" />
+
         <RelativeLayout
             android:id="@+id/progress_container"
             android:layout_width="match_parent"

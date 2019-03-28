@@ -47,7 +47,8 @@
             android:theme="@style/AppThemeNoActionBar" />
         <activity
             android:name=".MainActivity"
-            android:noHistory="true">
+            android:noHistory="true"
+            android:launchMode="singleTop">
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

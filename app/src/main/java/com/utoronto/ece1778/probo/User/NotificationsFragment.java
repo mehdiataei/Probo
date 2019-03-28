@@ -18,14 +18,15 @@ import com.utoronto.ece1778.probo.News.AnnotationCardView;
 import com.utoronto.ece1778.probo.News.AnnotationsRecyclerAdapter;
 import com.utoronto.ece1778.probo.R;
 
-public class NotificationsFragment extends Fragment {
-    private User user;
+import java.util.ArrayList;
 
+public class NotificationsFragment extends Fragment {
     private SwipeRefreshLayout swipeRefreshLayout;
     private ProgressBar spinner;
     private LinearLayout noNotificationsContainer;
     private RecyclerView annotationsContainer;
 
+    private User.UserFragmentInteractionListener userInteractionListener;
     private NotificationsFragmentInteractionListener interactionListener;
 
     public NotificationsFragment() {
@@ -44,61 +45,27 @@ public class NotificationsFragment extends Fragment {
 
         swipeRefreshLayout.setOnRefreshListener(handleRefresh);
 
-        user = new User();
+        if (userInteractionListener.getUser().getSubscriptions().size() > 0 && false) {
+            noNotificationsContainer.setVisibility(View.GONE);
+            populate();
+        } else {
+            noNotificationsContainer.setVisibility(View.VISIBLE);
+        }
 
-        User.UserCallback cb = new User.UserCallback() {
-            @Override
-            public void onLoad() {
-                load();
-            }
+        annotationsContainer.setVisibility(View.VISIBLE);
+        spinner.setVisibility(View.INVISIBLE);
 
-            @Override
-            public void onError(Exception error) {
-            }
-        };
-
-        user.load(cb);
+        populate();
 
         return v;
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        load();
     }
 
     private SwipeRefreshLayout.OnRefreshListener handleRefresh = new SwipeRefreshLayout.OnRefreshListener() {
         @Override
         public void onRefresh() {
+            swipeRefreshLayout.setRefreshing(false);
         }
     };
-
-    private void load() {
-        User.UserAnnotationsCallback cb = new User.UserAnnotationsCallback() {
-            @Override
-            public void onLoad() {
-                if (user.getSubscriptions().size() > 0) {
-                    noNotificationsContainer.setVisibility(View.GONE);
-                    populate();
-                } else {
-                    noNotificationsContainer.setVisibility(View.VISIBLE);
-                }
-
-                annotationsContainer.setVisibility(View.VISIBLE);
-                spinner.setVisibility(View.INVISIBLE);
-            }
-
-            @Override
-            public void onError(Exception error) {
-            }
-        };
-
-        annotationsContainer.setVisibility(View.INVISIBLE);
-        spinner.setVisibility(View.VISIBLE);
-
-        user.loadSubscriptions(cb);
-    }
 
     private void populate() {
         AnnotationCardView.OnUserClickListener onUserClickListener = new AnnotationCardView.OnUserClickListener() {
@@ -120,8 +87,8 @@ public class NotificationsFragment extends Fragment {
         };
 
         AnnotationsRecyclerAdapter adapter = new AnnotationsRecyclerAdapter(
-                user.getSubscriptions(),
-                user,
+                new ArrayList<Annotation>(),
+                userInteractionListener.getUser(),
                 onUserClickListener,
                 onVoteListener
         );
@@ -135,6 +102,13 @@ public class NotificationsFragment extends Fragment {
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
+
+        if (context instanceof User.UserFragmentInteractionListener) {
+            userInteractionListener = (User.UserFragmentInteractionListener) context;
+        } else {
+            throw new RuntimeException(context.toString()
+                    + " must implement User.UserFragmentInteractionListener");
+        }
 
         if (context instanceof NotificationsFragmentInteractionListener) {
             interactionListener = (NotificationsFragmentInteractionListener) context;

@@ -49,6 +49,7 @@ public class AnnotationInputFragment extends Fragment {
     private EditText commentText;
     private EditText sourceText;
     private CheckBox primarySource;
+    private CheckBox subscribe;
     private RelativeLayout errorContainer;
     private TextView errorText;
     private Button submitButton;
@@ -102,6 +103,7 @@ public class AnnotationInputFragment extends Fragment {
         commentText = v.findViewById(R.id.input);
         sourceText = v.findViewById(R.id.source);
         primarySource = v.findViewById(R.id.primary_source);
+        subscribe = v.findViewById(R.id.subscribe);
         errorContainer = v.findViewById(R.id.error_container);
         errorText = v.findViewById(R.id.error_text);
         submitButton = v.findViewById(R.id.submit);
@@ -151,6 +153,8 @@ public class AnnotationInputFragment extends Fragment {
         valueSeekBar.setProgress(0);
         commentText.setText("");
         sourceText.setText("");
+        primarySource.setChecked(false);
+        subscribe.setChecked(false);
 
         annotationValue = 0;
         setTitleText(annotationValue);
@@ -314,7 +318,8 @@ public class AnnotationInputFragment extends Fragment {
                             annotationEndIndex,
                             annotationValue,
                             comment,
-                            source
+                            source,
+                            subscribe.isChecked()
                     );
 
 
@@ -335,11 +340,10 @@ public class AnnotationInputFragment extends Fragment {
                 }
             };
 
-
-            interactionListener.onAnnotationSourceChecker(sourceCb,
+            interactionListener.onAnnotationSourceChecker(
+                    sourceCb,
                     source
             );
-
         }
 
 
@@ -401,11 +405,8 @@ public class AnnotationInputFragment extends Fragment {
     }
 
     public interface AnnotationInputFragmentInteractionListener {
-        void onAnnotationSubmit(Annotation.AnnotationSubmitCallback cb, String type, int startIndex, int endIndex, int value, String comment, String source);
-
+        void onAnnotationSubmit(Annotation.AnnotationSubmitCallback cb, String type, int startIndex, int endIndex, int value, String comment, String source, boolean subscribe);
         void onAnnotationClose();
-
         void onAnnotationSourceChecker(Annotation.AnnotationSourceCheckerCallback cb, String source);
-
     }
 }

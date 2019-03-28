@@ -73,7 +73,12 @@ import static com.utoronto.ece1778.probo.News.Article.TAG;
 public class ArticleFragment extends Fragment
         implements AnnotationsFragment.AnnotationsFragmentInteractionListener {
 
-    private static final String ARG_ARTICLE_ID = "articleId";
+    private static final String
+            ARG_ARTICLE_ID = "articleId",
+            ARG_ANNOTATION_ID = "annotationId",
+            ARG_ANNOTATION_TYPE = "annotationType",
+            ARG_ANNOTATION_START_INDEX = "annotationStartIndex",
+            ARG_ANNOTATION_END_INDEX = "annotationEndIndex";
 
     private final int MAX_NUM_INLINE_ANNOTATION_TILES = 5;
 
@@ -84,6 +89,9 @@ public class ArticleFragment extends Fragment
 
     private SwipeRefreshLayout refresh;
     private Article article;
+
+    private String intentAnnotationId, intentAnnotationType;
+    private int intentAnnotationStartIndex, intentAnnotationEndIndex;
 
     private Switch heatmapSwitch;
     private TextView headline;
@@ -108,6 +116,20 @@ public class ArticleFragment extends Fragment
         return fragment;
     }
 
+    public static ArticleFragment newInstance(String articleId, String annotationId, String annotationType,
+                                              int annotationStartIndex, int annotationEndIndex) {
+
+        ArticleFragment fragment = new ArticleFragment();
+        Bundle args = new Bundle();
+        args.putString(ARG_ARTICLE_ID, articleId);
+        args.putString(ARG_ANNOTATION_ID, annotationId);
+        args.putString(ARG_ANNOTATION_TYPE, annotationType);
+        args.putInt(ARG_ANNOTATION_START_INDEX, annotationStartIndex);
+        args.putInt(ARG_ANNOTATION_END_INDEX, annotationEndIndex);
+        fragment.setArguments(args);
+        return fragment;
+    }
+
     public Article getArticle() {
         return this.article;
     }
@@ -119,6 +141,10 @@ public class ArticleFragment extends Fragment
 
         if (getArguments() != null) {
             article = new Article(getArguments().getString(ARG_ARTICLE_ID));
+            intentAnnotationId = getArguments().getString(ARG_ANNOTATION_ID);
+            intentAnnotationType = getArguments().getString(ARG_ANNOTATION_TYPE);
+            intentAnnotationStartIndex = getArguments().getInt(ARG_ANNOTATION_START_INDEX);
+            intentAnnotationEndIndex = getArguments().getInt(ARG_ANNOTATION_END_INDEX);
         }
     }
 
@@ -142,10 +168,24 @@ public class ArticleFragment extends Fragment
         final Article.ArticleCallback cb = new Article.ArticleCallback() {
             @Override
             public void onLoad() {
-                populateArticle();
+                boolean specificAnnotation = intentAnnotationId != null &&
+                        intentAnnotationType != null &&
+                        intentAnnotationStartIndex >= 0 &&
+                        intentAnnotationEndIndex >= 0;
+
+                populateArticle(!specificAnnotation);
 
                 if (heatmapSwitch != null) {
                     heatmapSwitch.setEnabled(true);
+                }
+
+                if (specificAnnotation) {
+                    showLocatedAnnotations(
+                            intentAnnotationId,
+                            intentAnnotationType,
+                            intentAnnotationStartIndex,
+                            intentAnnotationEndIndex
+                    );
                 }
             }
 
@@ -203,7 +243,7 @@ public class ArticleFragment extends Fragment
             Article.ArticleCallback cb = new Article.ArticleCallback() {
                 @Override
                 public void onLoad() {
-                    populateArticle();
+                    populateArticle(true);
                     refresh.setRefreshing(false);
                 }
 
@@ -222,7 +262,7 @@ public class ArticleFragment extends Fragment
         }
     };
 
-    public void populateArticle() {
+    public void populateArticle(boolean showArticleText) {
         RequestOptions options = new RequestOptions()
                 .centerCrop()
                 .priority(Priority.HIGH);
@@ -238,11 +278,16 @@ public class ArticleFragment extends Fragment
         author.setText(article.getAuthor());
         datetime.setText(dateFormat.format(article.getDatetime()));
 
-        updateArticleText();
+        updateArticleText(showArticleText);
     }
 
-    public void updateArticleText() {
-        ArticleFragment.UpdateTextParams params = new ArticleFragment.UpdateTextParams(article, showHeatmap);
+    public void updateArticleText(boolean updateBody) {
+        ArticleFragment.UpdateTextParams params = new ArticleFragment.UpdateTextParams(
+                article,
+                showHeatmap,
+                updateBody
+        );
+
         new ArticleFragment.UpdateText(this).execute(params);
     }
 
@@ -264,6 +309,23 @@ public class ArticleFragment extends Fragment
         annotationsContainer.setVisibility(View.VISIBLE);
     }
 
+    private void showLocatedAnnotations(String id, String type, int startIndex, int endIndex) {
+        showLocatedAnnotations(type, startIndex, endIndex);
+
+        ArrayList<Annotation> annotations = article.getLocatedAnnotations(type, startIndex, endIndex);
+        int index = 0;
+
+        for (Annotation annotation : annotations) {
+            if (annotation.getId().equals(id)) {
+                break;
+            }
+
+            index++;
+        }
+
+        annotationsContainer.setCurrentItem(index, true);
+    }
+
     private void splitBody(int index) {
         ArticleFragment.SplitTextParams params = new ArticleFragment.SplitTextParams(article, showHeatmap, index);
         new ArticleFragment.SplitText(this).execute(params);
@@ -277,15 +339,41 @@ public class ArticleFragment extends Fragment
 
     public void toggleHeatmap(boolean show) {
         showHeatmap = show;
-        updateArticleText();
+        updateArticleText(true);
     }
 
-    public void onAnnotationSubmit(final Annotation.AnnotationSubmitCallback cb, String type, int startIndex, int endIndex, int value, String comment, String source) {
+    public void onAnnotationSubmit(final Annotation.AnnotationSubmitCallback cb, String type,
+                                   int startIndex, int endIndex, int value, String comment,
+                                   String source, final boolean subscribe) {
+
         Annotation.AnnotationSubmitCallback submitCb = new Annotation.AnnotationSubmitCallback() {
             @Override
-            public void onSubmit(Annotation annotation) {
-                cb.onSubmit(annotation);
-                updateArticleText();
+            public void onSubmit(final Annotation annotation) {
+                User.UserSubscribeCallback subscribeCb = new User.UserSubscribeCallback() {
+                    @Override
+                    public void onUpdate() {
+                        cb.onSubmit(annotation);
+                        updateArticleText(true);
+                    }
+
+                    @Override
+                    public void onError(Exception error) {
+                    }
+                };
+
+                if (subscribe) {
+                    User user = userInteractionListener.getUser();
+                    user.subscribe(
+                            subscribeCb,
+                            article,
+                            annotation.getType(),
+                            annotation.getStartIndex(),
+                            annotation.getEndIndex()
+                    );
+                    userInteractionListener.updateUser(user);
+                } else {
+                    subscribeCb.onUpdate();
+                }
             }
 
             @Override
@@ -365,7 +453,7 @@ public class ArticleFragment extends Fragment
 
             showLocatedAnnotations(Annotation.TYPE_BODY, startIndex, endIndex);
         } else {
-            updateArticleText();
+            updateArticleText(true);
         }
     }
 
@@ -723,10 +811,12 @@ public class ArticleFragment extends Fragment
         protected ArticleFragment.UpdateTextResults doInBackground(ArticleFragment.UpdateTextParams... params) {
             Article currentArticle = params[0].getCurrentArticle();
             boolean displayHeatmap = params[0].getDisplayHeatmap();
+            boolean updateBody = params[0].getUpdateBody();
 
             return new ArticleFragment.UpdateTextResults(
                     currentArticle.getHeadline(displayHeatmap),
-                    currentArticle.getBody(displayHeatmap, -1, -1)
+                    currentArticle.getBody(displayHeatmap, -1, -1),
+                    updateBody
             );
         }
 
@@ -758,23 +848,28 @@ public class ArticleFragment extends Fragment
             };
 
             activity.headline.setText(results.getHeadlineResult());
-            activity.body.setTextWithClickableSentences(results.getBodyResult(), cb, 0);
 
-            activity.bodyOverflow.setVisibility(View.GONE);
-            activity.bodyOverflow.setTextWithClickableSentences(new SpannableString(""), cb, 0);
+            if (results.getUpdateBody()) {
+                activity.body.setTextWithClickableSentences(results.getBodyResult(), cb, 0);
 
-            activity.currentAnnotationStartIndex = -1;
-            activity.currentAnnotationEndIndex = -1;
+                activity.bodyOverflow.setVisibility(View.GONE);
+                activity.bodyOverflow.setTextWithClickableSentences(new SpannableString(""), cb, 0);
+
+                activity.currentAnnotationStartIndex = -1;
+                activity.currentAnnotationEndIndex = -1;
+            }
         }
     }
 
     private static class UpdateTextParams {
         private Article currentArticle;
         private boolean displayHeatmap;
+        private boolean updateBody;
 
-        UpdateTextParams(Article currentArticle, boolean displayHeatmap) {
+        UpdateTextParams(Article currentArticle, boolean displayHeatmap, boolean updateBody) {
             this.currentArticle = currentArticle;
             this.displayHeatmap = displayHeatmap;
+            this.updateBody = updateBody;
         }
 
         public Article getCurrentArticle() {
@@ -784,15 +879,21 @@ public class ArticleFragment extends Fragment
         public boolean getDisplayHeatmap() {
             return this.displayHeatmap;
         }
+
+        public boolean getUpdateBody() {
+            return this.updateBody;
+        }
     }
 
     private static class UpdateTextResults {
         private SpannableString headlineResult;
         private SpannableString bodyResult;
+        private boolean updateBody;
 
-        UpdateTextResults(SpannableString headlineResult, SpannableString bodyResult) {
+        UpdateTextResults(SpannableString headlineResult, SpannableString bodyResult, boolean updateBody) {
             this.headlineResult = headlineResult;
             this.bodyResult = bodyResult;
+            this.updateBody = updateBody;
         }
 
         public SpannableString getHeadlineResult() {
@@ -801,6 +902,10 @@ public class ArticleFragment extends Fragment
 
         public SpannableString getBodyResult() {
             return this.bodyResult;
+        }
+
+        public boolean getUpdateBody() {
+            return this.updateBody;
         }
     }
 

@@ -323,10 +323,6 @@ public class Annotation {
                 });
     }
 
-    public String getNotificationTopic() {
-        return this.article.getId() + ":" + this.startIndex + ":" + this.endIndex;
-    }
-
     public void notifyListeners(final NotificationCallback cb) {
         FirebaseInstanceId.getInstance().getInstanceId()
                 .addOnCompleteListener(new OnCompleteListener<InstanceIdResult>() {
@@ -361,11 +357,6 @@ public class Annotation {
         void onSubmit(Annotation annotation);
         void onAnnotationError(int errorCode);
         void onError(Exception e);
-    }
-
-    public interface SubscribeCallback {
-        void onSubscribe();
-        void onUnsubscribe();
     }
 
     public interface NotificationCallback {

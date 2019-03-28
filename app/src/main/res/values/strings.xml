@@ -83,6 +83,7 @@
     <string name="annotation_input_edit_text_hint">Enter your comment</string>
     <string name="annotation_input_source_hint">Enter your source</string>
     <string name="annotation_input_primary_source_text">I am a source in this article.</string>
+    <string name="annotation_input_subscribe">Subscribe to new annotations on this sentence.</string>
     <string name="annotation_input_error_icon_description">Error icon</string>
     <string name="annotation_input_submit">SUBMIT</string>
     <string name="annotation_input_error_no_value_fact">Please indicate whether the fact is true or false.</string>

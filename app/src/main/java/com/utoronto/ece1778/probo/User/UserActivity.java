@@ -83,7 +83,7 @@ public class UserActivity extends AppCompatActivity
         NavigationView navigationView = findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
-        routeToNews();
+        handleIntent(getIntent());
     }
 
     @Override
@@ -131,6 +131,28 @@ public class UserActivity extends AppCompatActivity
         return true;
     }
 
+    private void handleIntent(Intent intent) {
+        Bundle extras = intent.getExtras();
+
+        if (extras != null &&
+                extras.getString("articleId") != null &&
+                extras.getString("annotationId") != null &&
+                extras.getString("annotationType") != null &&
+                extras.getInt("annotationStartIndex") >= 0 &&
+                extras.getInt("annotationEndIndex") >= 0) {
+
+            routeToNews(
+                    intent.getExtras().getString("articleId"),
+                    extras.getString("annotationId"),
+                    extras.getString("annotationType"),
+                    extras.getInt("annotationStartIndex"),
+                    extras.getInt("annotationEndIndex")
+            );
+        } else {
+            routeToNews();
+        }
+    }
+
     private void routeToNews() {
         if (currentRoute == UserActivity.ROUTE_NEWS) {
             if (currentFragment instanceof NewsFragment) {
@@ -144,6 +166,31 @@ public class UserActivity extends AppCompatActivity
 
         currentRoute = UserActivity.ROUTE_NEWS;
         currentFragment = new NewsFragment();
+
+        displayFragment(currentFragment);
+    }
+
+    private void routeToNews(String articleId, String annotationId, String annotationType,
+                             int annotationStartIndex, int annotationEndIndex) {
+
+        if (currentRoute == UserActivity.ROUTE_NEWS) {
+            if (currentFragment instanceof NewsFragment) {
+                ((NewsFragment) currentFragment).goToViewPage(0);
+            }
+
+            return;
+        }
+
+        removeCurrentFragment();
+
+        currentRoute = UserActivity.ROUTE_NEWS;
+        currentFragment = NewsFragment.newInstance(
+                articleId,
+                annotationId,
+                annotationType,
+                annotationStartIndex,
+                annotationEndIndex
+        );
 
         displayFragment(currentFragment);
     }
@@ -233,8 +280,6 @@ public class UserActivity extends AppCompatActivity
         User.UserCallback cb = new User.UserCallback() {
             @Override
             public void onLoad() {
-                user.subscribeToAnnotations();
-
                 populateUser();
                 enableUserNavigation();
             }
