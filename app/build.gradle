@@ -70,6 +70,9 @@ dependencies {
 
     // SeekBar
     implementation 'com.xw.repo:bubbleseekbar:3.20-lite'
+
+    // ViewPager
+    implementation 'com.tbuonomo:creative-viewpager:1.0.1'
 }
 
 apply plugin: 'com.google.gms.google-services'

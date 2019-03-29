@@ -6,12 +6,14 @@ import android.graphics.Color;
 import android.support.v4.graphics.drawable.RoundedBitmapDrawable;
 import android.support.v7.widget.CardView;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -26,12 +28,14 @@ import java.util.Locale;
 public class AnnotationCardView extends CardView {
     private Context context;
     private boolean profileMenuVisible;
+    private boolean showProfileImage;
 
     private View rootView;
     private ProgressBar progress;
     private TextView commentTextView;
     private ProgressBar profileImageProgress;
     private ImageView profileImageView;
+    private LinearLayout userInformationContainer;
     private Button nameButton;
     private TextView titleTextView;
     private ImageButton downvoteButton, upvoteButton;
@@ -60,12 +64,14 @@ public class AnnotationCardView extends CardView {
     private void init(Context context) {
         this.context = context;
         this.profileMenuVisible = false;
+        this.showProfileImage = true;
 
         this.rootView = inflate(context, R.layout.annotation_card_view, this);
         this.progress = this.rootView.findViewById(R.id.progress);
         this.commentTextView = this.rootView.findViewById(R.id.comment);
         this.profileImageProgress = this.rootView.findViewById(R.id.profile_image_progress);
         this.profileImageView = this.rootView.findViewById(R.id.profile_image);
+        this.userInformationContainer = this.rootView.findViewById(R.id.user_information_container);
         this.nameButton = this.rootView.findViewById(R.id.name);
         this.titleTextView = this.rootView.findViewById(R.id.title);
         this.downvoteButton = this.rootView.findViewById(R.id.downvote);
@@ -93,11 +99,11 @@ public class AnnotationCardView extends CardView {
     private void applyDefaultStyles() {
         CardView.LayoutParams params = new CardView.LayoutParams(
                 CardView.LayoutParams.MATCH_PARENT,
-                CardView.LayoutParams.WRAP_CONTENT
+                CardView.LayoutParams.MATCH_PARENT
         );
 
         this.setLayoutParams(params);
-        this.setCardElevation(Helper.dpToPx(this.context, 10));
+        //this.setCardElevation(Helper.dpToPx(this.context, 10));
         this.setRadius(Helper.dpToPx(this.context, 15));
         this.setUseCompatPadding(true);
     }
@@ -144,7 +150,7 @@ public class AnnotationCardView extends CardView {
         } else if (this.annotation.getValue() < 0) {
             color = Color.parseColor("#ffb3b3");
         }
-                                  ;
+
         this.setCardBackgroundColor(color);
 
         this.commentTextView.setText(annotation.getComment());
@@ -191,16 +197,20 @@ public class AnnotationCardView extends CardView {
             }
         };
 
-        if (annotation.getUser().getProfileImagePath() != null) {
+        if (this.showProfileImage &&
+            annotation.getUser().getProfileImagePath() != null) {
+
             ImageLoader imageLoader = new ImageLoader(
                     annotation.getUser().getProfileImagePath(),
                     this.context.getApplicationContext()
             );
 
             imageLoader.load(cb);
-        } else {
+        } else if (this.showProfileImage) {
             this.profileImageProgress.setVisibility(View.INVISIBLE);
             this.profileImageView.setVisibility(View.VISIBLE);
+        } else {
+            this.profileImageProgress.setVisibility(View.GONE);
         }
 
         this.nameButton.setText(annotation.getUser().getName());
@@ -215,6 +225,16 @@ public class AnnotationCardView extends CardView {
         } else {
             this.followButton.setText(R.string.annotation_card_follow);
         }
+    }
+
+    public void hideProfileImage() {
+        this.showProfileImage = false;
+
+        this.profileImageView.setVisibility(View.GONE);
+
+        RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams) this.userInformationContainer.getLayoutParams();
+        params.addRule(RelativeLayout.ALIGN_PARENT_START);
+        this.userInformationContainer.setLayoutParams(params);
     }
 
     private void handleVote(final ImageButton imageButton, boolean value) {

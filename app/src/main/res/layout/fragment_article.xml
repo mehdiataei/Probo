@@ -92,12 +92,10 @@
                         android:textSize="16sp"
                         android:singleLine="false" />
 
-                    <com.utoronto.ece1778.probo.Utils.WrapHeightViewPager
+                    <com.tbuonomo.creativeviewpager.CreativeViewPager
                         android:id="@+id/annotations_container"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="16dp"
-                        android:layout_marginEnd="16dp"
                         android:overScrollMode="never"
                         android:visibility="gone" />
 

@@ -1,10 +1,13 @@
 package com.utoronto.ece1778.probo.News;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
+import android.support.v4.graphics.drawable.RoundedBitmapDrawable;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -17,8 +20,11 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CompoundButton;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
 import android.widget.Switch;
 import android.widget.TextView;
 
@@ -42,6 +48,8 @@ import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.Ke
 import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.SentimentOptions;
 import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.TargetedSentimentResults;
 import com.ibm.watson.developer_cloud.service.security.IamOptions;
+import com.tbuonomo.creativeviewpager.CreativeViewPager;
+import com.tbuonomo.creativeviewpager.adapter.CreativePagerAdapter;
 import com.utoronto.ece1778.probo.Models.Sentence;
 import com.utoronto.ece1778.probo.R;
 import com.utoronto.ece1778.probo.User.User;
@@ -49,6 +57,8 @@ import com.utoronto.ece1778.probo.Utils.ClickableTextView;
 import com.utoronto.ece1778.probo.Utils.ExtractSentences;
 import com.utoronto.ece1778.probo.Utils.GlideImageLoader;
 import com.utoronto.ece1778.probo.Utils.Helper;
+import com.utoronto.ece1778.probo.Utils.ImageBitmap;
+import com.utoronto.ece1778.probo.Utils.ImageLoader;
 import com.utoronto.ece1778.probo.Utils.SentimentParams;
 import com.utoronto.ece1778.probo.Utils.SquareImageView;
 import com.utoronto.ece1778.probo.Utils.WrapHeightViewPager;
@@ -96,7 +106,7 @@ public class ArticleFragment extends Fragment
     private Switch heatmapSwitch;
     private TextView headline;
     private ClickableTextView body, bodyOverflow;
-    private WrapHeightViewPager annotationsContainer;
+    private CreativeViewPager annotationsContainer;
     private ProgressBar progressBar;
     private SquareImageView image;
     private TextView author;
@@ -294,19 +304,18 @@ public class ArticleFragment extends Fragment
     private void showLocatedAnnotations(String type, int startIndex, int endIndex) {
         ArrayList<Annotation> annotations = article.getLocatedAnnotations(type, startIndex, endIndex);
 
-        annotationsContainer.setPageTransformer(true, new ArticleFragment.ZoomOutPageTransformer());
-
         ArticleFragment.AnnotationPagerAdapter adapter = new ArticleFragment.AnnotationPagerAdapter(
+                getContext(),
                 annotations,
                 type,
                 startIndex,
                 endIndex
         );
 
-        annotationsContainer.setAdapter(adapter);
-
         splitBody(endIndex);
         annotationsContainer.setVisibility(View.VISIBLE);
+        annotationsContainer.setCreativeViewPagerAdapter(adapter);
+        adapter.setCurrentItem(0);
     }
 
     private void showLocatedAnnotations(String id, String type, int startIndex, int endIndex) {
@@ -323,7 +332,7 @@ public class ArticleFragment extends Fragment
             index++;
         }
 
-        annotationsContainer.setCurrentItem(index, true);
+        annotationsContainer.setCurrentItem(index);
     }
 
     private void splitBody(int index) {
@@ -1024,14 +1033,14 @@ public class ArticleFragment extends Fragment
         }
     }
 
-    private class AnnotationPagerAdapter extends PagerAdapter {
+    private class AnnotationPagerAdapter extends ViewPager implements CreativePagerAdapter {
         private ArrayList<Annotation> annotations;
         private String type;
         private int startIndex;
         private int endIndex;
 
-        AnnotationPagerAdapter(ArrayList<Annotation> annotations, String type, int startIndex, int endIndex) {
-            super();
+        AnnotationPagerAdapter(Context context, ArrayList<Annotation> annotations, String type, int startIndex, int endIndex) {
+            super(context);
 
             this.annotations = annotations;
             this.type = type;
@@ -1040,13 +1049,12 @@ public class ArticleFragment extends Fragment
         }
 
         @Override
-        public Object instantiateItem(ViewGroup container, int position) {
-            Context context = getContext();
+        public View instantiateHeaderItem(LayoutInflater inflater, ViewGroup container, int position) {
             int rawSize = this.annotations.size();
             int size = this.getCount();
 
             if (this.hasOverflow(rawSize) && position == size - 1) {
-                AnnotationMoreCardView annotationMoreCardView = new AnnotationMoreCardView(context);
+                AnnotationMoreCardView annotationMoreCardView = new AnnotationMoreCardView(getContext());
                 annotationMoreCardView.setNumMore(rawSize - MAX_NUM_INLINE_ANNOTATION_TILES + 1);
                 annotationMoreCardView.setOnMoreClickListener(new AnnotationMoreCardView.OnMoreClick() {
                     @Override
@@ -1055,10 +1063,19 @@ public class ArticleFragment extends Fragment
                     }
                 });
 
-                container.addView(annotationMoreCardView);
                 return annotationMoreCardView;
             } else {
                 AnnotationCardView annotationCardView = new AnnotationCardView(getContext());
+                LinearLayout innerLayout = annotationCardView.findViewById(R.id.inner);
+
+                innerLayout.setPadding(
+                        0,
+                        Helper.dpToPx(getContext(), 42),
+                        0,
+                        0
+                );
+
+                annotationCardView.hideProfileImage();
                 annotationCardView.setData(this.annotations.get(position), userInteractionListener.getUser());
 
                 annotationCardView.setOnUserClickListener(new AnnotationCardView.OnUserClickListener() {
@@ -1082,19 +1099,77 @@ public class ArticleFragment extends Fragment
                     }
                 });
 
-                container.addView(annotationCardView);
                 return annotationCardView;
             }
         }
 
         @Override
-        public void destroyItem(ViewGroup container, int position, Object object) {
-            container.removeView((View) object);
+        public View instantiateContentItem(LayoutInflater inflater, ViewGroup container, final int position) {
+            final Annotation annotation = this.annotations.get(position);
+            final User annotationUser = annotation.getUser();
+
+            View contentRoot = inflater.inflate(R.layout.annotation_card_view_pager_profile, container, false);
+            final ImageView imageView = contentRoot.findViewById(R.id.profile_image);
+
+            if (this.hasOverflow(this.annotations.size()) && position == this.getCount() - 1) {
+                imageView.setVisibility(View.GONE);
+            } else {
+                imageView.setImageResource(R.drawable.profile_image_default_dark);
+                imageView.setBackgroundResource(R.drawable.oval_border_light);
+
+                imageView.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        onRouteToProfile(annotation.getUser().getUid());
+                    }
+                });
+
+                User.UserCallback userCb = new User.UserCallback() {
+                    @Override
+                    public void onLoad() {
+                        ImageLoader.ImageLoaderCallback imageCb = new ImageLoader.ImageLoaderCallback() {
+                            @Override
+                            public void onSuccess(Bitmap image) {
+                                ImageBitmap imageBitmap = new ImageBitmap(image);
+                                RoundedBitmapDrawable roundedImage = imageBitmap.getCroppedRoundedBitmapDrawable(getResources());
+
+                                imageView.setImageDrawable(roundedImage);
+                            }
+
+                            @Override
+                            public void onFailure(Exception e) {
+                            }
+
+                            @Override
+                            public void onComplete() {
+                            }
+                        };
+
+                        ImageLoader imageLoader = new ImageLoader(annotationUser.getProfileImagePath(), getContext());
+
+                        if (annotationUser.getProfileImagePath() != null) {
+                            imageLoader.load(imageCb);
+                        }
+                    }
+
+                    @Override
+                    public void onError(Exception error) {}
+                };
+
+                annotationUser.load(userCb);
+            }
+
+            return contentRoot;
         }
 
         @Override
-        public boolean isViewFromObject(View view, Object object) {
-            return view == object;
+        public boolean isUpdatingBackgroundColor() {
+            return false;
+        }
+
+        @Override
+        public Bitmap requestBitmapAtPosition(int position) {
+            return null;
         }
 
         private boolean hasOverflow(int size) {
@@ -1109,38 +1184,6 @@ public class ArticleFragment extends Fragment
                     Math.min(size, MAX_NUM_INLINE_ANNOTATION_TILES) : size;
         }
     }
-
-    private class ZoomOutPageTransformer implements ViewPager.PageTransformer {
-        private static final float MIN_SCALE = 0.85f;
-        private static final float MIN_ALPHA = 0.75f;
-
-        public void transformPage(View view, float position) {
-            int pageWidth = view.getWidth();
-            int pageHeight = view.getHeight();
-
-            if (position < -1) {
-                view.setAlpha(0f);
-            } else if (position <= 1) {
-                float scaleFactor = Math.max(MIN_SCALE, 1 - Math.abs(position));
-                float vertMargin = pageHeight * (1 - scaleFactor) / 2;
-                float horzMargin = pageWidth * (1 - scaleFactor) / 2;
-
-                if (position < 0) {
-                    view.setTranslationX(horzMargin - vertMargin / 2);
-                } else {
-                    view.setTranslationX(-horzMargin + vertMargin / 2);
-                }
-
-                view.setScaleX(scaleFactor);
-                view.setScaleY(scaleFactor);
-
-                view.setAlpha(MIN_ALPHA + (scaleFactor - MIN_SCALE) / (1 - MIN_SCALE) * (1 - MIN_ALPHA));
-            } else {
-                view.setAlpha(0f);
-            }
-        }
-    }
-
 
     public class SourceCheckerParams {
 
