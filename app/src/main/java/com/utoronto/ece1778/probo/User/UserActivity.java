@@ -1,13 +1,16 @@
 package com.utoronto.ece1778.probo.User;
 
 import android.app.Activity;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.graphics.drawable.RoundedBitmapDrawable;
 import android.util.Log;
 import android.view.View;
@@ -24,6 +27,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.utoronto.ece1778.probo.News.Annotation;
 import com.utoronto.ece1778.probo.News.NewsFragment;
 import com.utoronto.ece1778.probo.R;
@@ -32,6 +36,7 @@ import com.utoronto.ece1778.probo.Utils.ImageBitmap;
 import com.utoronto.ece1778.probo.Utils.ImageLoader;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 
 public class UserActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener,
@@ -48,6 +53,7 @@ public class UserActivity extends AppCompatActivity
             ROUTE_ACCOUNT = 3;
 
     private User user;
+    private ArrayList<Annotation> notifications;
 
     private int currentRoute;
     private Fragment currentFragment;
@@ -61,6 +67,8 @@ public class UserActivity extends AppCompatActivity
         setContentView(R.layout.activity_user);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        notifications = new ArrayList<>();
 
         loadUser();
 
@@ -84,6 +92,22 @@ public class UserActivity extends AppCompatActivity
         navigationView.setNavigationItemSelectedListener(this);
 
         handleIntent(getIntent());
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+        LocalBroadcastManager.getInstance(this).registerReceiver(
+                broadcastReceiver,
+                new IntentFilter("notification")
+        );
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcastReceiver);
     }
 
     @Override
@@ -348,6 +372,44 @@ public class UserActivity extends AppCompatActivity
 
     private void disableUserNavigation() {
         userNavigationEnabled = false;
+    }
+
+    private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Bundle extras = intent.getExtras();
+
+            if (extras != null) {
+                loadAnnotationToNotification(new Annotation(extras.getString("annotationId")));
+            }
+        }
+    };
+
+    private void loadAnnotationToNotification(final Annotation annotation) {
+        final User.UserNotificationCallback notificationCb = new User.UserNotificationCallback() {
+            @Override
+            public void onUpdate() {
+                notifications.add(annotation);
+            }
+
+            @Override
+            public void onError(Exception error) {
+            }
+        };
+
+        Annotation.AnnotationCallback cb = new Annotation.AnnotationCallback() {
+            @Override
+            public void onLoad() {
+                user.notification(notificationCb, annotation);
+            }
+
+            @Override
+            public void onError(Exception e) {
+                notificationCb.onError(e);
+            }
+        };
+
+        annotation.load(cb);
     }
 
     @Override

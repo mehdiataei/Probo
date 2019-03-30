@@ -70,6 +70,10 @@ public class Annotation {
         return this.id;
     }
 
+    public Article getArticle() {
+        return this.article;
+    }
+
     public User getUser() {
         return this.user;
     }
@@ -177,6 +181,8 @@ public class Annotation {
 
                                         upvoteCount = upvotes.size();
                                         downvoteCount = downvotes.size();
+
+                                        loaded = true;
 
                                         cb.onLoad();
                                     }
@@ -323,19 +329,15 @@ public class Annotation {
                 });
     }
 
-    public void notifyListeners(final NotificationCallback cb) {
-        FirebaseInstanceId.getInstance().getInstanceId()
-                .addOnCompleteListener(new OnCompleteListener<InstanceIdResult>() {
-                    @Override
-                    public void onComplete(@NonNull Task<InstanceIdResult> task) {
-                        if (!task.isSuccessful()) {
-                            cb.onError(task.getException());
-                            return;
-                        }
+    @Override
+    public boolean equals(Object object) {
+        if (!(object instanceof Annotation)) {
+            return false;
+        }
 
-                        String token = task.getResult().getToken();
-                    }
-                });
+        Annotation otherAnnotation = (Annotation) object;
+
+        return this.id.equals(otherAnnotation.getId());
     }
 
     public interface AnnotationCallback {

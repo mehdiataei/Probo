@@ -1,39 +1,40 @@
 package com.utoronto.ece1778.probo.User;
 
-import com.utoronto.ece1778.probo.News.Article;
+import com.utoronto.ece1778.probo.News.Annotation;
 
-import java.util.ArrayList;
 import java.util.Date;
 
 public class Subscription {
-    private Article article;
-    private String type;
-    private int startIndex;
-    private int endIndex;
+    private User user;
+    private Annotation annotation;
     private Date date;
 
-    Subscription(Article article, String type, int startIndex, int endIndex, Date date) {
-        this.article = article;
-        this.type = type;
-        this.startIndex = startIndex;
-        this.endIndex = endIndex;
+    private enum SubscriptionTypes {
+        USER,
+        ANNOTATION
+    };
+
+    private SubscriptionTypes subscriptionType;
+
+    Subscription(User user) {
+        this.user = user;
+
+        this.subscriptionType = SubscriptionTypes.USER;
+    }
+
+    Subscription(Annotation annotation, Date date) {
+        this.annotation = annotation;
         this.date = date;
+
+        this.subscriptionType = SubscriptionTypes.ANNOTATION;
     }
 
-    public Article getArticle() {
-        return this.article;
+    public User getUser() {
+        return this.user;
     }
 
-    public String getType() {
-        return this.type;
-    }
-
-    public int getStartIndex() {
-        return this.startIndex;
-    }
-
-    public int getEndIndex() {
-        return this.endIndex;
+    public Annotation getAnnotation() {
+        return this.annotation;
     }
 
     public Date getDate() {
@@ -41,7 +42,14 @@ public class Subscription {
     }
 
     public String getTopic() {
-        return this.article.getId() + "-" + this.startIndex + "-" + this.endIndex;
+        if (this.subscriptionType == SubscriptionTypes.USER) {
+            return this.user.getUid();
+        }
+
+        return this.annotation.getArticle().getId() + "-" +
+                this.annotation.getType() + "-" +
+                this.annotation.getStartIndex() + "-" +
+                this.annotation.getEndIndex();
     }
 
     @Override

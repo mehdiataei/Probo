@@ -2,13 +2,11 @@ package com.utoronto.ece1778.probo.News;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v4.graphics.drawable.RoundedBitmapDrawable;
-import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.text.SpannableString;
@@ -20,11 +18,9 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CompoundButton;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
-import android.widget.RelativeLayout;
 import android.widget.Switch;
 import android.widget.TextView;
 
@@ -61,7 +57,6 @@ import com.utoronto.ece1778.probo.Utils.ImageBitmap;
 import com.utoronto.ece1778.probo.Utils.ImageLoader;
 import com.utoronto.ece1778.probo.Utils.SentimentParams;
 import com.utoronto.ece1778.probo.Utils.SquareImageView;
-import com.utoronto.ece1778.probo.Utils.WrapHeightViewPager;
 
 import net.ricecode.similarity.JaroWinklerStrategy;
 import net.ricecode.similarity.SimilarityStrategy;
@@ -94,8 +89,10 @@ public class ArticleFragment extends Fragment
 
     private boolean showHeatmap = true;
 
-    int currentAnnotationStartIndex = -1;
-    int currentAnnotationEndIndex = -1;
+    int currentHeadlineAnnotationStartIndex = -1;
+    int currentHeadlineAnnotationEndIndex = -1;
+    int currentBodyAnnotationStartIndex = -1;
+    int currentBodyAnnotationEndIndex = -1;
 
     private SwipeRefreshLayout refresh;
     private Article article;
@@ -104,9 +101,8 @@ public class ArticleFragment extends Fragment
     private int intentAnnotationStartIndex, intentAnnotationEndIndex;
 
     private Switch heatmapSwitch;
-    private TextView headline;
-    private ClickableTextView body, bodyOverflow;
-    private CreativeViewPager annotationsContainer;
+    private ClickableTextView headline, body, bodyOverflow;
+    private CreativeViewPager headlineAnnotationsContainer, bodyAnnotationsContainer;
     private ProgressBar progressBar;
     private SquareImageView image;
     private TextView author;
@@ -169,7 +165,8 @@ public class ArticleFragment extends Fragment
         headline = v.findViewById(R.id.headline);
         body = v.findViewById(R.id.body);
         bodyOverflow = v.findViewById(R.id.body_overflow);
-        annotationsContainer = v.findViewById(R.id.annotations_container);
+        headlineAnnotationsContainer = v.findViewById(R.id.headline_annotations_container);
+        bodyAnnotationsContainer = v.findViewById(R.id.annotations_container);
         progressBar = v.findViewById(R.id.progress_spinner);
         image = v.findViewById(R.id.image);
         author = v.findViewById(R.id.author);
@@ -236,7 +233,6 @@ public class ArticleFragment extends Fragment
     @Override
     public void onDestroyView() {
         setHasOptionsMenu(false);
-
         super.onDestroyView();
     }
 
@@ -312,10 +308,24 @@ public class ArticleFragment extends Fragment
                 endIndex
         );
 
-        splitBody(endIndex);
-        annotationsContainer.setVisibility(View.VISIBLE);
-        annotationsContainer.setCreativeViewPagerAdapter(adapter);
-        adapter.setCurrentItem(0);
+        if (type.equals(Annotation.TYPE_BODY)) {
+            splitBody(endIndex);
+        }
+
+        CreativeViewPager container = type.equals(Annotation.TYPE_HEADLINE) ?
+                headlineAnnotationsContainer : bodyAnnotationsContainer;
+
+        container.setVisibility(View.VISIBLE);
+        container.setCreativeViewPagerAdapter(adapter);
+        container.setCurrentItem(0);
+
+        if (type.equals(Annotation.TYPE_HEADLINE)) {
+            currentHeadlineAnnotationStartIndex = startIndex;
+            currentHeadlineAnnotationEndIndex = endIndex;
+        } else if (type.equals(Annotation.TYPE_BODY)) {
+            currentBodyAnnotationStartIndex = startIndex;
+            currentBodyAnnotationEndIndex = endIndex;
+        }
     }
 
     private void showLocatedAnnotations(String id, String type, int startIndex, int endIndex) {
@@ -332,7 +342,10 @@ public class ArticleFragment extends Fragment
             index++;
         }
 
-        annotationsContainer.setCurrentItem(index);
+        CreativeViewPager container = type.equals(Annotation.TYPE_HEADLINE) ?
+                headlineAnnotationsContainer : bodyAnnotationsContainer;
+
+        container.setCurrentItem(index);
     }
 
     private void splitBody(int index) {
@@ -352,8 +365,8 @@ public class ArticleFragment extends Fragment
     }
 
     public void onAnnotationSubmit(final Annotation.AnnotationSubmitCallback cb, String type,
-                                   int startIndex, int endIndex, int value, String comment,
-                                   String source, final boolean subscribe) {
+                                   int startIndex, int endIndex, final int value, final String comment,
+                                   final String source, final boolean subscribe) {
 
         Annotation.AnnotationSubmitCallback submitCb = new Annotation.AnnotationSubmitCallback() {
             @Override
@@ -374,10 +387,7 @@ public class ArticleFragment extends Fragment
                     User user = userInteractionListener.getUser();
                     user.subscribe(
                             subscribeCb,
-                            article,
-                            annotation.getType(),
-                            annotation.getStartIndex(),
-                            annotation.getEndIndex()
+                            annotation
                     );
                     userInteractionListener.updateUser(user);
                 } else {
@@ -449,30 +459,38 @@ public class ArticleFragment extends Fragment
         }
     }
 
-    public void handleTextViewClick(String quote, int startIndex, int endIndex) {
-        boolean annotationExists = article.annotationExists(Annotation.TYPE_BODY, startIndex, endIndex);
+    public void handleTextViewClick(String quote, String type, int startIndex, int endIndex) {
+        boolean annotationExists = article.annotationExists(type, startIndex, endIndex);
 
         if (!showHeatmap || !annotationExists) {
             return;
         }
 
-        if (startIndex != currentAnnotationStartIndex || endIndex != currentAnnotationEndIndex) {
-            currentAnnotationStartIndex = startIndex;
-            currentAnnotationEndIndex = endIndex;
+        if (type.equals(Annotation.TYPE_HEADLINE) &&
+                (startIndex != currentHeadlineAnnotationStartIndex ||
+                        endIndex != currentHeadlineAnnotationEndIndex)) {
 
-            showLocatedAnnotations(Annotation.TYPE_BODY, startIndex, endIndex);
+            showLocatedAnnotations(type, startIndex, endIndex);
+        } else if (type.equals(Annotation.TYPE_BODY) &&
+                (startIndex != currentBodyAnnotationStartIndex ||
+                        endIndex != currentBodyAnnotationEndIndex)) {
+
+            currentBodyAnnotationStartIndex = startIndex;
+            currentBodyAnnotationEndIndex = endIndex;
+
+            showLocatedAnnotations(type, startIndex, endIndex);
         } else {
             updateArticleText(true);
         }
     }
 
-    public void handleTextViewLongClick(String quote, int startIndex, int endIndex) {
+    public void handleTextViewLongClick(String quote, String type, int startIndex, int endIndex) {
         if (!showHeatmap) {
             return;
         }
 
         Helper.vibrate(getActivity().getApplicationContext(), 100);
-        showAnnotationInput(quote, Annotation.TYPE_BODY, startIndex, endIndex, 1);
+        showAnnotationInput(quote, type, startIndex, endIndex, 1);
     }
 
     @Override
@@ -831,7 +849,9 @@ public class ArticleFragment extends Fragment
 
         protected void onPreExecute() {
             ArticleFragment activity = activityReference.get();
-            activity.annotationsContainer.setVisibility(View.GONE);
+
+            activity.headlineAnnotationsContainer.setVisibility(View.GONE);
+            activity.bodyAnnotationsContainer.setVisibility(View.GONE);
         }
 
         protected void onPostExecute(ArticleFragment.UpdateTextResults results) {
@@ -840,32 +860,45 @@ public class ArticleFragment extends Fragment
 
             if (activity.article.getAnalysed().equals("false")) {
                 activity.startSentimentAnalysis();
-
             }
 
-
-            ClickableTextView.ClickableTextViewInterface cb = new ClickableTextView.ClickableTextViewInterface() {
+            ClickableTextView.ClickableTextViewInterface headlineCb = new ClickableTextView.ClickableTextViewInterface() {
                 @Override
                 public void onTextViewClick(String quote, int startIndex, int endIndex) {
-                    activity.handleTextViewClick(quote, startIndex, endIndex);
+                    activity.handleTextViewClick(quote, Annotation.TYPE_HEADLINE, startIndex, endIndex);
                 }
 
                 @Override
                 public void onTextViewLongClick(String quote, int startIndex, int endIndex) {
-                    activity.handleTextViewLongClick(quote, startIndex, endIndex);
+                    activity.handleTextViewLongClick(quote, Annotation.TYPE_HEADLINE, startIndex, endIndex);
                 }
             };
 
-            activity.headline.setText(results.getHeadlineResult());
+            ClickableTextView.ClickableTextViewInterface bodyCb = new ClickableTextView.ClickableTextViewInterface() {
+                @Override
+                public void onTextViewClick(String quote, int startIndex, int endIndex) {
+                    activity.handleTextViewClick(quote, Annotation.TYPE_BODY, startIndex, endIndex);
+                }
+
+                @Override
+                public void onTextViewLongClick(String quote, int startIndex, int endIndex) {
+                    activity.handleTextViewLongClick(quote, Annotation.TYPE_BODY, startIndex, endIndex);
+                }
+            };
+
+            activity.headline.setTextWithClickableSentences(results.getHeadlineResult(), headlineCb, 0);
+
+            activity.currentHeadlineAnnotationStartIndex = -1;
+            activity.currentHeadlineAnnotationEndIndex = -1;
 
             if (results.getUpdateBody()) {
-                activity.body.setTextWithClickableSentences(results.getBodyResult(), cb, 0);
+                activity.body.setTextWithClickableSentences(results.getBodyResult(), bodyCb, 0);
 
                 activity.bodyOverflow.setVisibility(View.GONE);
-                activity.bodyOverflow.setTextWithClickableSentences(new SpannableString(""), cb, 0);
+                activity.bodyOverflow.setTextWithClickableSentences(new SpannableString(""), bodyCb, 0);
 
-                activity.currentAnnotationStartIndex = -1;
-                activity.currentAnnotationEndIndex = -1;
+                activity.currentBodyAnnotationStartIndex = -1;
+                activity.currentBodyAnnotationEndIndex = -1;
             }
         }
     }
@@ -969,12 +1002,12 @@ public class ArticleFragment extends Fragment
             ClickableTextView.ClickableTextViewInterface cb = new ClickableTextView.ClickableTextViewInterface() {
                 @Override
                 public void onTextViewClick(String quote, int startIndex, int endIndex) {
-                    activity.handleTextViewClick(quote, startIndex, endIndex);
+                    activity.handleTextViewClick(quote, Annotation.TYPE_BODY, startIndex, endIndex);
                 }
 
                 @Override
                 public void onTextViewLongClick(String quote, int startIndex, int endIndex) {
-                    activity.handleTextViewLongClick(quote, startIndex, endIndex);
+                    activity.handleTextViewLongClick(quote, Annotation.TYPE_BODY, startIndex, endIndex);
                 }
             };
 
