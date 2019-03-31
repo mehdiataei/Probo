@@ -18,6 +18,11 @@
             android:title="@string/user_nav_profile" />
 
         <item
+            android:id="@+id/nav_feed"
+            android:icon="@drawable/feed_icon"
+            android:title="@string/user_nav_feed" />
+
+        <item
             android:id="@+id/nav_notifications"
             android:icon="@drawable/notification_icon"
             android:title="@string/user_nav_notifications" />

@@ -18,6 +18,7 @@ import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.firestore.WriteBatch;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
@@ -66,6 +67,7 @@ public class User {
     private ArrayList<User> following;
     private ArrayList<User> followers;
     private ArrayList<Annotation> notifications;
+    private ArrayList<Annotation> feed;
 
     private boolean loggedInUser;
     private boolean loaded;
@@ -82,6 +84,7 @@ public class User {
         this.following = new ArrayList<>();
         this.followers = new ArrayList<>();
         this.notifications = new ArrayList<>();
+        this.feed = new ArrayList<>();
 
         this.loggedInUser = true;
         this.loaded = false;
@@ -128,6 +131,10 @@ public class User {
 
     public ArrayList<Annotation> getNotifications() {
         return this.notifications;
+    }
+
+    public ArrayList<Annotation> getFeed() {
+        return this.feed;
     }
 
     public void setName(String name) {
@@ -364,6 +371,95 @@ public class User {
                                             );
 
                                             annotations.add(annotation);
+                                        }
+
+                                        cb.onLoad();
+                                    }
+                                })
+                                .addOnFailureListener(new OnFailureListener() {
+                                    @Override
+                                    public void onFailure(@NonNull Exception e) {
+                                        cb.onError(e);
+                                    }
+                                });
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        cb.onError(e);
+                    }
+                });
+    }
+
+    public void loadFeed(final UserFeedCallback cb) {
+        final FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        this.feed = new ArrayList<>();
+
+        db.collection("annotations")
+                .get()
+                .addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
+                    @Override
+                    public void onSuccess(final QuerySnapshot annotationDocumentSnapshots) {
+                        db.collection("annotation_votes")
+                                .get()
+                                .addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
+                                    @Override
+                                    public void onSuccess(QuerySnapshot votesDocumentSnapshots) {
+                                        for (DocumentSnapshot annotationDocumentSnapshot : annotationDocumentSnapshots) {
+                                            User annotationUser = new User(annotationDocumentSnapshot.getString("userId"));
+
+                                            if (following.contains(annotationUser)) {
+                                                String annotationId = annotationDocumentSnapshot.getId();
+                                                Article article = new Article(annotationDocumentSnapshot.getString("articleId"));
+                                                String type = annotationDocumentSnapshot.getString("type");
+                                                Long startIndex = annotationDocumentSnapshot.getLong("startIndex");
+                                                Long endIndex = annotationDocumentSnapshot.getLong("endIndex");
+                                                Long value = annotationDocumentSnapshot.getLong("value");
+                                                HashMap<String, AnnotationVote> upvotes = new HashMap<>();
+                                                HashMap<String, AnnotationVote> downvotes = new HashMap<>();
+
+                                                for (DocumentSnapshot votesDocumentSnapshot : votesDocumentSnapshots) {
+                                                    if (votesDocumentSnapshot.getString("annotationId").equals(annotationId)) {
+                                                        AnnotationVote vote = new AnnotationVote(
+                                                                votesDocumentSnapshot.getId(),
+                                                                new User(votesDocumentSnapshot.getString("userId")),
+                                                                votesDocumentSnapshot.getBoolean("value")
+                                                        );
+
+                                                        if (vote.getValue()) {
+                                                            upvotes.put(
+                                                                    votesDocumentSnapshot.getString("userId"),
+                                                                    vote
+                                                            );
+                                                        } else {
+                                                            downvotes.put(
+                                                                    votesDocumentSnapshot.getString("userId"),
+                                                                    vote
+                                                            );
+                                                        }
+                                                    }
+                                                }
+
+                                                Annotation annotation = new Annotation(
+                                                        annotationId,
+                                                        article,
+                                                        annotationUser,
+                                                        type,
+                                                        startIndex.intValue(),
+                                                        endIndex.intValue(),
+                                                        value.intValue(),
+                                                        annotationDocumentSnapshot.getString("comment"),
+                                                        annotationDocumentSnapshot.getString("source"),
+                                                        upvotes,
+                                                        downvotes,
+                                                        annotationDocumentSnapshot.getString("heading"),
+                                                        annotationDocumentSnapshot.getString("sentence")
+                                                );
+
+                                                feed.add(annotation);
+                                            }
                                         }
 
                                         cb.onLoad();
@@ -684,47 +780,44 @@ public class User {
         }
     }
 
-    private void addFollowing(final UserFollowCallback cb, final User userToAdd) {
+    private void addFollowing(final UserFollowCallback cb, User userToAdd) {
         final FirebaseFirestore db = FirebaseFirestore.getInstance();
-        Map<String, Object> data = new HashMap<>();
-        final Date now = new Date();
+        WriteBatch batch = db.batch();
 
+        Map<String, Object> data = new HashMap<>();
+        Map<String, Object> otherUserData = new HashMap<>();
+
+        final Date now = new Date();
         final Subscription subscription = new Subscription(userToAdd);
 
         data.put("userId", userToAdd.getUid());
         data.put("date", now);
 
-        db.collection("users")
+        otherUserData.put("userId", userToAdd.getUid());
+        otherUserData.put("date", now);
+
+        DocumentReference userReference = db
+                .collection("users")
                 .document(this.uid)
                 .collection("following")
+                .document(userToAdd.getUid());
+
+        batch.set(userReference, data);
+
+        DocumentReference otherUserReference = db
+                .collection("users")
                 .document(userToAdd.getUid())
-                .set(data)
+                .collection("followers")
+                .document(this.uid);
+
+        batch.set(otherUserReference, otherUserData);
+
+        batch.commit()
                 .addOnSuccessListener(new OnSuccessListener<Void>() {
                     @Override
                     public void onSuccess(Void aVoid) {
-                        Map<String, Object> otherUserData = new HashMap<>();
-
-                        otherUserData.put("userId", userToAdd.getUid());
-                        otherUserData.put("date", now);
-
-                        db.collection("users")
-                                .document(userToAdd.getUid())
-                                .collection("followers")
-                                .document(uid)
-                                .set(otherUserData)
-                                .addOnSuccessListener(new OnSuccessListener<Void>() {
-                                    @Override
-                                    public void onSuccess(Void aVoid) {
-                                        createSubscription(subscription);
-                                        cb.onUpdate();
-                                    }
-                                })
-                                .addOnFailureListener(new OnFailureListener() {
-                                    @Override
-                                    public void onFailure(@NonNull Exception e) {
-                                        cb.onError(e);
-                                    }
-                                });
+                        createSubscription(subscription);
+                        cb.onUpdate();
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {
@@ -735,34 +828,31 @@ public class User {
                 });
     }
 
-    private void removeFollowing(final UserFollowCallback cb, final User userToRemove) {
+    private void removeFollowing(final UserFollowCallback cb, User userToRemove) {
         final FirebaseFirestore db = FirebaseFirestore.getInstance();
+        WriteBatch batch = db.batch();
 
-        db.collection("users")
+        DocumentReference userReference = db
+                .collection("users")
                 .document(this.uid)
                 .collection("following")
+                .document(userToRemove.getUid());
+
+        batch.delete(userReference);
+
+        DocumentReference otherUserReference = db
+                .collection("users")
                 .document(userToRemove.getUid())
-                .delete()
+                .collection("followers")
+                .document(this.uid);
+
+        batch.delete(otherUserReference);
+
+        batch.commit()
                 .addOnSuccessListener(new OnSuccessListener<Void>() {
                     @Override
                     public void onSuccess(Void aVoid) {
-                        db.collection("users")
-                                .document(userToRemove.getUid())
-                                .collection("followers")
-                                .document(uid)
-                                .delete()
-                                .addOnSuccessListener(new OnSuccessListener<Void>() {
-                                    @Override
-                                    public void onSuccess(Void aVoid) {
-                                        cb.onUpdate();
-                                    }
-                                })
-                                .addOnFailureListener(new OnFailureListener() {
-                                    @Override
-                                    public void onFailure(@NonNull Exception e) {
-                                        cb.onError(e);
-                                    }
-                                });
+                        cb.onUpdate();
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {
@@ -793,6 +883,8 @@ public class User {
         data.put("startIndex", subscription.getAnnotation().getStartIndex());
         data.put("endIndex", subscription.getAnnotation().getEndIndex());
         data.put("date", subscription.getDate());
+        data.put("heading", subscription.getAnnotation().getHeading());
+        data.put("sentence", subscription.getAnnotation().getSentence());
 
         db.collection("users")
                 .document(this.uid)
@@ -872,7 +964,6 @@ public class User {
                                             Long value = notificationsDocumentSnapshot.getLong("value");
                                             HashMap<String, AnnotationVote> upvotes = new HashMap<>();
                                             HashMap<String, AnnotationVote> downvotes = new HashMap<>();
-                                            String sentence = notificationsDocumentSnapshot.getString("sentence");
 
                                             for (DocumentSnapshot votesDocumentSnapshot : votesDocumentSnapshots) {
                                                 if (votesDocumentSnapshot.getString("annotationId").equals(annotationId)) {
@@ -946,6 +1037,8 @@ public class User {
         data.put("value", annotation.getValue());
         data.put("comment", annotation.getComment());
         data.put("source", annotation.getSource());
+        data.put("heading", annotation.getHeading());
+        data.put("sentence", annotation.getSentence());
 
         db.collection("users")
                 .document(this.uid)
@@ -1063,6 +1156,11 @@ public class User {
 
     public interface UserClearNotificationsCallback {
         void onClear();
+        void onError(Exception error);
+    }
+
+    public interface UserFeedCallback {
+        void onLoad();
         void onError(Exception error);
     }
 
