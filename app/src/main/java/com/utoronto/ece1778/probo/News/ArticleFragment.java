@@ -246,7 +246,6 @@ public class ArticleFragment extends Fragment
 
         if (article.hasLoaded()) {
             heatmapSwitch.setEnabled(true);
-
         }
 
         super.onCreateOptionsMenu(menu, inflater);
