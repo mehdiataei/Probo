@@ -31,6 +31,7 @@ import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
@@ -353,9 +354,9 @@ public class ArticleFragment extends Fragment
         new ArticleFragment.SplitText(this).execute(params);
     }
 
-    private void showAnnotationInput(String quote, String type, int startIndex, int endIndex, int value) {
+    private void showAnnotationInput(float sentiment, String quote, String type, int startIndex, int endIndex, int value) {
         if (interactionListener != null) {
-            interactionListener.onAnnotationInput(quote, type, startIndex, endIndex, value);
+            interactionListener.onAnnotationInput(sentiment, quote, type, startIndex, endIndex, value);
         }
     }
 
@@ -486,13 +487,45 @@ public class ArticleFragment extends Fragment
         }
     }
 
-    public void handleTextViewLongClick(String quote, String type, int startIndex, int endIndex) {
+    public void handleTextViewLongClick(final String quote, final String type, final int startIndex, final int endIndex) {
         if (!showHeatmap) {
             return;
         }
 
-        Helper.vibrate(getActivity().getApplicationContext(), 100);
-        showAnnotationInput(quote, type, startIndex, endIndex, 1);
+        Log.d(TAG, "handleTextViewLongClick: startIndex: " + startIndex);
+
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        db.collection("news")
+                .document(article.getId())
+                .collection("sentences")
+                .whereEqualTo("startIndex", Integer.toString(startIndex))
+                .get().addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
+            @Override
+            public void onSuccess(QuerySnapshot queryDocumentSnapshots) {
+
+
+                for (DocumentSnapshot documentSnapshot : queryDocumentSnapshots) {
+
+                    String sentiment = documentSnapshot.getString("sentiment");
+
+                    Helper.vibrate(getActivity().getApplicationContext(), 100);
+                    showAnnotationInput(Float.parseFloat(sentiment), quote, type, startIndex, endIndex, 1);
+
+                }
+
+            }
+        }).addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+
+                Log.d(TAG, "onFailure: No sentiment found.");
+
+                Helper.vibrate(getActivity().getApplicationContext(), 100);
+                showAnnotationInput(0, quote, type, startIndex, endIndex, 1);
+
+            }
+        });
+
     }
 
     @Override
@@ -516,176 +549,12 @@ public class ArticleFragment extends Fragment
         }
     }
 
-    private class SentimentAnalysis extends AsyncTask<SentimentParams, Void, ArrayList<Sentence>> {
+    public interface ArticleFragmentInteractionListener {
+        void onAnnotationInput(float sentiment, String quote, String type, int startIndex, int endIndex, int value);
 
+        void onMoreAnnotations(String type, int startIndex, int endIndex);
 
-        private WeakReference<ArticleFragment> activityReference;
-
-        public SentimentAnalysis(ArticleFragment context) {
-
-            this.activityReference = new WeakReference<>(context);
-        }
-
-        @Override
-        protected ArrayList<Sentence> doInBackground(SentimentParams... sentimentParams) {
-
-
-            final String body = sentimentParams[0].getBody().replaceAll("\n\n", " ");
-            final String articleId = sentimentParams[0].getArticleId();
-
-
-            final ArrayList<Sentence> sTemp = new ArrayList<>();
-
-            ExtractSentences extractSentences = new ExtractSentences(body);
-
-            List<String> sentencesList = extractSentences.getSentences();
-
-            sentencesList.removeAll(Collections.singleton(null));
-            sentencesList.removeAll(Collections.singleton("\n"));
-
-            ListIterator<String> it = sentencesList.listIterator();
-            while (it.hasNext()) {
-                it.set(it.next().replace("\n", ""));
-
-            }
-
-
-            IamOptions options = new IamOptions.Builder()
-                    .apiKey("48kgp2fHd9HVz6fe3f0TsQjTWysYNx9iKc2eyh2aUoQ-")
-                    .build();
-
-            NaturalLanguageUnderstanding naturalLanguageUnderstanding = new NaturalLanguageUnderstanding("2018-11-16", options);
-            naturalLanguageUnderstanding.setEndPoint("https://gateway.watsonplatform.net/natural-language-understanding/api");
-
-            SentimentOptions sentiment = new SentimentOptions.Builder().targets(sentencesList)
-                    .build();
-
-            KeywordsOptions keywords = new KeywordsOptions.Builder()
-                    .sentiment(true)
-                    .emotion(true)
-                    .limit(20)
-                    .build();
-
-            Features features = new Features.Builder()
-                    .sentiment(sentiment)
-                    .keywords(keywords)
-                    .build();
-
-
-            AnalyzeOptions parameters = new AnalyzeOptions.Builder().text(body)
-                    .features(features)
-                    .build();
-
-            naturalLanguageUnderstanding
-                    .analyze(parameters).enqueue(new ServiceCallback<AnalysisResults>() {
-                @Override
-                public void onResponse(AnalysisResults response) {
-
-
-                    List<TargetedSentimentResults> listOfSentiments = response.getSentiment().getTargets();
-                    List<KeywordsResult> listOfKeywords = response.getKeywords();
-
-                    Log.d(TAG, "onResponse: response of the whole doc: " + response);
-
-                    Log.d(TAG, "onResponse: Size of the sentiment list: " + listOfSentiments.size());
-
-                    for (TargetedSentimentResults r : listOfSentiments) {
-
-                        Log.d(TAG, "onResponse: Receiving interate response.");
-
-                        String sentence = r.getText();
-                        String score = r.getScore().toString();
-
-                        Log.d(TAG, "onResponse: score: " + score);
-                        final int startIndex = body.indexOf(sentence);
-                        final int endIndex = startIndex + sentence.length();
-
-
-                        Sentence s = new Sentence(sentence, articleId, score, String.valueOf(startIndex), String.valueOf(endIndex));
-                        sTemp.add(s);
-
-                    }
-
-
-                    FirebaseFirestore db = FirebaseFirestore.getInstance();
-
-                    Map<String, Object> docData = new HashMap<>();
-                    docData.put("analysed", "true");
-
-
-                    for (Sentence s : sTemp) {
-
-                        Log.d(TAG, "onPostExecute: Adding NLP results to the database...");
-
-
-                        db.collection("news").document(article.getId()).collection("sentences").add(s).addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
-                            @Override
-                            public void onSuccess(DocumentReference documentReference) {
-                                Log.d("Probo_app", "onSuccess: Added sentence to the database.");
-                            }
-                        }).addOnFailureListener(new OnFailureListener() {
-                            @Override
-                            public void onFailure(@NonNull Exception e) {
-                                Log.d("Probo_app", "onFailure: Failed adding sentence to the database.");
-                            }
-                        });
-
-                    }
-
-                    for (KeywordsResult k : listOfKeywords) {
-
-                        Map<String, Object> keywordsInfo = new HashMap<>();
-                        keywordsInfo.put("text", k.getText());
-                        keywordsInfo.put("relevance", k.getRelevance());
-                        keywordsInfo.put("sentiment", k.getSentiment());
-                        keywordsInfo.put("emotion", k.getEmotion());
-
-
-                        db.collection("news").document(article.getId()).collection("keywords").add(keywordsInfo).addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
-                            @Override
-                            public void onSuccess(DocumentReference documentReference) {
-
-                                Log.d(TAG, "onSuccess: Added keyword.");
-
-                            }
-                        }).addOnFailureListener(new OnFailureListener() {
-                            @Override
-                            public void onFailure(@NonNull Exception e) {
-
-                                Log.d(TAG, "onFailure: Failed adding keyword.");
-
-                            }
-                        });
-
-                    }
-
-
-                    db.collection("news").document(article.getId()).update(docData);
-
-                }
-
-
-                @Override
-                public void onFailure(Exception e) {
-
-                }
-
-
-            });
-
-
-            return sTemp;
-        }
-
-        @Override
-        protected void onPostExecute(ArrayList<Sentence> sentences) {
-            super.onPostExecute(sentences);
-
-            Log.d("Probo_app", "onTaskCompleted: Sentiment Analysis completed.");
-
-        }
-
-
+        void onRouteToProfile(String userId);
     }
 
     private void startSentimentAnalysis() {
@@ -1248,12 +1117,177 @@ public class ArticleFragment extends Fragment
         }
     }
 
+    private class SentimentAnalysis extends AsyncTask<SentimentParams, Void, ArrayList<Sentence>> {
 
-    public interface ArticleFragmentInteractionListener {
-        void onAnnotationInput(String quote, String type, int startIndex, int endIndex, int value);
 
-        void onMoreAnnotations(String type, int startIndex, int endIndex);
+        private WeakReference<ArticleFragment> activityReference;
 
-        void onRouteToProfile(String userId);
+        public SentimentAnalysis(ArticleFragment context) {
+
+            this.activityReference = new WeakReference<>(context);
+        }
+
+        @Override
+        protected ArrayList<Sentence> doInBackground(SentimentParams... sentimentParams) {
+
+
+            final String body = sentimentParams[0].getBody().replaceAll("\n\n", " ");
+            final String rawBody = sentimentParams[0].getBody().replaceAll("\n\n", "  ");
+            final String articleId = sentimentParams[0].getArticleId();
+
+
+            final ArrayList<Sentence> sTemp = new ArrayList<>();
+
+            ExtractSentences extractSentences = new ExtractSentences(body);
+
+            List<String> sentencesList = extractSentences.getSentences();
+
+            sentencesList.removeAll(Collections.singleton(null));
+            sentencesList.removeAll(Collections.singleton("\n"));
+
+            ListIterator<String> it = sentencesList.listIterator();
+            while (it.hasNext()) {
+                it.set(it.next().replace("\n", ""));
+
+            }
+
+
+            IamOptions options = new IamOptions.Builder()
+                    .apiKey("48kgp2fHd9HVz6fe3f0TsQjTWysYNx9iKc2eyh2aUoQ-")
+                    .build();
+
+            NaturalLanguageUnderstanding naturalLanguageUnderstanding = new NaturalLanguageUnderstanding("2018-11-16", options);
+            naturalLanguageUnderstanding.setEndPoint("https://gateway.watsonplatform.net/natural-language-understanding/api");
+
+            SentimentOptions sentiment = new SentimentOptions.Builder().targets(sentencesList)
+                    .build();
+
+            KeywordsOptions keywords = new KeywordsOptions.Builder()
+                    .sentiment(true)
+                    .emotion(true)
+                    .limit(20)
+                    .build();
+
+            Features features = new Features.Builder()
+                    .sentiment(sentiment)
+                    .keywords(keywords)
+                    .build();
+
+
+            AnalyzeOptions parameters = new AnalyzeOptions.Builder().text(body)
+                    .features(features)
+                    .build();
+
+            naturalLanguageUnderstanding
+                    .analyze(parameters).enqueue(new ServiceCallback<AnalysisResults>() {
+                @Override
+                public void onResponse(AnalysisResults response) {
+
+
+                    List<TargetedSentimentResults> listOfSentiments = response.getSentiment().getTargets();
+                    List<KeywordsResult> listOfKeywords = response.getKeywords();
+
+                    Log.d(TAG, "onResponse: response of the whole doc: " + response);
+
+                    Log.d(TAG, "onResponse: Size of the sentiment list: " + listOfSentiments.size());
+
+                    for (TargetedSentimentResults r : listOfSentiments) {
+
+                        Log.d(TAG, "onResponse: Receiving interate response.");
+
+                        String sentence = r.getText();
+                        String score = r.getScore().toString();
+
+                        Log.d(TAG, "onResponse: score: " + score);
+
+                        final int startIndex = rawBody.indexOf(sentence);
+                        final int endIndex = startIndex + sentence.length();
+
+
+                        Sentence s = new Sentence(sentence, articleId, score, String.valueOf(startIndex), String.valueOf(endIndex));
+                        sTemp.add(s);
+
+                    }
+
+
+                    FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+                    Map<String, Object> docData = new HashMap<>();
+                    docData.put("analysed", "true");
+
+
+                    for (Sentence s : sTemp) {
+
+                        Log.d(TAG, "onPostExecute: Adding NLP results to the database...");
+
+
+                        db.collection("news").document(article.getId()).collection("sentences").add(s).addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
+                            @Override
+                            public void onSuccess(DocumentReference documentReference) {
+                                Log.d("Probo_app", "onSuccess: Added sentence to the database.");
+                            }
+                        }).addOnFailureListener(new OnFailureListener() {
+                            @Override
+                            public void onFailure(@NonNull Exception e) {
+                                Log.d("Probo_app", "onFailure: Failed adding sentence to the database.");
+                            }
+                        });
+
+                    }
+
+                    for (KeywordsResult k : listOfKeywords) {
+
+                        Map<String, Object> keywordsInfo = new HashMap<>();
+                        keywordsInfo.put("text", k.getText());
+                        keywordsInfo.put("relevance", k.getRelevance());
+                        keywordsInfo.put("sentiment", k.getSentiment());
+                        keywordsInfo.put("emotion", k.getEmotion());
+
+
+                        db.collection("news").document(article.getId()).collection("keywords").add(keywordsInfo).addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
+                            @Override
+                            public void onSuccess(DocumentReference documentReference) {
+
+                                Log.d(TAG, "onSuccess: Added keyword.");
+
+                            }
+                        }).addOnFailureListener(new OnFailureListener() {
+                            @Override
+                            public void onFailure(@NonNull Exception e) {
+
+                                Log.d(TAG, "onFailure: Failed adding keyword.");
+
+                            }
+                        });
+
+                    }
+
+
+                    db.collection("news").document(article.getId()).update(docData);
+
+                }
+
+
+                @Override
+                public void onFailure(Exception e) {
+
+                }
+
+
+            });
+
+
+            return sTemp;
+        }
+
+        @Override
+        protected void onPostExecute(ArrayList<Sentence> sentences) {
+            super.onPostExecute(sentences);
+
+            Log.d("Probo_app", "onTaskCompleted: Sentiment Analysis completed.");
+
+        }
+
+
     }
 }

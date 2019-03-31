@@ -156,7 +156,7 @@ public class NewsFragment extends Fragment
     }
 
     public void onRouteToArticleAnnotation(String articleId, String annotationId, String annotationType,
-                                 int annotationStartIndex, int annotationEndIndex) {
+                                           int annotationStartIndex, int annotationEndIndex) {
 
         if (fragments.size() > 1) {
             fragments.subList(1, fragments.size()).clear();
@@ -206,10 +206,14 @@ public class NewsFragment extends Fragment
     }
 
     @Override
-    public void onAnnotationInput(String quote, String type, int startIndex, int endIndex, int value) {
+    public void onAnnotationInput(final float sentiment, final String quote, final String type, final int startIndex, final int endIndex, final int value) {
+
+
+        Boolean isFact = !(Math.abs(sentiment) > 0.5);
+
         if (fragments.size() > 1 && fragments.get(1) instanceof ArticleFragment) {
             AnnotationInputFragment annotationInputFragment = AnnotationInputFragment.newInstance(
-                    true,
+                    isFact,
                     quote,
                     type,
                     startIndex,
@@ -219,6 +223,8 @@ public class NewsFragment extends Fragment
 
             onRouteToArticleExtension(annotationInputFragment);
         }
+
+
     }
 
     @Override
