@@ -3,7 +3,6 @@ package com.utoronto.ece1778.probo.User;
 import android.content.Context;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
-import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -17,20 +16,15 @@ import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 
-import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.firebase.firestore.CollectionReference;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.QuerySnapshot;
 import com.utoronto.ece1778.probo.News.Annotation;
 import com.utoronto.ece1778.probo.News.AnnotationCardView;
 import com.utoronto.ece1778.probo.News.AnnotationsRecyclerAdapter;
 import com.utoronto.ece1778.probo.R;
 
-import java.util.ArrayList;
+import jp.co.recruit_lifestyle.android.widget.WaveSwipeRefreshLayout;
 
 public class NotificationsFragment extends Fragment {
-    private SwipeRefreshLayout swipeRefreshLayout;
+    private WaveSwipeRefreshLayout swipeRefreshLayout;
     private LinearLayout noNotificationsContainer;
     private RecyclerView annotationsContainer;
     private ProgressBar progress;
@@ -48,23 +42,12 @@ public class NotificationsFragment extends Fragment {
         setHasOptionsMenu(true);
     }
 
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-
-        View v = inflater.inflate(R.layout.fragment_notifications, container, false);
-
-        swipeRefreshLayout = v.findViewById(R.id.refresh);
-        noNotificationsContainer = v.findViewById(R.id.no_notifications_container);
-        annotationsContainer = v.findViewById(R.id.annotations_container);
-        progress = v.findViewById(R.id.progress_spinner);
-
-        swipeRefreshLayout.setOnRefreshListener(handleRefresh);
-
-        load();
-
-        return v;
-    }
+    private WaveSwipeRefreshLayout.OnRefreshListener handleRefresh = new WaveSwipeRefreshLayout.OnRefreshListener() {
+        @Override
+        public void onRefresh() {
+            load();
+        }
+    };
 
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
@@ -89,12 +72,25 @@ public class NotificationsFragment extends Fragment {
         super.onDestroyView();
     }
 
-    private SwipeRefreshLayout.OnRefreshListener handleRefresh = new SwipeRefreshLayout.OnRefreshListener() {
-        @Override
-        public void onRefresh() {
-            load();
-        }
-    };
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+
+        View v = inflater.inflate(R.layout.fragment_notifications, container, false);
+
+        swipeRefreshLayout = v.findViewById(R.id.refresh);
+        swipeRefreshLayout.setWaveARGBColor(255, 55, 64, 70);
+
+        noNotificationsContainer = v.findViewById(R.id.no_notifications_container);
+        annotationsContainer = v.findViewById(R.id.annotations_container);
+        progress = v.findViewById(R.id.progress_spinner);
+
+        swipeRefreshLayout.setOnRefreshListener(handleRefresh);
+
+        load();
+
+        return v;
+    }
 
     private void populate() {
         if (userInteractionListener.getUser().getNotifications().size() > 0) {

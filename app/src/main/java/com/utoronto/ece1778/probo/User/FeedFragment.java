@@ -3,7 +3,6 @@ package com.utoronto.ece1778.probo.User;
 import android.content.Context;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
-import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -19,8 +18,10 @@ import com.utoronto.ece1778.probo.News.AnnotationCardView;
 import com.utoronto.ece1778.probo.News.AnnotationsRecyclerAdapter;
 import com.utoronto.ece1778.probo.R;
 
+import jp.co.recruit_lifestyle.android.widget.WaveSwipeRefreshLayout;
+
 public class FeedFragment extends Fragment {
-    private SwipeRefreshLayout swipeRefreshLayout;
+    private WaveSwipeRefreshLayout swipeRefreshLayout;
     private LinearLayout noAnnotationsContainer;
     private RecyclerView annotationsContainer;
     private ProgressBar progress;
@@ -32,6 +33,13 @@ public class FeedFragment extends Fragment {
     public FeedFragment() {
     }
 
+    private WaveSwipeRefreshLayout.OnRefreshListener handleRefresh = new WaveSwipeRefreshLayout.OnRefreshListener() {
+        @Override
+        public void onRefresh() {
+            load();
+        }
+    };
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -39,6 +47,7 @@ public class FeedFragment extends Fragment {
         View v = inflater.inflate(R.layout.fragment_feed, container, false);
 
         swipeRefreshLayout = v.findViewById(R.id.refresh);
+        swipeRefreshLayout.setWaveARGBColor(255, 55, 64, 70);
         noAnnotationsContainer = v.findViewById(R.id.no_annotations_container);
         annotationsContainer = v.findViewById(R.id.annotations_container);
         progress = v.findViewById(R.id.progress_spinner);
@@ -49,13 +58,6 @@ public class FeedFragment extends Fragment {
 
         return v;
     }
-
-    private SwipeRefreshLayout.OnRefreshListener handleRefresh = new SwipeRefreshLayout.OnRefreshListener() {
-        @Override
-        public void onRefresh() {
-            load();
-        }
-    };
 
     private void populate() {
         if (userInteractionListener.getUser().getFeed().size() > 0) {

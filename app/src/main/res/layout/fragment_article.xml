@@ -8,7 +8,7 @@
     android:background="@color/backgroundColor"
     tools:context=".News.ArticleFragment">
 
-    <android.support.v4.widget.SwipeRefreshLayout
+    <jp.co.recruit_lifestyle.android.widget.WaveSwipeRefreshLayout
         android:id="@+id/refresh"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -119,5 +119,5 @@
                 </LinearLayout>
             </LinearLayout>
         </ScrollView>
-    </android.support.v4.widget.SwipeRefreshLayout>
+    </jp.co.recruit_lifestyle.android.widget.WaveSwipeRefreshLayout>
 </android.support.constraint.ConstraintLayout>

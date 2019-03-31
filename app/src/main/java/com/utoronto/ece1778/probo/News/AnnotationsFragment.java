@@ -3,7 +3,6 @@ package com.utoronto.ece1778.probo.News;
 import android.content.Context;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
-import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -14,6 +13,8 @@ import android.widget.ProgressBar;
 
 import com.utoronto.ece1778.probo.R;
 import com.utoronto.ece1778.probo.User.User;
+
+import jp.co.recruit_lifestyle.android.widget.WaveSwipeRefreshLayout;
 
 public class AnnotationsFragment extends Fragment {
     private static final String
@@ -27,7 +28,7 @@ public class AnnotationsFragment extends Fragment {
     private int startIndex;
     private int endIndex;
 
-    private SwipeRefreshLayout swipeRefreshLayout;
+    private WaveSwipeRefreshLayout swipeRefreshLayout;
     private ProgressBar spinner;
     private RecyclerView annotationsContainer;
 
@@ -61,29 +62,7 @@ public class AnnotationsFragment extends Fragment {
         }
     }
 
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-
-        View v = inflater.inflate(R.layout.fragment_annotations, container, false);
-
-        swipeRefreshLayout = v.findViewById(R.id.refresh);
-        spinner = v.findViewById(R.id.progress_spinner);
-        swipeRefreshLayout.setOnRefreshListener(handleRefresh);
-        annotationsContainer = v.findViewById(R.id.annotations_container);
-
-        load();
-
-        return v;
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        load();
-    }
-
-    private SwipeRefreshLayout.OnRefreshListener handleRefresh = new SwipeRefreshLayout.OnRefreshListener() {
+    private WaveSwipeRefreshLayout.OnRefreshListener handleRefresh = new WaveSwipeRefreshLayout.OnRefreshListener() {
         @Override
         public void onRefresh() {
             Article.ArticleCallback cb = new Article.ArticleCallback() {
@@ -106,6 +85,30 @@ public class AnnotationsFragment extends Fragment {
             article.load(cb);
         }
     };
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        load();
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+
+        View v = inflater.inflate(R.layout.fragment_annotations, container, false);
+
+        swipeRefreshLayout = v.findViewById(R.id.refresh);
+        swipeRefreshLayout.setWaveARGBColor(255, 55, 64, 70);
+
+        spinner = v.findViewById(R.id.progress_spinner);
+        swipeRefreshLayout.setOnRefreshListener(handleRefresh);
+        annotationsContainer = v.findViewById(R.id.annotations_container);
+
+        load();
+
+        return v;
+    }
 
     private void load() {
         Article.ArticleCallback cb = new Article.ArticleCallback() {

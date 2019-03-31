@@ -5,7 +5,6 @@ import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.graphics.drawable.RoundedBitmapDrawable;
-import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -25,10 +24,12 @@ import com.utoronto.ece1778.probo.R;
 import com.utoronto.ece1778.probo.Utils.ImageBitmap;
 import com.utoronto.ece1778.probo.Utils.ImageLoader;
 
+import jp.co.recruit_lifestyle.android.widget.WaveSwipeRefreshLayout;
+
 public class ProfileFragment extends Fragment {
     private static final String ARG_USER_ID = "userId";
 
-    private SwipeRefreshLayout refreshLayout;
+    private WaveSwipeRefreshLayout refreshLayout;
     private ProgressBar annotationsProgress;
     private LinearLayout noAnnotationsContainer;
     private RecyclerView annotationsContainer;
@@ -101,7 +102,7 @@ public class ProfileFragment extends Fragment {
         return v;
     }
 
-    private SwipeRefreshLayout.OnRefreshListener handleRefresh = new SwipeRefreshLayout.OnRefreshListener() {
+    private WaveSwipeRefreshLayout.OnRefreshListener handleRefresh = new WaveSwipeRefreshLayout.OnRefreshListener() {
         @Override
         public void onRefresh() {
             User.UserCallback cb = new User.UserCallback() {

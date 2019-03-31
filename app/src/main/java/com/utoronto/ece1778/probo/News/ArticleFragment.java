@@ -8,7 +8,6 @@ import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v4.graphics.drawable.RoundedBitmapDrawable;
 import android.support.v4.view.ViewPager;
-import android.support.v4.widget.SwipeRefreshLayout;
 import android.text.SpannableString;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -73,6 +72,8 @@ import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
 
+import jp.co.recruit_lifestyle.android.widget.WaveSwipeRefreshLayout;
+
 import static com.utoronto.ece1778.probo.News.Article.TAG;
 
 public class ArticleFragment extends Fragment
@@ -94,7 +95,7 @@ public class ArticleFragment extends Fragment
     int currentBodyAnnotationStartIndex = -1;
     int currentBodyAnnotationEndIndex = -1;
 
-    private SwipeRefreshLayout refresh;
+    private WaveSwipeRefreshLayout refresh;
     private Article article;
 
     private String intentAnnotationId, intentAnnotationType;
@@ -165,6 +166,52 @@ public class ArticleFragment extends Fragment
     }
 
     private RMSwitch heatmapSwitch;
+    private WaveSwipeRefreshLayout.OnRefreshListener handleRefresh = new WaveSwipeRefreshLayout.OnRefreshListener() {
+        @Override
+        public void onRefresh() {
+            Article.ArticleCallback cb = new Article.ArticleCallback() {
+                @Override
+                public void onLoad() {
+                    populateArticle(true);
+                    refresh.setRefreshing(false);
+                }
+
+                @Override
+                public void onArticleError(int errorCode) {
+                    Log.d("PROBO_APP", "erroCode: " + errorCode);
+                }
+
+                @Override
+                public void onError(Exception e) {
+                    Log.d("PROBO_APP", "err", e);
+                }
+            };
+
+            article.load(cb);
+        }
+    };
+
+    @Override
+    public void onDestroyView() {
+        setHasOptionsMenu(false);
+        super.onDestroyView();
+    }
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        inflater.inflate(R.menu.article_action_menu, menu);
+
+        MenuItem item = menu.findItem(R.id.heatmap_action);
+        heatmapSwitch = item.getActionView().findViewById(R.id.heatmap_switch);
+        heatmapSwitch.setChecked(showHeatmap);
+        heatmapSwitch.addSwitchObserver(handleHeatmapSwitch);
+
+        if (article.hasLoaded()) {
+            heatmapSwitch.setEnabled(true);
+        }
+
+        super.onCreateOptionsMenu(menu, inflater);
+    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -173,6 +220,7 @@ public class ArticleFragment extends Fragment
         View v = inflater.inflate(R.layout.fragment_article, container, false);
 
         refresh = v.findViewById(R.id.refresh);
+        refresh.setWaveARGBColor(255, 55, 64, 70);
 
         headline = v.findViewById(R.id.headline);
         body = v.findViewById(R.id.body);
@@ -226,53 +274,6 @@ public class ArticleFragment extends Fragment
 
         return v;
     }
-
-    @Override
-    public void onDestroyView() {
-        setHasOptionsMenu(false);
-        super.onDestroyView();
-    }
-
-    @Override
-    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        inflater.inflate(R.menu.article_action_menu, menu);
-
-        MenuItem item = menu.findItem(R.id.heatmap_action);
-        heatmapSwitch = item.getActionView().findViewById(R.id.heatmap_switch);
-        heatmapSwitch.setChecked(showHeatmap);
-        heatmapSwitch.addSwitchObserver(handleHeatmapSwitch);
-
-        if (article.hasLoaded()) {
-            heatmapSwitch.setEnabled(true);
-        }
-
-        super.onCreateOptionsMenu(menu, inflater);
-    }
-
-    private SwipeRefreshLayout.OnRefreshListener handleRefresh = new SwipeRefreshLayout.OnRefreshListener() {
-        @Override
-        public void onRefresh() {
-            Article.ArticleCallback cb = new Article.ArticleCallback() {
-                @Override
-                public void onLoad() {
-                    populateArticle(true);
-                    refresh.setRefreshing(false);
-                }
-
-                @Override
-                public void onArticleError(int errorCode) {
-                    Log.d("PROBO_APP", "erroCode: " + errorCode);
-                }
-
-                @Override
-                public void onError(Exception e) {
-                    Log.d("PROBO_APP", "err", e);
-                }
-            };
-
-            article.load(cb);
-        }
-    };
 
     public void populateArticle(boolean showArticleText) {
         RequestOptions options = new RequestOptions()
