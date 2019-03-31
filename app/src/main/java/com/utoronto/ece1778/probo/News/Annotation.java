@@ -2,16 +2,12 @@ package com.utoronto.ece1778.probo.News;
 
 import android.support.annotation.NonNull;
 
-import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.gms.tasks.Task;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
-import com.google.firebase.iid.FirebaseInstanceId;
-import com.google.firebase.iid.InstanceIdResult;
 import com.utoronto.ece1778.probo.User.User;
 
 import java.util.HashMap;
@@ -34,6 +30,8 @@ public class Annotation {
     private HashMap<String, AnnotationVote> votes;
     private int upvoteCount;
     private int downvoteCount;
+    private String heading;
+    private String sentence;
 
     private boolean loaded;
 
@@ -44,7 +42,7 @@ public class Annotation {
 
     public Annotation(String id, Article article, User user, String type, int startIndex, int endIndex, int value,
                       String comment, String source, HashMap<String, AnnotationVote> upvotes,
-                      HashMap<String, AnnotationVote> downvotes) {
+                      HashMap<String, AnnotationVote> downvotes, String heading, String sentence) {
 
         this.id = id;
         this.article = article;
@@ -62,8 +60,27 @@ public class Annotation {
 
         this.upvoteCount = upvotes.size();
         this.downvoteCount = downvotes.size();
+        this.heading = heading;
+        this.sentence = sentence;
 
         this.loaded = true;
+    }
+
+
+    public String getHeading() {
+        return heading;
+    }
+
+    public void setHeading(String heading) {
+        this.heading = heading;
+    }
+
+    public String getSentence() {
+        return sentence;
+    }
+
+    public void setSentence(String sentence) {
+        this.sentence = sentence;
     }
 
     public String getId() {
@@ -109,6 +126,7 @@ public class Annotation {
     public int getDownvoteCount() {
         return this.downvoteCount;
     }
+
 
     public boolean userHasUpvoted(User user) {
         return this.votes.containsKey(user.getUid()) && this.votes.get(user.getUid()).getValue();
@@ -230,6 +248,8 @@ public class Annotation {
         newAnnotation.put("type", this.type);
         newAnnotation.put("comment", this.comment);
         newAnnotation.put("source", this.source);
+        newAnnotation.put("heading", article.getHeading());
+        newAnnotation.put("sentence", this.sentence);
         newAnnotation.put("timestamp", System.currentTimeMillis());
 
         db.collection("annotations")

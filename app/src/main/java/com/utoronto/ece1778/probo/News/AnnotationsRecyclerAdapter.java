@@ -1,10 +1,12 @@
 package com.utoronto.ece1778.probo.News;
 
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.elyeproj.loaderviewlibrary.LoaderTextView;
 import com.utoronto.ece1778.probo.R;
 import com.utoronto.ece1778.probo.User.User;
 
@@ -36,11 +38,18 @@ public class AnnotationsRecyclerAdapter extends RecyclerView.Adapter<Annotations
     public void onBindViewHolder(AnnotationViewHolder holder, int position) {
         Annotation annotation = this.annotations.get(position);
         AnnotationCardView annotationCardView = holder.getAnnotationCardView();
+        LoaderTextView annotationTitle = holder.getAnnotationTitle();
+        LoaderTextView annotationQoute = holder.getAnnotationQuote();
+
 
         annotationCardView.setOnUserClickListener(this.onUserClickListener);
         annotationCardView.setOnVoteListener(this.onVoteListener);
 
         annotationCardView.setData(annotation, this.user);
+
+        Log.d("RecyclerAdapter", "onBindViewHolder: heading:" + annotation.getHeading());
+        annotationTitle.setText(annotation.getHeading());
+        annotationQoute.setText(annotation.getSentence());
     }
 
     @Override
@@ -50,14 +59,26 @@ public class AnnotationsRecyclerAdapter extends RecyclerView.Adapter<Annotations
 
     public static class AnnotationViewHolder extends RecyclerView.ViewHolder {
         private AnnotationCardView annotationCardView;
+        private LoaderTextView annotationTitle;
+        private LoaderTextView annotationQuote;
 
         public AnnotationViewHolder(View view) {
             super(view);
             annotationCardView = view.findViewById(R.id.annotation_card);
+            annotationTitle = view.findViewById(R.id.annotation_title);
+            annotationQuote = view.findViewById(R.id.annotation_qoute);
         }
 
         public AnnotationCardView getAnnotationCardView() {
             return this.annotationCardView;
+        }
+
+        public LoaderTextView getAnnotationTitle() {
+            return annotationTitle;
+        }
+
+        public LoaderTextView getAnnotationQuote() {
+            return annotationQuote;
         }
     }
 }

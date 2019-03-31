@@ -34,6 +34,7 @@ public class AnnotationInputFragment extends Fragment {
     private boolean isFact;
 
     private String
+            annotationTitle,
             annotationQuote,
             annotationType;
 
@@ -312,6 +313,7 @@ public class AnnotationInputFragment extends Fragment {
                             annotationValue,
                             comment,
                             source,
+                            annotationQuote,
                             subscribe.isChecked()
                     );
 
@@ -410,7 +412,7 @@ public class AnnotationInputFragment extends Fragment {
     }
 
     public interface AnnotationInputFragmentInteractionListener {
-        void onAnnotationSubmit(Annotation.AnnotationSubmitCallback cb, String type, int startIndex, int endIndex, int value, String comment, String source, boolean subscribe);
+        void onAnnotationSubmit(Annotation.AnnotationSubmitCallback cb, String type, int startIndex, int endIndex, int value, String comment, String source, String sentence, boolean subscribe);
         void onAnnotationClose();
         void onAnnotationSourceChecker(Annotation.AnnotationSourceCheckerCallback cb, String source);
     }

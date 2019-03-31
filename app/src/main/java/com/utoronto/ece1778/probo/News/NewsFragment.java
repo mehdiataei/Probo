@@ -224,7 +224,7 @@ public class NewsFragment extends Fragment
     @Override
     public void onAnnotationSubmit(Annotation.AnnotationSubmitCallback cb, String type,
                                    int startIndex, int endIndex, int value, String comment,
-                                   String source, boolean subscribe) {
+                                   String source, String sentence, boolean subscribe) {
 
         if (fragments.size() > 1 && fragments.get(1) instanceof ArticleFragment) {
             ((ArticleFragment) fragments.get(1)).onAnnotationSubmit(
@@ -235,6 +235,7 @@ public class NewsFragment extends Fragment
                     value,
                     comment,
                     source,
+                    sentence,
                     subscribe
             );
         }

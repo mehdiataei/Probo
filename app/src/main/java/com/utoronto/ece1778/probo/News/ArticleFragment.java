@@ -366,7 +366,7 @@ public class ArticleFragment extends Fragment
 
     public void onAnnotationSubmit(final Annotation.AnnotationSubmitCallback cb, String type,
                                    int startIndex, int endIndex, final int value, final String comment,
-                                   final String source, final boolean subscribe) {
+                                   final String source, String sentence, final boolean subscribe) {
 
         Annotation.AnnotationSubmitCallback submitCb = new Annotation.AnnotationSubmitCallback() {
             @Override
@@ -414,7 +414,8 @@ public class ArticleFragment extends Fragment
                     endIndex,
                     value,
                     comment,
-                    source
+                    source,
+                    sentence
             );
         } else {
             article.addBodyAnnotation(
@@ -424,7 +425,8 @@ public class ArticleFragment extends Fragment
                     endIndex,
                     value,
                     comment,
-                    source
+                    source,
+                    sentence
             );
         }
     }

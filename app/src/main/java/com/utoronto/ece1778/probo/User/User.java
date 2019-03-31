@@ -233,7 +233,10 @@ public class User {
                                     null,
                                     null,
                                     new HashMap<String, AnnotationVote>(),
-                                    new HashMap<String, AnnotationVote>()
+                                    new HashMap<String, AnnotationVote>(),
+                                    documentSnapshot.getString("heading"),
+                                    documentSnapshot.getString("sentence")
+
                             );
 
                             Subscription subscription = new Subscription(
@@ -285,6 +288,7 @@ public class User {
                                             Long value = documentSnapshot.getLong("value");
                                             HashMap<String, AnnotationVote> upvotes = new HashMap<>();
                                             HashMap<String, AnnotationVote> downvotes = new HashMap<>();
+                                            String sentence = documentSnapshot.getString("sentence");
 
                                             for (DocumentSnapshot votesDocumentSnapshot : queryVotesDocumentSnapshots) {
                                                 if (votesDocumentSnapshot.getString("annotationId").equals(annotationId)) {
@@ -319,7 +323,9 @@ public class User {
                                                     documentSnapshot.getString("comment"),
                                                     documentSnapshot.getString("source"),
                                                     upvotes,
-                                                    downvotes
+                                                    downvotes,
+                                                    documentSnapshot.getString("heading"),
+                                                    documentSnapshot.getString("sentence")
                                             );
 
                                             annotations.add(annotation);
@@ -793,6 +799,7 @@ public class User {
                                             Long value = notificationsDocumentSnapshot.getLong("value");
                                             HashMap<String, AnnotationVote> upvotes = new HashMap<>();
                                             HashMap<String, AnnotationVote> downvotes = new HashMap<>();
+                                            String sentence = notificationsDocumentSnapshot.getString("sentence");
 
                                             for (DocumentSnapshot votesDocumentSnapshot : votesDocumentSnapshots) {
                                                 if (votesDocumentSnapshot.getString("annotationId").equals(annotationId)) {
@@ -827,7 +834,9 @@ public class User {
                                                     notificationsDocumentSnapshot.getString("comment"),
                                                     notificationsDocumentSnapshot.getString("source"),
                                                     upvotes,
-                                                    downvotes
+                                                    downvotes,
+                                                    notificationsDocumentSnapshot.getString("heading"),
+                                                    notificationsDocumentSnapshot.getString("sentence")
                                             );
 
                                             notifications.add(annotation);

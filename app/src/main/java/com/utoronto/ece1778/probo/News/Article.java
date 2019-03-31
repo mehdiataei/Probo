@@ -5,7 +5,6 @@ import android.support.annotation.NonNull;
 import android.support.v4.graphics.ColorUtils;
 import android.text.SpannableString;
 import android.text.style.BackgroundColorSpan;
-import android.util.Log;
 
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -120,6 +119,11 @@ public class Article {
         ) : new SpannableString(this.headline);
     }
 
+    public String getHeading() {
+
+        return this.headline;
+    }
+
     public String getDescription() {
         return this.description;
     }
@@ -231,7 +235,7 @@ public class Article {
         return Article.ARTICLE_ANNOTATION_VALID;
     }
 
-    public void addHeadlineAnnotation(Annotation.AnnotationSubmitCallback cb, User user, int startIndex, int endIndex, int value, String comment, String source) {
+    public void addHeadlineAnnotation(Annotation.AnnotationSubmitCallback cb, User user, int startIndex, int endIndex, int value, String comment, String source, String sentence) {
         int errorCode = this.checkNewAnnotation(user, Annotation.TYPE_HEADLINE, startIndex, endIndex);
 
         if (errorCode != Article.ARTICLE_ANNOTATION_VALID) {
@@ -250,7 +254,9 @@ public class Article {
                 comment,
                 source,
                 new HashMap<String, AnnotationVote>(),
-                new HashMap<String, AnnotationVote>()
+                new HashMap<String, AnnotationVote>(),
+                this.getHeading(),
+                sentence
         );
 
         this.headlineAnnotations.add(annotation);
@@ -261,7 +267,7 @@ public class Article {
         annotation.save(cb, this);
     }
 
-    public void addBodyAnnotation(final Annotation.AnnotationSubmitCallback cb, User user, int startIndex, int endIndex, int value, String comment, String source) {
+    public void addBodyAnnotation(final Annotation.AnnotationSubmitCallback cb, User user, int startIndex, int endIndex, int value, String comment, String source, String sentence) {
         int errorCode = this.checkNewAnnotation(user, Annotation.TYPE_BODY, startIndex, endIndex);
 
         if (errorCode != Article.ARTICLE_ANNOTATION_VALID) {
@@ -301,7 +307,9 @@ public class Article {
                 comment,
                 source,
                 new HashMap<String, AnnotationVote>(),
-                new HashMap<String, AnnotationVote>()
+                new HashMap<String, AnnotationVote>(),
+                this.getHeading(),
+                sentence
         );
 
         newAnnotation.save(submitCb, this);
@@ -489,6 +497,10 @@ public class Article {
                                             String userId = snapshot.getString("userId");
                                             String comment = snapshot.getString("comment");
                                             String source = snapshot.getString("source");
+
+                                            String title = snapshot.getString("title");
+                                            String sentence = snapshot.getString("sentence");
+
                                             HashMap<String, AnnotationVote> upvotes = new HashMap<>();
                                             HashMap<String, AnnotationVote> downvotes = new HashMap<>();
 
@@ -547,7 +559,9 @@ public class Article {
                                                         comment,
                                                         source,
                                                         upvotes,
-                                                        downvotes
+                                                        downvotes,
+                                                        currentArticle.getHeading(),
+                                                        sentence
                                                 );
 
                                                 switch (type) {

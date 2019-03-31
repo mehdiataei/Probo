@@ -53,7 +53,7 @@ public class ClickableTextView extends android.support.v7.widget.AppCompatTextVi
         new SetText(this).execute(params);
     }
 
-    private static SpannableStringBuilder addClickableSentence(String str, List<String> clickableSentences, SpannableString annotations,
+    private static SpannableStringBuilder addClickableSentence(final String str, List<String> clickableSentences, SpannableString annotations,
                                                                final ClickableTextViewInterface clickableInterface, final int offset) {
 
         SpannableStringBuilder ssb = new SpannableStringBuilder(annotations);
