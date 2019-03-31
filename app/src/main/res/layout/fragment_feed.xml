@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/backgroundColor"
-    tools:context=".User.NotificationsFragment">
+    tools:context=".User.FeedFragment">
 
     <android.support.v4.widget.SwipeRefreshLayout
         android:id="@+id/refresh"
@@ -29,7 +29,7 @@
         android:layout_centerInParent="true" />
 
     <LinearLayout
-        android:id="@+id/no_notifications_container"
+        android:id="@+id/no_annotations_container"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:paddingHorizontal="32dp"
@@ -41,7 +41,7 @@
         <ImageView
             android:layout_width="96dp"
             android:layout_height="96dp"
-            android:src="@drawable/notifications_empty_icon" />
+            android:src="@drawable/sad_face_icon" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -50,6 +50,6 @@
             android:textColor="@color/colorPrimary"
             android:textSize="18sp"
             android:textAlignment="center"
-            android:text="@string/notifications_empty_message" />
+            android:text="@string/feed_empty_message" />
     </LinearLayout>
 </RelativeLayout>

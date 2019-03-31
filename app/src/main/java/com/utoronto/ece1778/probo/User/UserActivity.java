@@ -44,13 +44,15 @@ public class UserActivity extends AppCompatActivity
                     NewsFragment.NewsFragmentInteractionListener,
                     ProfileFragment.ProfileFragmentInteractionListener,
                     NotificationsFragment.NotificationsFragmentInteractionListener,
+                    FeedFragment.FeedFragmentInteractionListener,
                     AccountFragment.AccountFragmentInteractionListener {
 
     public static final int
             ROUTE_NEWS = 0,
             ROUTE_PROFILE = 1,
             ROUTE_NOTIFICATIONS = 2,
-            ROUTE_ACCOUNT = 3;
+            ROUTE_FEED = 3,
+            ROUTE_ACCOUNT = 4;
 
     private User user;
     private ArrayList<Annotation> notifications;
@@ -140,6 +142,9 @@ public class UserActivity extends AppCompatActivity
             case R.id.nav_notifications:
                 routeToNotifications();
                 break;
+            case R.id.nav_feed:
+                routeToFeed();
+                break;
             case R.id.nav_account:
                 routeToAccount();
                 break;
@@ -191,6 +196,8 @@ public class UserActivity extends AppCompatActivity
         currentRoute = UserActivity.ROUTE_NEWS;
         currentFragment = new NewsFragment();
 
+        getSupportActionBar().setTitle(getString(R.string.action_title_news));
+
         displayFragment(currentFragment);
     }
 
@@ -216,6 +223,8 @@ public class UserActivity extends AppCompatActivity
                 annotationEndIndex
         );
 
+        getSupportActionBar().setTitle(getString(R.string.action_title_news));
+
         displayFragment(currentFragment);
     }
 
@@ -232,6 +241,8 @@ public class UserActivity extends AppCompatActivity
         currentFragment = ProfileFragment.newInstance(userId);
         currentProfileUserId = userId;
 
+        getSupportActionBar().setTitle(getString(R.string.action_title_profile));
+
         displayFragment(currentFragment);
     }
 
@@ -245,6 +256,23 @@ public class UserActivity extends AppCompatActivity
         currentRoute = UserActivity.ROUTE_NOTIFICATIONS;
         currentFragment = new NotificationsFragment();
 
+        getSupportActionBar().setTitle(getString(R.string.action_title_notifications));
+
+        displayFragment(currentFragment);
+    }
+
+    private void routeToFeed() {
+        if (currentRoute == UserActivity.ROUTE_FEED) {
+            return;
+        }
+
+        removeCurrentFragment();
+
+        currentRoute = UserActivity.ROUTE_FEED;
+        currentFragment = new FeedFragment();
+
+        getSupportActionBar().setTitle(getString(R.string.action_title_feed));
+
         displayFragment(currentFragment);
     }
 
@@ -257,6 +285,8 @@ public class UserActivity extends AppCompatActivity
 
         currentRoute = UserActivity.ROUTE_ACCOUNT;
         currentFragment = AccountFragment.newInstance(user.getUid());
+
+        getSupportActionBar().setTitle(getString(R.string.action_title_account));
 
         displayFragment(currentFragment);
     }

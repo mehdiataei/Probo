@@ -182,6 +182,8 @@ public class Annotation {
                                         value = longValue.intValue();
                                         comment = annotationDocumentSnapshot.getString("comment");
                                         source = annotationDocumentSnapshot.getString("source");
+                                        heading = annotationDocumentSnapshot.getString("heading");
+                                        sentence = annotationDocumentSnapshot.getString("sentence");
 
                                         votes = new HashMap<>();
                                         HashMap<String, AnnotationVote> upvotes = new HashMap<>();
