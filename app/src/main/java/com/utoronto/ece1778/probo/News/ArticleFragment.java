@@ -208,6 +208,7 @@ public class ArticleFragment extends Fragment
         heatmapSwitch.addSwitchObserver(handleHeatmapSwitch);
 
         if (article.hasLoaded()) {
+
             heatmapSwitch.setEnabled(true);
         }
 
@@ -245,6 +246,7 @@ public class ArticleFragment extends Fragment
                 populateArticle(!specificAnnotation);
 
                 if (heatmapSwitch != null) {
+
                     heatmapSwitch.setEnabled(true);
 
                 }
