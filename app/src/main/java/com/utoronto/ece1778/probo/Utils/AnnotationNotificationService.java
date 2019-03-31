@@ -89,13 +89,6 @@ public class AnnotationNotificationService extends FirebaseMessagingService {
                 .setContentIntent(pendingIntent);
 
         notificationManager.notify(notificationId, notificationBuilder.build());
-        sendToActivity(remoteMessage);
-    }
-
-    private void sendToActivity(RemoteMessage remoteMessage) {
-        Intent intent = new Intent("notification");
-        intent.putExtra("annotationId", remoteMessage.getData().get("annotationId"));
-        broadcastManager.sendBroadcast(intent);
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)

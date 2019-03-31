@@ -780,7 +780,7 @@ public class User {
         }
     }
 
-    private void addFollowing(final UserFollowCallback cb, User userToAdd) {
+    private void addFollowing(final UserFollowCallback cb, final User userToAdd) {
         final FirebaseFirestore db = FirebaseFirestore.getInstance();
         WriteBatch batch = db.batch();
 
@@ -788,7 +788,6 @@ public class User {
         Map<String, Object> otherUserData = new HashMap<>();
 
         final Date now = new Date();
-        final Subscription subscription = new Subscription(userToAdd);
 
         data.put("userId", userToAdd.getUid());
         data.put("date", now);
@@ -816,7 +815,7 @@ public class User {
                 .addOnSuccessListener(new OnSuccessListener<Void>() {
                     @Override
                     public void onSuccess(Void aVoid) {
-                        createSubscription(subscription);
+                        createSubscription(new Subscription(userToAdd));
                         cb.onUpdate();
                     }
                 })
@@ -828,7 +827,7 @@ public class User {
                 });
     }
 
-    private void removeFollowing(final UserFollowCallback cb, User userToRemove) {
+    private void removeFollowing(final UserFollowCallback cb, final User userToRemove) {
         final FirebaseFirestore db = FirebaseFirestore.getInstance();
         WriteBatch batch = db.batch();
 
@@ -852,6 +851,7 @@ public class User {
                 .addOnSuccessListener(new OnSuccessListener<Void>() {
                     @Override
                     public void onSuccess(Void aVoid) {
+                        removeSubscription(new Subscription(userToRemove));
                         cb.onUpdate();
                     }
                 })
@@ -1009,45 +1009,6 @@ public class User {
                                         cb.onLoad();
                                     }
                                 });
-                    }
-                })
-                .addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        cb.onError(e);
-                    }
-                });
-    }
-
-    public void notification(final UserNotificationCallback cb, Annotation annotation) {
-        if (this.notifications.contains(annotation)) {
-            cb.onUpdate();
-            return;
-        }
-
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
-        Map<String, Object> data = new HashMap<>();
-
-        data.put("annotationId", annotation.getId());
-        data.put("articleId", annotation.getArticle().getId());
-        data.put("userId", annotation.getUser().getUid());
-        data.put("type", annotation.getType());
-        data.put("startIndex", annotation.getStartIndex());
-        data.put("endIndex", annotation.getEndIndex());
-        data.put("value", annotation.getValue());
-        data.put("comment", annotation.getComment());
-        data.put("source", annotation.getSource());
-        data.put("heading", annotation.getHeading());
-        data.put("sentence", annotation.getSentence());
-
-        db.collection("users")
-                .document(this.uid)
-                .collection("notifications")
-                .add(data)
-                .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
-                    @Override
-                    public void onSuccess(DocumentReference documentReference) {
-                        cb.onUpdate();
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {
