@@ -17,15 +17,14 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
-import android.widget.Switch;
 import android.widget.TextView;
 
 import com.bumptech.glide.Priority;
 import com.bumptech.glide.request.RequestOptions;
+import com.github.glomadrian.materialanimatedswitch.MaterialAnimatedSwitch;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -101,7 +100,14 @@ public class ArticleFragment extends Fragment
     private String intentAnnotationId, intentAnnotationType;
     private int intentAnnotationStartIndex, intentAnnotationEndIndex;
 
-    private Switch heatmapSwitch;
+    MaterialAnimatedSwitch.OnCheckedChangeListener handleHeatmapSwitch = new MaterialAnimatedSwitch.OnCheckedChangeListener() {
+
+        @Override
+        public void onCheckedChanged(boolean isChecked) {
+            toggleHeatmap(isChecked);
+        }
+
+    };
     private ClickableTextView headline, body, bodyOverflow;
     private CreativeViewPager headlineAnnotationsContainer, bodyAnnotationsContainer;
     private ProgressBar progressBar;
@@ -155,6 +161,8 @@ public class ArticleFragment extends Fragment
         }
     }
 
+    private MaterialAnimatedSwitch heatmapSwitch;
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -185,6 +193,12 @@ public class ArticleFragment extends Fragment
 
                 if (heatmapSwitch != null) {
                     heatmapSwitch.setEnabled(true);
+                    heatmapSwitch.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            heatmapSwitch.toggle();
+                        }
+                    });
                 }
 
                 if (specificAnnotation) {
@@ -216,33 +230,27 @@ public class ArticleFragment extends Fragment
     }
 
     @Override
-    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        inflater.inflate(R.menu.article_action_menu, menu);
-
-        MenuItem item = menu.findItem(R.id.heatmap_action);
-        heatmapSwitch = item.getActionView().findViewById(R.id.heatmap_switch);
-        heatmapSwitch.setChecked(showHeatmap);
-        heatmapSwitch.setOnCheckedChangeListener(handleHeatmapSwitch);
-
-        if (article.hasLoaded()) {
-            heatmapSwitch.setEnabled(true);
-        }
-
-        super.onCreateOptionsMenu(menu, inflater);
-    }
-
-    @Override
     public void onDestroyView() {
         setHasOptionsMenu(false);
         super.onDestroyView();
     }
 
-    CompoundButton.OnCheckedChangeListener handleHeatmapSwitch = new CompoundButton.OnCheckedChangeListener() {
-        @Override
-        public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-            toggleHeatmap(isChecked);
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        inflater.inflate(R.menu.article_action_menu, menu);
+
+        MenuItem item = menu.findItem(R.id.heatmap_action);
+        heatmapSwitch = item.getActionView().findViewById(R.id.heatmap_switch);
+
+        heatmapSwitch.setOnCheckedChangeListener(handleHeatmapSwitch);
+
+        if (article.hasLoaded()) {
+            heatmapSwitch.setEnabled(true);
+
         }
-    };
+
+        super.onCreateOptionsMenu(menu, inflater);
+    }
 
     private SwipeRefreshLayout.OnRefreshListener handleRefresh = new SwipeRefreshLayout.OnRefreshListener() {
         @Override
@@ -1057,7 +1065,8 @@ public class ArticleFragment extends Fragment
                     }
 
                     @Override
-                    public void onError(Exception error) {}
+                    public void onError(Exception error) {
+                    }
                 };
 
                 annotationUser.load(userCb);
