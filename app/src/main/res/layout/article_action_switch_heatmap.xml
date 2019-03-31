@@ -25,7 +25,6 @@
         app:ball_release_color="@color/md_white_1000"
         app:base_press_color="@color/md_deep_orange_50"
         app:base_release_color="@color/md_white_1000"
-
         app:icon_press="@drawable/edit_mode"
         app:icon_release="@drawable/reading_mode" />
 </RelativeLayout>
