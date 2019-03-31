@@ -184,7 +184,7 @@ public class User {
     private void loadFollowing(final UserCallback cb) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
-        this.following.clear();
+        this.following = new ArrayList<>();
 
         db.collection("users")
                 .document(this.uid)
@@ -215,7 +215,7 @@ public class User {
     private void loadFollowers(final UserCallback cb) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
-        this.followers.clear();
+        this.followers = new ArrayList<>();
 
         db.collection("users")
                 .document(this.uid)
