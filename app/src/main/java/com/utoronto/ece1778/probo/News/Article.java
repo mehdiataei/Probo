@@ -141,7 +141,6 @@ public class Article {
     }
 
     public String getRawBody() {
-
         return body;
     }
 
@@ -180,6 +179,35 @@ public class Article {
         return this.annotationsMap.containsKey(key) ?
                 this.annotationsMap.get(key) :
                 new ArrayList<Annotation>();
+    }
+
+    public int getScore() {
+        int totalAnnotationsScore = 0;
+        int validAnnotationCount = 0;
+
+        for (Annotation annotation : this.headlineAnnotations) {
+            float score = annotation.getScore();
+
+            if (score != 0) {
+                totalAnnotationsScore += annotation.getScore();
+                validAnnotationCount++;
+            }
+        }
+
+        for (Annotation annotation : this.bodyAnnotations) {
+            float score = annotation.getScore();
+
+            if (score != 0) {
+                totalAnnotationsScore += annotation.getScore();
+                validAnnotationCount++;
+            }
+        }
+
+        if (validAnnotationCount == 0) {
+            return 0;
+        }
+
+        return Math.round((float) totalAnnotationsScore / (validAnnotationCount * 100) * 100);
     }
 
     private int checkNewAnnotation(User user, String type, int startIndex, int endIndex) {

@@ -122,6 +122,19 @@ public class Annotation {
         return this.loaded;
     }
 
+    public int getScore() {
+        int externalUpvoteCount = this.userHasUpvoted(this.user) ?
+                this.upvoteCount - 1 : this.upvoteCount;
+        int externalDownvoteCount = this.userHasDownvoted(this.user) ?
+                this.downvoteCount - 1 : this.downvoteCount;
+
+        if ((externalUpvoteCount + externalDownvoteCount) == 0) {
+            return 0;
+        }
+
+        return Math.round(((float) externalUpvoteCount / (externalUpvoteCount + externalDownvoteCount)) * Math.abs((float) this.value / 50) * 100);
+    }
+
     public void load(final AnnotationCallback cb) {
         final FirebaseFirestore db = FirebaseFirestore.getInstance();
 
