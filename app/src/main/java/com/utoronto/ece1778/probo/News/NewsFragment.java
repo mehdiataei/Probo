@@ -7,6 +7,7 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,6 +17,8 @@ import com.utoronto.ece1778.probo.R;
 import java.util.ArrayList;
 
 import javax.annotation.Nullable;
+
+import static com.joooonho.SelectableRoundedImageView.TAG;
 
 
 public class NewsFragment extends Fragment
@@ -209,7 +212,9 @@ public class NewsFragment extends Fragment
     public void onAnnotationInput(final float sentiment, final String quote, final String type, final int startIndex, final int endIndex, final int value) {
 
 
-        Boolean isFact = !(Math.abs(sentiment) > 0.5);
+        Boolean isFact = !(Math.abs(sentiment) > 0.3);
+
+        Log.d(TAG, "onAnnotationInput: sentiment:  " + sentiment);
 
         if (fragments.size() > 1 && fragments.get(1) instanceof ArticleFragment) {
             AnnotationInputFragment annotationInputFragment = AnnotationInputFragment.newInstance(
