@@ -44,7 +44,7 @@ dependencies {
     implementation 'com.ibm.watson.developer_cloud:java-sdk:6.14.0'
     implementation 'net.ricecode:string-similarity:1.0.0'
     implementation 'com.elyeproj.libraries:loaderviewlibrary:1.5.0'
-    implementation 'com.github.glomadrian:MaterialAnimatedSwitch:1.1@aar'
+    implementation 'com.rm:rmswitch:1.2.2'
 
 //    // Dependencies for Google API Client Libraries
 //    implementation("com.google.http-client:google-http-client:$googleApiClientVersion") {

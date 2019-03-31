@@ -14,17 +14,25 @@
         android:layout_centerVertical="true"
         android:text="@string/article_heatmap_toggle_title" />
 
-    <com.github.glomadrian.materialanimatedswitch.MaterialAnimatedSwitch
+    <com.rm.rmswitch.RMSwitch
         android:id="@+id/heatmap_switch"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerVertical="true"
         android:layout_marginStart="8dp"
         android:layout_toEndOf="@id/heatmap_switch_title"
-        app:ball_press_color="@color/md_deep_orange_500"
-        app:ball_release_color="@color/md_white_1000"
-        app:base_press_color="@color/md_deep_orange_50"
-        app:base_release_color="@color/md_white_1000"
-        app:icon_press="@drawable/edit_mode"
-        app:icon_release="@drawable/reading_mode" />
+        android:enabled="false"
+        android:scaleX="1"
+        android:scaleY="1"
+        app:forceAspectRatio="false"
+        app:switchBkgCheckedColor="@color/md_deep_orange_50"
+        app:switchBkgNotCheckedColor="@color/md_white_1000"
+        app:switchDesign="android"
+        app:switchToggleCheckedColor="@color/md_deep_orange_500"
+        app:switchToggleCheckedImage="@drawable/edit_mode"
+        app:switchToggleNotCheckedColor="@color/md_white_1000"
+        app:switchToggleNotCheckedImage="@drawable/reading_mode"
+
+
+        />
 </RelativeLayout>

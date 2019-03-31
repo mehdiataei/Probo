@@ -24,7 +24,6 @@ import android.widget.TextView;
 
 import com.bumptech.glide.Priority;
 import com.bumptech.glide.request.RequestOptions;
-import com.github.glomadrian.materialanimatedswitch.MaterialAnimatedSwitch;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -44,6 +43,7 @@ import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.Ke
 import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.SentimentOptions;
 import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.TargetedSentimentResults;
 import com.ibm.watson.developer_cloud.service.security.IamOptions;
+import com.rm.rmswitch.RMSwitch;
 import com.tbuonomo.creativeviewpager.CreativeViewPager;
 import com.tbuonomo.creativeviewpager.adapter.CreativePagerAdapter;
 import com.utoronto.ece1778.probo.Models.Sentence;
@@ -100,12 +100,15 @@ public class ArticleFragment extends Fragment
     private String intentAnnotationId, intentAnnotationType;
     private int intentAnnotationStartIndex, intentAnnotationEndIndex;
 
-    MaterialAnimatedSwitch.OnCheckedChangeListener handleHeatmapSwitch = new MaterialAnimatedSwitch.OnCheckedChangeListener() {
+    RMSwitch.RMSwitchObserver handleHeatmapSwitch = new RMSwitch.RMSwitchObserver() {
 
         @Override
-        public void onCheckedChanged(boolean isChecked) {
+        public void onCheckStateChange(RMSwitch switchView, boolean isChecked) {
+
             toggleHeatmap(isChecked);
+
         }
+
 
     };
     private ClickableTextView headline, body, bodyOverflow;
@@ -161,7 +164,7 @@ public class ArticleFragment extends Fragment
         }
     }
 
-    private MaterialAnimatedSwitch heatmapSwitch;
+    private RMSwitch heatmapSwitch;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -193,12 +196,7 @@ public class ArticleFragment extends Fragment
 
                 if (heatmapSwitch != null) {
                     heatmapSwitch.setEnabled(true);
-                    heatmapSwitch.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            heatmapSwitch.toggle();
-                        }
-                    });
+
                 }
 
                 if (specificAnnotation) {
@@ -241,8 +239,8 @@ public class ArticleFragment extends Fragment
 
         MenuItem item = menu.findItem(R.id.heatmap_action);
         heatmapSwitch = item.getActionView().findViewById(R.id.heatmap_switch);
-
-        heatmapSwitch.setOnCheckedChangeListener(handleHeatmapSwitch);
+        heatmapSwitch.setChecked(showHeatmap);
+        heatmapSwitch.addSwitchObserver(handleHeatmapSwitch);
 
         if (article.hasLoaded()) {
             heatmapSwitch.setEnabled(true);
