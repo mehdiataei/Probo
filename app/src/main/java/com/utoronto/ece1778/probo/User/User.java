@@ -2,6 +2,7 @@ package com.utoronto.ece1778.probo.User;
 
 import android.graphics.Bitmap;
 import android.support.annotation.NonNull;
+import android.util.Log;
 
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -63,6 +64,7 @@ public class User {
     private ArrayList<Annotation> annotations;
     private ArrayList<Subscription> subscriptions;
     private ArrayList<User> following;
+    private ArrayList<User> followers;
     private ArrayList<Annotation> notifications;
 
     private boolean loggedInUser;
@@ -78,6 +80,7 @@ public class User {
         this.annotations = new ArrayList<>();
         this.subscriptions = new ArrayList<>();
         this.following = new ArrayList<>();
+        this.followers = new ArrayList<>();
         this.notifications = new ArrayList<>();
 
         this.loggedInUser = true;
@@ -117,6 +120,10 @@ public class User {
 
     public ArrayList<User> getFollowing() {
         return this.following;
+    }
+
+    public ArrayList<User> getFollowers() {
+        return this.followers;
     }
 
     public ArrayList<Annotation> getNotifications() {
@@ -177,7 +184,7 @@ public class User {
     private void loadFollowing(final UserCallback cb) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
-        this.following = new ArrayList<>();
+        this.following.clear();
 
         db.collection("users")
                 .document(this.uid)
@@ -192,6 +199,34 @@ public class User {
 
                             following.add(followingUser);
                             createSubscription(subscription);
+                        }
+
+                        loadFollowers(cb);
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        cb.onError(e);
+                    }
+                });
+    }
+
+    private void loadFollowers(final UserCallback cb) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        this.followers.clear();
+
+        db.collection("users")
+                .document(this.uid)
+                .collection("followers")
+                .get()
+                .addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
+                    @Override
+                    public void onSuccess(QuerySnapshot queryDocumentSnapshots) {
+                        for (DocumentSnapshot documentSnapshot : queryDocumentSnapshots) {
+                            User followersUser = new User(documentSnapshot.getString("userId"));
+                            followers.add(followersUser);
                         }
 
                         loadSubscriptions(cb);
@@ -649,25 +684,47 @@ public class User {
         }
     }
 
-    private void addFollowing(final UserFollowCallback cb, User userToAdd) {
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
+    private void addFollowing(final UserFollowCallback cb, final User userToAdd) {
+        final FirebaseFirestore db = FirebaseFirestore.getInstance();
         Map<String, Object> data = new HashMap<>();
+        final Date now = new Date();
 
         final Subscription subscription = new Subscription(userToAdd);
 
         data.put("userId", userToAdd.getUid());
-        data.put("timestamp", new Date().getTime());
+        data.put("date", now);
 
         db.collection("users")
                 .document(this.uid)
                 .collection("following")
-                .document(this.uid + ":" + userToAdd.getUid())
+                .document(userToAdd.getUid())
                 .set(data)
                 .addOnSuccessListener(new OnSuccessListener<Void>() {
                     @Override
                     public void onSuccess(Void aVoid) {
-                        createSubscription(subscription);
-                        cb.onUpdate();
+                        Map<String, Object> otherUserData = new HashMap<>();
+
+                        otherUserData.put("userId", userToAdd.getUid());
+                        otherUserData.put("date", now);
+
+                        db.collection("users")
+                                .document(userToAdd.getUid())
+                                .collection("followers")
+                                .document(uid)
+                                .set(otherUserData)
+                                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                                    @Override
+                                    public void onSuccess(Void aVoid) {
+                                        createSubscription(subscription);
+                                        cb.onUpdate();
+                                    }
+                                })
+                                .addOnFailureListener(new OnFailureListener() {
+                                    @Override
+                                    public void onFailure(@NonNull Exception e) {
+                                        cb.onError(e);
+                                    }
+                                });
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {
@@ -678,18 +735,34 @@ public class User {
                 });
     }
 
-    private void removeFollowing(final UserFollowCallback cb, User userToRemove) {
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
+    private void removeFollowing(final UserFollowCallback cb, final User userToRemove) {
+        final FirebaseFirestore db = FirebaseFirestore.getInstance();
 
         db.collection("users")
                 .document(this.uid)
                 .collection("following")
-                .document(this.uid + ":" + userToRemove.getUid())
+                .document(userToRemove.getUid())
                 .delete()
                 .addOnSuccessListener(new OnSuccessListener<Void>() {
                     @Override
                     public void onSuccess(Void aVoid) {
-                        cb.onUpdate();
+                        db.collection("users")
+                                .document(userToRemove.getUid())
+                                .collection("followers")
+                                .document(uid)
+                                .delete()
+                                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                                    @Override
+                                    public void onSuccess(Void aVoid) {
+                                        cb.onUpdate();
+                                    }
+                                })
+                                .addOnFailureListener(new OnFailureListener() {
+                                    @Override
+                                    public void onFailure(@NonNull Exception e) {
+                                        cb.onError(e);
+                                    }
+                                });
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {
