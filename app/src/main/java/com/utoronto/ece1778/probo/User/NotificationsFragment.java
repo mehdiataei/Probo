@@ -1,6 +1,7 @@
 package com.utoronto.ece1778.probo.User;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.DefaultItemAnimator;
@@ -80,6 +81,8 @@ public class NotificationsFragment extends Fragment {
 
         swipeRefreshLayout = v.findViewById(R.id.refresh);
         swipeRefreshLayout.setWaveARGBColor(255, 55, 64, 70);
+        swipeRefreshLayout.setColorSchemeColors(Color.WHITE);
+
 
         noNotificationsContainer = v.findViewById(R.id.no_notifications_container);
         annotationsContainer = v.findViewById(R.id.annotations_container);

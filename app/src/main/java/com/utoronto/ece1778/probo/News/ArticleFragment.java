@@ -2,6 +2,7 @@ package com.utoronto.ece1778.probo.News;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -221,6 +222,7 @@ public class ArticleFragment extends Fragment
 
         refresh = v.findViewById(R.id.refresh);
         refresh.setWaveARGBColor(255, 55, 64, 70);
+        refresh.setColorSchemeColors(Color.WHITE);
 
         headline = v.findViewById(R.id.headline);
         body = v.findViewById(R.id.body);

@@ -1,6 +1,7 @@
 package com.utoronto.ece1778.probo.User;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.DefaultItemAnimator;
@@ -48,6 +49,7 @@ public class FeedFragment extends Fragment {
 
         swipeRefreshLayout = v.findViewById(R.id.refresh);
         swipeRefreshLayout.setWaveARGBColor(255, 55, 64, 70);
+        swipeRefreshLayout.setColorSchemeColors(Color.WHITE);
         noAnnotationsContainer = v.findViewById(R.id.no_annotations_container);
         annotationsContainer = v.findViewById(R.id.annotations_container);
         progress = v.findViewById(R.id.progress_spinner);

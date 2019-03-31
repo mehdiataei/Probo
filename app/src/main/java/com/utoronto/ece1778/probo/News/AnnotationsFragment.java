@@ -1,6 +1,7 @@
 package com.utoronto.ece1778.probo.News;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.DefaultItemAnimator;
@@ -100,6 +101,7 @@ public class AnnotationsFragment extends Fragment {
 
         swipeRefreshLayout = v.findViewById(R.id.refresh);
         swipeRefreshLayout.setWaveARGBColor(255, 55, 64, 70);
+        swipeRefreshLayout.setColorSchemeColors(Color.WHITE);
 
         spinner = v.findViewById(R.id.progress_spinner);
         swipeRefreshLayout.setOnRefreshListener(handleRefresh);
