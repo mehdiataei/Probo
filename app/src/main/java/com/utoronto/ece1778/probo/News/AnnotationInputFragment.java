@@ -11,12 +11,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
-import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.utoronto.ece1778.probo.R;
+import com.utoronto.ece1778.probo.Utils.ExtendedEditText;
 import com.utoronto.ece1778.probo.Utils.Helper;
 import com.xw.repo.BubbleSeekBar;
 
@@ -47,8 +47,8 @@ public class AnnotationInputFragment extends Fragment {
     private ImageButton closeButton;
     private BubbleSeekBar valueSeekBar;
     private TextView title;
-    private EditText commentText;
-    private EditText sourceText;
+    private ExtendedEditText commentText;
+    private ExtendedEditText sourceText;
     private CheckBox primarySource;
     private CheckBox subscribe;
     private RelativeLayout errorContainer;
@@ -103,6 +103,7 @@ public class AnnotationInputFragment extends Fragment {
         title = v.findViewById(R.id.title);
         commentText = v.findViewById(R.id.input);
         sourceText = v.findViewById(R.id.source);
+        sourceText.setPrefix("https://");
         primarySource = v.findViewById(R.id.primary_source);
         subscribe = v.findViewById(R.id.subscribe);
         errorContainer = v.findViewById(R.id.error_container);
@@ -247,6 +248,8 @@ public class AnnotationInputFragment extends Fragment {
     public void submit() {
         final String comment = commentText.getText().toString();
         final String source = sourceText.getText().toString();
+
+        Log.d(TAG, "submit: source: " + source);
 
         if (annotationValue == 0) {
             String valueErrorText = isFact ?

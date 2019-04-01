@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:background="@color/backgroundColor"
     tools:context=".News.AnnotationInputFragment">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="32dp"
+        android:animateLayoutChanges="true"
         android:orientation="vertical"
-        android:animateLayoutChanges="true">
+        android:padding="32dp">
 
         <RelativeLayout
             android:layout_width="match_parent"
@@ -23,21 +23,21 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerVertical="true"
+                android:text="@string/annotation_input_title_fact"
                 android:textColor="@color/colorPrimary"
                 android:textSize="20sp"
-                android:textStyle="bold"
-                android:text="@string/annotation_input_title_fact" />
+                android:textStyle="bold" />
 
             <ImageButton
                 android:id="@+id/close"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:background="@null"
+                android:layout_alignParentEnd="true"
                 android:layout_centerVertical="true"
                 android:layout_gravity="end"
-                android:layout_alignParentEnd="true"
-                android:src="@drawable/x_dark"
-                android:contentDescription="@string/annotation_input_close_image_description" />
+                android:background="@null"
+                android:contentDescription="@string/annotation_input_close_image_description"
+                android:src="@drawable/x_dark" />
         </RelativeLayout>
 
         <com.xw.repo.BubbleSeekBar
@@ -45,21 +45,21 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="32dp"
+            app:bsb_auto_adjust_section_mark="true"
             app:bsb_bubble_color="@color/colorPrimary"
             app:bsb_bubble_text_color="@color/colorPrimary"
+            app:bsb_hide_bubble="true"
             app:bsb_max="50.0"
             app:bsb_min="-50"
             app:bsb_progress="0"
             app:bsb_second_track_color="@color/colorPrimary"
-            app:bsb_track_color="@color/grey"
-            app:bsb_auto_adjust_section_mark="true"
-            app:bsb_hide_bubble="true"
             app:bsb_section_count="5"
+            app:bsb_section_text_color="@color/colorPrimary"
+            app:bsb_section_text_position="below_section_mark"
             app:bsb_show_section_mark="true"
             app:bsb_show_section_text="false"
             app:bsb_touch_to_seek="true"
-            app:bsb_section_text_color="@color/colorPrimary"
-            app:bsb_section_text_position="below_section_mark" />
+            app:bsb_track_color="@color/grey" />
 
         <TextView
             android:id="@+id/quote"
@@ -75,28 +75,30 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="32dp"
+            android:textColor="@color/colorPrimary"
             android:textSize="24sp"
-            android:textStyle="bold"
-            android:textColor="@color/colorPrimary" />
+            android:textStyle="bold" />
 
-        <EditText
+
+        <com.utoronto.ece1778.probo.Utils.ExtendedEditText
             android:id="@+id/input"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="32dp"
             android:hint="@string/annotation_input_edit_text_hint"
-            android:inputType="textLongMessage"
             android:importantForAutofill="no"
+            android:inputType="textLongMessage"
             tools:targetApi="o" />
 
-        <EditText
+
+        <com.utoronto.ece1778.probo.Utils.ExtendedEditText
             android:id="@+id/source"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="32dp"
-            android:hint="@string/annotation_input_source_hint"
-            android:inputType="textLongMessage"
+            android:hint=" Enter your source"
             android:importantForAutofill="no"
+            android:inputType="textLongMessage"
             tools:targetApi="o" />
 
         <CheckBox
@@ -117,8 +119,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="32dp"
-            android:padding="16dp"
             android:background="@drawable/rectangle_border_light"
+            android:padding="16dp"
             android:visibility="gone">
 
             <ProgressBar
@@ -128,14 +130,14 @@
                 android:indeterminateTint="@color/colorPrimary" />
 
             <TextView
+                android:id="@+id/progress_textview"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:textColor="@color/colorPrimary"
-                android:layout_toEndOf="@+id/progress_spinner"
                 android:layout_centerVertical="true"
-                android:id="@+id/progress_textview"
-                android:text="@string/annotation_input_progress" />
+                android:layout_marginStart="8dp"
+                android:layout_toEndOf="@+id/progress_spinner"
+                android:text="@string/annotation_input_progress"
+                android:textColor="@color/colorPrimary" />
         </RelativeLayout>
 
         <RelativeLayout
@@ -143,25 +145,25 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="32dp"
-            android:padding="16dp"
             android:background="@drawable/rectangle_border_light"
+            android:padding="16dp"
             android:visibility="gone">
 
             <ImageView
                 android:id="@+id/error_icon"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:src="@drawable/error_icon_dark"
-                android:contentDescription="@string/annotation_input_error_icon_description" />
+                android:contentDescription="@string/annotation_input_error_icon_description"
+                android:src="@drawable/error_icon_dark" />
 
             <TextView
                 android:id="@+id/error_text"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
                 android:layout_marginStart="8dp"
-                android:textColor="@color/colorPrimary"
                 android:layout_toEndOf="@+id/error_icon"
-                android:layout_centerVertical="true" />
+                android:textColor="@color/colorPrimary" />
         </RelativeLayout>
 
         <Button
@@ -170,7 +172,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="32dp"
             android:background="@drawable/rectangle_border_light"
-            android:textColor="@color/colorPrimary"
-            android:text="@string/annotation_input_submit" />
+            android:text="@string/annotation_input_submit"
+            android:textColor="@color/colorPrimary" />
     </LinearLayout>
 </ScrollView>

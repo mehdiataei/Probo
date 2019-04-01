@@ -46,6 +46,10 @@ dependencies {
     implementation 'com.elyeproj.libraries:loaderviewlibrary:1.5.0'
     implementation 'com.rm:rmswitch:1.2.2'
     implementation 'com.github.recruit-lifestyle:WaveSwipeRefreshLayout:1.6'
+    implementation 'com.github.florent37:materialtextfield:1.0.7'
+    implementation 'com.github.HITGIF:TextFieldBoxes:1.4.4'
+
+
 
 //    // Dependencies for Google API Client Libraries
 //    implementation("com.google.http-client:google-http-client:$googleApiClientVersion") {
