@@ -34,7 +34,6 @@ public class ExtendedEditText extends android.support.v7.widget.AppCompatEditTex
         mTextPaint.setTextSize(mFontHeight);
         mTextPaint.setTextAlign(Paint.Align.LEFT);
 
-        // Setup the left side
         setCompoundDrawablesRelative(left, null, null, null);
     }
 
@@ -42,7 +41,6 @@ public class ExtendedEditText extends android.support.v7.widget.AppCompatEditTex
     public void setTypeface(Typeface typeface) {
         super.setTypeface(typeface);
         if (mTextPaint != null) {
-            // Sometimes TextView itself calls me when i'm naked
             mTextPaint.setTypeface(typeface);
         }
 
