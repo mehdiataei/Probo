@@ -147,7 +147,6 @@ public class ArticlesFragment extends Fragment {
                                     }
                                 });
 
-
                                 // set up the RecyclerView
                                 recyclerView.setLayoutManager(new GridLayoutManager(mContext, NUM_OF_COLUMNS, GridLayoutManager.VERTICAL, false));
                                 adapter = new MyRecyclerViewAdapter(mContext, news);

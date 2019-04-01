@@ -13,6 +13,7 @@ public class NewsItem implements Parcelable {
     private String news_id;
     private String author;
     private String date_created;
+    private String confidence_score;
 
 
     public NewsItem() {
@@ -46,6 +47,16 @@ public class NewsItem implements Parcelable {
         return 0;
     }
 
+    public NewsItem(String heading, String description, String image_url, String body, String news_id, String author, String confidence_score) {
+        this.heading = heading;
+        this.description = description;
+        this.image_url = image_url;
+        this.body = body;
+        this.news_id = news_id;
+        this.author = author;
+        this.confidence_score = confidence_score;
+    }
+
     @Override
     public void writeToParcel(Parcel dest, int flags) {
 
@@ -56,7 +67,7 @@ public class NewsItem implements Parcelable {
         dest.writeString(news_id);
         dest.writeString(author);
         dest.writeString(date_created);
-
+        dest.writeString(confidence_score);
 
     }
 
@@ -70,16 +81,8 @@ public class NewsItem implements Parcelable {
                 ", news_id='" + news_id + '\'' +
                 ", author='" + author + '\'' +
                 ", date_created='" + date_created + '\'' +
+                ", confidence_score='" + confidence_score + '\'' +
                 '}';
-    }
-
-    public NewsItem(String heading, String description, String image_url, String body, String news_id, String author) {
-        this.heading = heading;
-        this.description = description;
-        this.image_url = image_url;
-        this.body = body;
-        this.news_id = news_id;
-        this.author = author;
     }
 
 
@@ -137,5 +140,13 @@ public class NewsItem implements Parcelable {
 
     public void setAuthor(String author) {
         this.author = author;
+    }
+
+    public String getConfidence_score() {
+        return confidence_score;
+    }
+
+    public void setConfidence_score(String confidence_score) {
+        this.confidence_score = confidence_score;
     }
 }

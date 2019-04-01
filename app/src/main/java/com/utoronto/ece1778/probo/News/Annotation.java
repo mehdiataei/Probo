@@ -236,7 +236,7 @@ public class Annotation {
                 });
     }
 
-    public void save(final AnnotationSubmitCallback cb, Article article) {
+    public void save(final AnnotationSubmitCallback cb, final Article article) {
         final Annotation currentAnnotation = this;
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
@@ -261,6 +261,7 @@ public class Annotation {
                     public void onSuccess(DocumentReference documentReference) {
                         currentAnnotation.id = documentReference.getId();
                         cb.onSubmit(currentAnnotation);
+                        article.updateScore();
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {

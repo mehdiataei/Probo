@@ -5,6 +5,7 @@ import android.support.annotation.NonNull;
 import android.support.v4.graphics.ColorUtils;
 import android.text.SpannableString;
 import android.text.style.BackgroundColorSpan;
+import android.util.Log;
 
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -20,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 
 public class Article {
     public static final String TAG = "ARTICLE";
@@ -185,33 +187,57 @@ public class Article {
                 new ArrayList<Annotation>();
     }
 
-    public int getScore() {
+    public void updateScore() {
         int totalAnnotationsScore = 0;
         int validAnnotationCount = 0;
+        int score;
 
         for (Annotation annotation : this.headlineAnnotations) {
-            float score = annotation.getScore();
+            float annotationScore = annotation.getScore();
 
-            if (score != 0) {
+            if (annotationScore != 0) {
                 totalAnnotationsScore += annotation.getScore();
                 validAnnotationCount++;
             }
         }
 
         for (Annotation annotation : this.bodyAnnotations) {
-            float score = annotation.getScore();
+            float annotationScore = annotation.getScore();
 
-            if (score != 0) {
+            if (annotationScore != 0) {
                 totalAnnotationsScore += annotation.getScore();
                 validAnnotationCount++;
             }
         }
 
         if (validAnnotationCount == 0) {
-            return 0;
+            score = 0;
+        } else {
+
+            score = Math.round((float) totalAnnotationsScore / (validAnnotationCount * 100) * 100);
+
         }
 
-        return Math.round((float) totalAnnotationsScore / (validAnnotationCount * 100) * 100);
+
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        Map<String, Object> hashMap = new HashMap<>();
+        hashMap.put("confidence_score", Integer.toString(score));
+        db.collection("news").document(this.getId()).update(hashMap).addOnSuccessListener(new OnSuccessListener<Void>() {
+            @Override
+            public void onSuccess(Void aVoid) {
+
+                Log.d(TAG, "onSuccess: confidence score updated.");
+            }
+        }).addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+
+                Log.d(TAG, "onFailure: confidence score failed to update.");
+
+            }
+        });
+
     }
 
     private int checkNewAnnotation(User user, String type, int startIndex, int endIndex) {
