@@ -1,60 +1,71 @@
 <?xml version="1.0" encoding="utf-8"?>
 <android.support.v7.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:card_view="http://schemas.android.com/tools"
     android:layoutAnimation="@anim/layout_animation_fall_down"
     android:padding="0dp"
-    app:cardElevation="10dp"
-    app:cardUseCompatPadding="true"
     app:cardBackgroundColor="@color/white"
     app:cardCornerRadius="10dp"
+    app:cardElevation="5dp"
+    app:cardUseCompatPadding="true"
 
     >
-    <RelativeLayout
+
+    <RelativeLayout xmlns:app="http://schemas.android.com/apk/res-auto"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        xmlns:app="http://schemas.android.com/apk/res-auto"
         android:layoutAnimation="@anim/layout_animation_fall_down"
         android:padding="10dp">
 
 
-    <com.utoronto.ece1778.probo.Utils.SquareImageView
-        android:id="@+id/images"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:scaleType="centerCrop"
-        android:src="@drawable/bg_rounded_top"
-        android:layout_margin="20dp"
-        />
+        <com.utoronto.ece1778.probo.Utils.SquareImageView
+            android:id="@+id/images"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginBottom="20dp"
+            android:scaleType="centerCrop"
+            android:src="@drawable/bg_rounded_top"
 
-    <ProgressBar
-        android:id="@+id/gridImageProgressbar"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
-        android:layout_centerInParent="true" />
+            />
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/header"
-        android:layout_below="@id/images"
-        android:text="Header lipsum lurem sdsa sdms sdakd"
-        android:textColor="@color/black"
-        android:textSize="15sp"
-        android:textStyle="bold" />
+        <com.battleent.ribbonviews.RibbonTag
+            android:id="@+id/ribbonTag"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Unreliable source"
+            app:tag_ribbonColor="#cdda0b23"
+            app:tag_ribbonRadius="0"
+            app:tag_textSize="15" />
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/description"
-        android:layout_below="@id/header"
-        android:layout_marginTop="15dp"
-        android:text="Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s"
-        android:textColor="@color/dark_grey"
-        android:textSize="12sp"
-        android:textStyle="normal" />
+
+        <ProgressBar
+            android:id="@+id/gridImageProgressbar"
+
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_centerInParent="true" />
+
+        <TextView
+            android:id="@+id/header"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/images"
+            android:text="Header lipsum lurem sdsa sdms sdakd"
+            android:textColor="@color/black"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/description"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/header"
+            android:layout_marginTop="15dp"
+            android:text="Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s"
+            android:textColor="@color/dark_grey"
+            android:textSize="12sp"
+            android:textStyle="normal" />
 
     </RelativeLayout>
 
