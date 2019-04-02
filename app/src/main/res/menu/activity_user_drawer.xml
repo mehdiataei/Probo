@@ -40,10 +40,6 @@
                         android:icon="@drawable/account_icon"
                         android:title="@string/user_nav_account" />
 
-                    <item
-                        android:id="@+id/nav_preferences"
-                        android:icon="@drawable/preferences_icon"
-                        android:title="@string/user_nav_preferences" />
                 </group>
             </menu>
         </item>

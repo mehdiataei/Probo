@@ -9,6 +9,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.bumptech.glide.Priority;
@@ -56,6 +57,12 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
         holder.myHeading.setText(mData.get(position).getHeading());
         holder.myDescription.setText(mData.get(position).getDescription());
 
+        if (mData.get(position).getCredibility().equals("true")) {
+
+            holder.myRel.setVisibility(View.GONE);
+        }
+
+
     }
 
     // total number of cells
@@ -70,6 +77,7 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
         ProgressBar myProgressBar;
         TextView myDescription;
         TextView myHeading;
+        RelativeLayout myRel;
 
         ViewHolder(View itemView) {
             super(itemView);
@@ -78,6 +86,7 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
 
             myHeading = itemView.findViewById(R.id.header);
             myDescription = itemView.findViewById(R.id.description);
+            myRel = itemView.findViewById(R.id.alart_rel_layout);
 
             itemView.setOnClickListener(this);
         }

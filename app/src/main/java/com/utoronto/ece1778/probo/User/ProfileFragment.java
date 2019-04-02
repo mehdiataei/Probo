@@ -2,6 +2,7 @@ package com.utoronto.ece1778.probo.User;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.graphics.drawable.RoundedBitmapDrawable;
@@ -69,6 +70,8 @@ public class ProfileFragment extends Fragment {
         View v = inflater.inflate(R.layout.fragment_profile, container, false);
 
         refreshLayout = v.findViewById(R.id.refresh);
+        refreshLayout.setWaveARGBColor(255, 55, 64, 70);
+        refreshLayout.setColorSchemeColors(Color.WHITE);
         annotationsProgress = v.findViewById(R.id.annotations_progress);
         noAnnotationsContainer = v.findViewById(R.id.no_annotations_container);
         annotationsContainer = v.findViewById(R.id.annotations_container);

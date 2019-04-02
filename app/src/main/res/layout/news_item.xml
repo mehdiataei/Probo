@@ -18,7 +18,6 @@
         android:layoutAnimation="@anim/layout_animation_fall_down"
         android:padding="10dp">
 
-
         <com.utoronto.ece1778.probo.Utils.SquareImageView
             android:id="@+id/images"
             android:layout_width="match_parent"
@@ -29,14 +28,32 @@
 
             />
 
-        <com.battleent.ribbonviews.RibbonTag
-            android:id="@+id/ribbonTag"
+        <RelativeLayout
+            android:id="@+id/alart_rel_layout"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Unreliable source"
-            app:tag_ribbonColor="#cdda0b23"
-            app:tag_ribbonRadius="0"
-            app:tag_textSize="15" />
+            android:background="@color/material_red_500_transparent"
+            android:padding="8dp">
+
+            <ImageView
+                android:id="@+id/alart_image"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:src="@drawable/ic_warning_black_24dp"
+                android:layout_centerVertical="true" />
+
+            <TextView
+                android:id="@+id/TextAct1"
+                android:layout_toEndOf="@id/alart_image"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:text="Potentially unreliable"
+                android:textSize="14sp"
+                android:textColor="@color/white"
+                android:layout_centerVertical="true" />
+
+        </RelativeLayout>
 
 
         <ProgressBar

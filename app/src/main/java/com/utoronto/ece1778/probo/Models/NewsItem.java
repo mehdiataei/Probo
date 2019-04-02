@@ -14,6 +14,7 @@ public class NewsItem implements Parcelable {
     private String author;
     private String date_created;
     private String confidence_score;
+    private String credibility;
 
 
     public NewsItem() {
@@ -27,7 +28,8 @@ public class NewsItem implements Parcelable {
         news_id = in.readString();
         author = in.readString();
         date_created = in.readString();
-
+        credibility = in.readString();
+        confidence_score = in.readString();
     }
 
     public static final Creator<NewsItem> CREATOR = new Creator<NewsItem>() {
@@ -47,7 +49,7 @@ public class NewsItem implements Parcelable {
         return 0;
     }
 
-    public NewsItem(String heading, String description, String image_url, String body, String news_id, String author, String confidence_score) {
+    public NewsItem(String heading, String description, String image_url, String body, String news_id, String author, String confidence_score, String credibility) {
         this.heading = heading;
         this.description = description;
         this.image_url = image_url;
@@ -55,6 +57,7 @@ public class NewsItem implements Parcelable {
         this.news_id = news_id;
         this.author = author;
         this.confidence_score = confidence_score;
+        this.credibility = credibility;
     }
 
     @Override
@@ -68,21 +71,8 @@ public class NewsItem implements Parcelable {
         dest.writeString(author);
         dest.writeString(date_created);
         dest.writeString(confidence_score);
+        dest.writeString(credibility);
 
-    }
-
-    @Override
-    public String toString() {
-        return "NewsItem{" +
-                "heading='" + heading + '\'' +
-                ", description='" + description + '\'' +
-                ", image_url='" + image_url + '\'' +
-                ", body='" + body + '\'' +
-                ", news_id='" + news_id + '\'' +
-                ", author='" + author + '\'' +
-                ", date_created='" + date_created + '\'' +
-                ", confidence_score='" + confidence_score + '\'' +
-                '}';
     }
 
 
@@ -149,4 +139,33 @@ public class NewsItem implements Parcelable {
     public void setConfidence_score(String confidence_score) {
         this.confidence_score = confidence_score;
     }
+
+    public String getCredibility() {
+        return credibility;
+    }
+
+    public void setCredibility(String credibility) {
+        this.credibility = credibility;
+    }
+
+    public static Creator<NewsItem> getCREATOR() {
+        return CREATOR;
+    }
+
+    @Override
+    public String toString() {
+        return "NewsItem{" +
+                "heading='" + heading + '\'' +
+                ", description='" + description + '\'' +
+                ", image_url='" + image_url + '\'' +
+                ", body='" + body + '\'' +
+                ", news_id='" + news_id + '\'' +
+                ", author='" + author + '\'' +
+                ", date_created='" + date_created + '\'' +
+                ", confidence_score='" + confidence_score + '\'' +
+                ", credibility='" + credibility + '\'' +
+                '}';
+    }
+
+
 }
