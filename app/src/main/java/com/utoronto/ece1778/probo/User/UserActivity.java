@@ -389,6 +389,17 @@ public class UserActivity extends AppCompatActivity
     }
 
     @Override
+    public void onGoToAnnotation(Annotation annotation) {
+        routeToNews(
+                annotation.getArticle().getId(),
+                annotation.getId(),
+                annotation.getType(),
+                annotation.getStartIndex(),
+                annotation.getEndIndex()
+        );
+    }
+
+    @Override
     public User getUser() {
         return user;
     }

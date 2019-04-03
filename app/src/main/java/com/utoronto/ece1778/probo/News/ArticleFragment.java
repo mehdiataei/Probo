@@ -472,6 +472,13 @@ public class ArticleFragment extends Fragment
         }
     }
 
+    @Override
+    public void onGoToAnnotation(Annotation annotation) {
+        if (interactionListener != null) {
+            interactionListener.onGoToAnnotation(annotation);
+        }
+    }
+
     public void handleTextViewClick(String quote, String type, int startIndex, int endIndex) {
         boolean annotationExists = article.annotationExists(type, startIndex, endIndex);
 
@@ -561,10 +568,9 @@ public class ArticleFragment extends Fragment
 
     public interface ArticleFragmentInteractionListener {
         void onAnnotationInput(float sentiment, String quote, String type, int startIndex, int endIndex, int value);
-
         void onMoreAnnotations(String type, int startIndex, int endIndex);
-
         void onRouteToProfile(String userId);
+        void onGoToAnnotation(Annotation annotation);
     }
 
     private void startSentimentAnalysis() {

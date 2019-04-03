@@ -304,6 +304,13 @@ public class NewsFragment extends Fragment
     }
 
     @Override
+    public void onGoToAnnotation(Annotation annotation) {
+        if (interactionListener != null) {
+            interactionListener.onGoToAnnotation(annotation);
+        }
+    }
+
+    @Override
     public void onAttach(Context context) {
         super.onAttach(context);
 
@@ -380,5 +387,6 @@ public class NewsFragment extends Fragment
 
     public interface NewsFragmentInteractionListener {
         void onRouteToProfile(String userId);
+        void onGoToAnnotation(Annotation annotation);
     }
 }

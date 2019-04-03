@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<jp.co.recruit_lifestyle.android.widget.WaveSwipeRefreshLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<android.support.v4.widget.SwipeRefreshLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/refresh"
     android:layout_width="match_parent"
@@ -106,4 +107,4 @@
                 android:paddingBottom="4dp" />
         </RelativeLayout>
     </LinearLayout>
-</jp.co.recruit_lifestyle.android.widget.WaveSwipeRefreshLayout>
+</android.support.v4.widget.SwipeRefreshLayout>

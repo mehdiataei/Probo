@@ -116,6 +116,8 @@
 
     <string name="feed_empty_message">Nothing was found. Follow some annotators to view their annotations here.</string>
 
+    <string name="annotation_recycler_go_to_annotation">Go to annotation</string>
+
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>

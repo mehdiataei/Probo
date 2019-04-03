@@ -156,11 +156,21 @@ public class AnnotationsFragment extends Fragment {
             }
         };
 
+        AnnotationsRecyclerAdapter.OnGoToAnnotationInterface onGoToAnnotationInterface = new AnnotationsRecyclerAdapter.OnGoToAnnotationInterface() {
+            @Override
+            public void onGoToAnnotation(Annotation annotation) {
+                if (interactionListener != null) {
+                    interactionListener.onGoToAnnotation(annotation);
+                }
+            }
+        };
+
         AnnotationsRecyclerAdapter adapter = new AnnotationsRecyclerAdapter(
                 article.getLocatedAnnotations(type, startIndex, endIndex),
                 userInteractionListener.getUser(),
                 onUserClickListener,
-                onVoteListener
+                onVoteListener,
+                onGoToAnnotationInterface
         );
 
         RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(this.getContext());
@@ -193,5 +203,6 @@ public class AnnotationsFragment extends Fragment {
     public interface AnnotationsFragmentInteractionListener {
         void onAnnotationVote(Annotation annotation);
         void onRouteToProfile(String userId);
+        void onGoToAnnotation(Annotation annotation);
     }
 }

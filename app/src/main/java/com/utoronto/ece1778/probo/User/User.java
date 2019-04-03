@@ -17,6 +17,7 @@ import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.WriteBatch;
 import com.google.firebase.messaging.FirebaseMessaging;
@@ -256,6 +257,7 @@ public class User {
         db.collection("users")
                 .document(this.uid)
                 .collection("subscriptions")
+                .orderBy("timestamp", Query.Direction.ASCENDING)
                 .get()
                 .addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
                     @Override
@@ -299,6 +301,7 @@ public class User {
                 .addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull Exception e) {
+                        Log.e("PROBO_APP", e.getMessage());
                         cb.onError(e);
                     }
                 });
@@ -312,6 +315,7 @@ public class User {
 
         db.collection("annotations")
                 .whereEqualTo("userId", this.uid)
+                .orderBy("timestamp", Query.Direction.ASCENDING)
                 .get()
                 .addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
                     @Override
@@ -398,6 +402,7 @@ public class User {
         this.feed = new ArrayList<>();
 
         db.collection("annotations")
+                .orderBy("timestamp", Query.Direction.ASCENDING)
                 .get()
                 .addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
                     @Override
@@ -476,6 +481,7 @@ public class User {
                 .addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull Exception e) {
+                        Log.e("PROBO_APP", e.getMessage());
                         cb.onError(e);
                     }
                 });
@@ -885,6 +891,7 @@ public class User {
         data.put("date", subscription.getDate());
         data.put("heading", subscription.getAnnotation().getHeading());
         data.put("sentence", subscription.getAnnotation().getSentence());
+        data.put("timestamp", System.currentTimeMillis());
 
         db.collection("users")
                 .document(this.uid)
@@ -946,6 +953,7 @@ public class User {
         db.collection("users")
                 .document(this.uid)
                 .collection("notifications")
+                .orderBy("timestamp", Query.Direction.ASCENDING)
                 .get()
                 .addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
                     @Override

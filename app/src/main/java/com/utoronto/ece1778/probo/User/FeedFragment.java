@@ -4,12 +4,15 @@ import android.content.Context;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v4.content.res.ResourcesCompat;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -19,14 +22,16 @@ import com.utoronto.ece1778.probo.News.AnnotationCardView;
 import com.utoronto.ece1778.probo.News.AnnotationsRecyclerAdapter;
 import com.utoronto.ece1778.probo.R;
 
+import java.util.ArrayList;
+import java.util.Collections;
+
 import jp.co.recruit_lifestyle.android.widget.WaveSwipeRefreshLayout;
 
 public class FeedFragment extends Fragment {
-    private WaveSwipeRefreshLayout swipeRefreshLayout;
+    private SwipeRefreshLayout swipeRefreshLayout;
     private LinearLayout noAnnotationsContainer;
     private RecyclerView annotationsContainer;
     private ProgressBar progress;
-    private ImageButton clearButton;
 
     private User.UserFragmentInteractionListener userInteractionListener;
     private FeedFragmentInteractionListener interactionListener;
@@ -34,7 +39,7 @@ public class FeedFragment extends Fragment {
     public FeedFragment() {
     }
 
-    private WaveSwipeRefreshLayout.OnRefreshListener handleRefresh = new WaveSwipeRefreshLayout.OnRefreshListener() {
+    private SwipeRefreshLayout.OnRefreshListener handleRefresh = new SwipeRefreshLayout.OnRefreshListener() {
         @Override
         public void onRefresh() {
             load();
@@ -48,8 +53,7 @@ public class FeedFragment extends Fragment {
         View v = inflater.inflate(R.layout.fragment_feed, container, false);
 
         swipeRefreshLayout = v.findViewById(R.id.refresh);
-        swipeRefreshLayout.setWaveARGBColor(255, 55, 64, 70);
-        swipeRefreshLayout.setColorSchemeColors(Color.WHITE);
+        swipeRefreshLayout.setColorSchemeColors(ResourcesCompat.getColor(getResources(), R.color.colorPrimary, null));
         noAnnotationsContainer = v.findViewById(R.id.no_annotations_container);
         annotationsContainer = v.findViewById(R.id.annotations_container);
         progress = v.findViewById(R.id.progress_spinner);
@@ -67,6 +71,9 @@ public class FeedFragment extends Fragment {
         } else {
             noAnnotationsContainer.setVisibility(View.VISIBLE);
         }
+
+        final ArrayList<Annotation> annotations = userInteractionListener.getUser().getFeed();
+        Collections.reverse(annotations);
 
         annotationsContainer.setVisibility(View.VISIBLE);
 
@@ -88,11 +95,21 @@ public class FeedFragment extends Fragment {
             }
         };
 
+        AnnotationsRecyclerAdapter.OnGoToAnnotationInterface onGoToAnnotationInterface = new AnnotationsRecyclerAdapter.OnGoToAnnotationInterface() {
+            @Override
+            public void onGoToAnnotation(Annotation annotation) {
+                if (interactionListener != null) {
+                    interactionListener.onGoToAnnotation(annotation);
+                }
+            }
+        };
+
         AnnotationsRecyclerAdapter adapter = new AnnotationsRecyclerAdapter(
-                userInteractionListener.getUser().getFeed(),
+                annotations,
                 userInteractionListener.getUser(),
                 onUserClickListener,
-                onVoteListener
+                onVoteListener,
+                onGoToAnnotationInterface
         );
 
         RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(this.getContext());
@@ -151,5 +168,6 @@ public class FeedFragment extends Fragment {
     public interface FeedFragmentInteractionListener {
         void onAnnotationVote(Annotation annotation);
         void onRouteToProfile(String userId);
+        void onGoToAnnotation(Annotation annotation);
     }
 }

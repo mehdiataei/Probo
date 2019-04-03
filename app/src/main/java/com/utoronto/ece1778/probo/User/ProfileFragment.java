@@ -5,7 +5,9 @@ import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v4.content.res.ResourcesCompat;
 import android.support.v4.graphics.drawable.RoundedBitmapDrawable;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -25,12 +27,15 @@ import com.utoronto.ece1778.probo.R;
 import com.utoronto.ece1778.probo.Utils.ImageBitmap;
 import com.utoronto.ece1778.probo.Utils.ImageLoader;
 
+import java.util.ArrayList;
+import java.util.Collections;
+
 import jp.co.recruit_lifestyle.android.widget.WaveSwipeRefreshLayout;
 
 public class ProfileFragment extends Fragment {
     private static final String ARG_USER_ID = "userId";
 
-    private WaveSwipeRefreshLayout refreshLayout;
+    private SwipeRefreshLayout refreshLayout;
     private ProgressBar annotationsProgress;
     private LinearLayout noAnnotationsContainer;
     private RecyclerView annotationsContainer;
@@ -70,8 +75,7 @@ public class ProfileFragment extends Fragment {
         View v = inflater.inflate(R.layout.fragment_profile, container, false);
 
         refreshLayout = v.findViewById(R.id.refresh);
-        refreshLayout.setWaveARGBColor(255, 55, 64, 70);
-        refreshLayout.setColorSchemeColors(Color.WHITE);
+        refreshLayout.setColorSchemeColors(ResourcesCompat.getColor(getResources(), R.color.colorPrimary, null));
         annotationsProgress = v.findViewById(R.id.annotations_progress);
         noAnnotationsContainer = v.findViewById(R.id.no_annotations_container);
         annotationsContainer = v.findViewById(R.id.annotations_container);
@@ -105,7 +109,7 @@ public class ProfileFragment extends Fragment {
         return v;
     }
 
-    private WaveSwipeRefreshLayout.OnRefreshListener handleRefresh = new WaveSwipeRefreshLayout.OnRefreshListener() {
+    private SwipeRefreshLayout.OnRefreshListener handleRefresh = new SwipeRefreshLayout.OnRefreshListener() {
         @Override
         public void onRefresh() {
             User.UserCallback cb = new User.UserCallback() {
@@ -196,6 +200,9 @@ public class ProfileFragment extends Fragment {
     }
 
     private void populateAnnotations() {
+        ArrayList<Annotation> annotations = profileUser.getAnnotations();
+        Collections.reverse(annotations);
+
         AnnotationCardView.OnUserClickListener onUserClickListener = new AnnotationCardView.OnUserClickListener() {
             @Override
             public void onClick(User user) {
@@ -212,11 +219,21 @@ public class ProfileFragment extends Fragment {
             }
         };
 
+        AnnotationsRecyclerAdapter.OnGoToAnnotationInterface onGoToAnnotationInterface = new AnnotationsRecyclerAdapter.OnGoToAnnotationInterface() {
+            @Override
+            public void onGoToAnnotation(Annotation annotation) {
+                if (interactionListener != null) {
+                    interactionListener.onGoToAnnotation(annotation);
+                }
+            }
+        };
+
         AnnotationsRecyclerAdapter adapter = new AnnotationsRecyclerAdapter(
-                profileUser.getAnnotations(),
+                annotations,
                 userInteractionListener.getUser(),
                 onUserClickListener,
-                onVoteListener
+                onVoteListener,
+                onGoToAnnotationInterface
         );
 
         RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(this.getContext());
@@ -246,5 +263,6 @@ public class ProfileFragment extends Fragment {
 
     public interface ProfileFragmentInteractionListener {
         void onRouteToProfile(String userId);
+        void onGoToAnnotation(Annotation annotation);
     }
 }

@@ -4,6 +4,8 @@ import android.content.Context;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v4.content.res.ResourcesCompat;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -22,14 +24,16 @@ import com.utoronto.ece1778.probo.News.AnnotationCardView;
 import com.utoronto.ece1778.probo.News.AnnotationsRecyclerAdapter;
 import com.utoronto.ece1778.probo.R;
 
+import java.util.ArrayList;
+import java.util.Collections;
+
 import jp.co.recruit_lifestyle.android.widget.WaveSwipeRefreshLayout;
 
 public class NotificationsFragment extends Fragment {
-    private WaveSwipeRefreshLayout swipeRefreshLayout;
+    private SwipeRefreshLayout swipeRefreshLayout;
     private LinearLayout noNotificationsContainer;
     private RecyclerView annotationsContainer;
     private ProgressBar progress;
-    private ImageButton clearButton;
 
     private User.UserFragmentInteractionListener userInteractionListener;
     private NotificationsFragmentInteractionListener interactionListener;
@@ -37,41 +41,12 @@ public class NotificationsFragment extends Fragment {
     public NotificationsFragment() {
     }
 
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setHasOptionsMenu(true);
-    }
-
-    private WaveSwipeRefreshLayout.OnRefreshListener handleRefresh = new WaveSwipeRefreshLayout.OnRefreshListener() {
+    private SwipeRefreshLayout.OnRefreshListener handleRefresh = new SwipeRefreshLayout.OnRefreshListener() {
         @Override
         public void onRefresh() {
             load();
         }
     };
-
-    @Override
-    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        inflater.inflate(R.menu.notifications_action_menu, menu);
-
-        MenuItem item = menu.findItem(R.id.clear_action);
-        clearButton = item.getActionView().findViewById(R.id.clear);
-
-        clearButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                clear();
-            }
-        });
-
-        super.onCreateOptionsMenu(menu, inflater);
-    }
-
-    @Override
-    public void onDestroyView() {
-        setHasOptionsMenu(false);
-        super.onDestroyView();
-    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -80,8 +55,7 @@ public class NotificationsFragment extends Fragment {
         View v = inflater.inflate(R.layout.fragment_notifications, container, false);
 
         swipeRefreshLayout = v.findViewById(R.id.refresh);
-        swipeRefreshLayout.setWaveARGBColor(255, 55, 64, 70);
-        swipeRefreshLayout.setColorSchemeColors(Color.WHITE);
+        swipeRefreshLayout.setColorSchemeColors(ResourcesCompat.getColor(getResources(), R.color.colorPrimary, null));
 
 
         noNotificationsContainer = v.findViewById(R.id.no_notifications_container);
@@ -104,6 +78,9 @@ public class NotificationsFragment extends Fragment {
 
         annotationsContainer.setVisibility(View.VISIBLE);
 
+        ArrayList<Annotation> annotations = userInteractionListener.getUser().getNotifications();
+        Collections.reverse(annotations);
+
         AnnotationCardView.OnUserClickListener onUserClickListener = new AnnotationCardView.OnUserClickListener() {
             @Override
             public void onClick(User user) {
@@ -122,11 +99,21 @@ public class NotificationsFragment extends Fragment {
             }
         };
 
+        AnnotationsRecyclerAdapter.OnGoToAnnotationInterface onGoToAnnotationInterface = new AnnotationsRecyclerAdapter.OnGoToAnnotationInterface() {
+            @Override
+            public void onGoToAnnotation(Annotation annotation) {
+                if (interactionListener != null) {
+                    interactionListener.onGoToAnnotation(annotation);
+                }
+            }
+        };
+
         AnnotationsRecyclerAdapter adapter = new AnnotationsRecyclerAdapter(
-                userInteractionListener.getUser().getNotifications(),
+                annotations,
                 userInteractionListener.getUser(),
                 onUserClickListener,
-                onVoteListener
+                onVoteListener,
+                onGoToAnnotationInterface
         );
 
         RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(this.getContext());
@@ -157,25 +144,6 @@ public class NotificationsFragment extends Fragment {
         user.loadNotifications(cb);
     }
 
-    private void clear() {
-        final User user = userInteractionListener.getUser();
-
-        User.UserClearNotificationsCallback cb = new User.UserClearNotificationsCallback() {
-            @Override
-            public void onClear() {
-                userInteractionListener.updateUser(user);
-                populate();
-                clearButton.setEnabled(true);
-            }
-
-            @Override
-            public void onError(Exception error) {
-            }
-        };
-
-        clearButton.setEnabled(false);
-        user.clearNotifications(cb);
-    }
 
     @Override
     public void onAttach(Context context) {
@@ -199,5 +167,6 @@ public class NotificationsFragment extends Fragment {
     public interface NotificationsFragmentInteractionListener {
         void onAnnotationVote(Annotation annotation);
         void onRouteToProfile(String userId);
+        void onGoToAnnotation(Annotation annotation);
     }
 }
