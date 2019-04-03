@@ -124,6 +124,10 @@ public class AnnotationInputFragment extends Fragment {
         closeButton.setOnClickListener(handleCloseClick);
         submitButton.setOnClickListener(handleSubmitClick);
 
+        if (!isFact) {
+            primarySource.setVisibility(View.GONE);
+        }
+
         valueSeekBar.setCustomSectionTextArray(new BubbleSeekBar.CustomSectionTextArray() {
             @NonNull
             @Override
@@ -249,8 +253,6 @@ public class AnnotationInputFragment extends Fragment {
         final String comment = commentText.getText().toString();
         final String source = sourceText.getText().toString();
 
-        Log.d(TAG, "submit: source: " + source);
-
         if (annotationValue == 0) {
             String valueErrorText = isFact ?
                     getString(R.string.annotation_input_error_no_value_fact) :
@@ -338,7 +340,7 @@ public class AnnotationInputFragment extends Fragment {
                 }
             };
 
-            if (primarySource.isChecked()) {
+            if (primarySource.isChecked() || !isFact) {
                 sourceCb.onChecked();
             } else {
                 showProgress(getString(R.string.annotation_input_checking_source));

@@ -6,7 +6,6 @@ import android.graphics.Color;
 import android.support.v4.graphics.drawable.RoundedBitmapDrawable;
 import android.support.v7.widget.CardView;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
@@ -17,6 +16,7 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.ornach.nobobutton.NoboButton;
 import com.utoronto.ece1778.probo.R;
 import com.utoronto.ece1778.probo.User.User;
 import com.utoronto.ece1778.probo.Utils.Helper;
@@ -42,7 +42,7 @@ public class AnnotationCardView extends CardView {
     private ProgressBar downvoteProgress, upvoteProgress;
     private TextView downvoteTextView, upvoteTextView;
     private LinearLayout profileMenuContainer;
-    private Button profileButton, followButton;
+    private NoboButton profileButton, followButton;
 
     private Annotation annotation;
     private User user;
@@ -144,16 +144,23 @@ public class AnnotationCardView extends CardView {
         this.progress.setVisibility(View.GONE);
         this.commentTextView.setVisibility(View.VISIBLE);
 
-        int color = Color.parseColor("#ffd633");
+        int color = Color.parseColor("#008000");
         if (this.annotation.getValue() > 0) {
-            color = Color.parseColor("#4dff88");
+            color = Color.parseColor("#008000");
         } else if (this.annotation.getValue() < 0) {
-            color = Color.parseColor("#ffb3b3");
+            color = Color.parseColor("#d32f2f");
         }
 
         this.setCardBackgroundColor(color);
 
-        this.commentTextView.setText(annotation.getComment());
+        if (!this.annotation.getSource().equals("")) {
+
+            this.commentTextView.setText(annotation.getComment() + "\n\n\n\n" + "Source: " + "\n\n" + annotation.getSource());
+
+        } else {
+
+            this.commentTextView.setText(annotation.getComment());
+        }
 
         updateVoteCounts();
         updateVoteDrawables();
@@ -221,9 +228,12 @@ public class AnnotationCardView extends CardView {
         }
 
         if (user.isFollowing(annotation.getUser())) {
-            this.followButton.setText(R.string.annotation_card_unfollow);
+            this.followButton.setText("Unfollow");
+            this.followButton.setFontIcon("\uf235");
+
         } else {
-            this.followButton.setText(R.string.annotation_card_follow);
+            this.followButton.setText("Follow");
+            this.followButton.setFontIcon("\uf234");
         }
     }
 
@@ -292,9 +302,12 @@ public class AnnotationCardView extends CardView {
                 }
 
                 if (user.isFollowing(annotation.getUser())) {
-                    followButton.setText(R.string.annotation_card_unfollow);
+                    followButton.setFontIcon("\uf235");
+                    followButton.setText("Unfollow");
                 } else {
-                    followButton.setText(R.string.annotation_card_follow);
+                    followButton.setFontIcon("\uf234");
+
+                    followButton.setText("Follow");
                 }
 
                 followButton.setEnabled(true);

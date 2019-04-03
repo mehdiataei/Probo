@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
 
     <LinearLayout
@@ -23,7 +23,7 @@
                 android:id="@+id/comment"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="@color/colorPrimary"
+                android:textColor="@color/white"
                 android:visibility="gone"
                 android:textSize="16sp" />
         </android.support.v4.widget.NestedScrollView>
@@ -38,7 +38,7 @@
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:layout_marginTop="12dp"
-            android:background="@color/black" />
+            android:background="@color/white" />
 
         <RelativeLayout
             android:layout_width="match_parent"
@@ -81,7 +81,7 @@
                     android:minHeight="0dp"
                     android:background="@null"
                     android:textAllCaps="false"
-                    android:textColor="@color/colorPrimary"
+                    android:textColor="@color/white"
                     android:textSize="14sp"
                     android:textStyle="bold" />
 
@@ -89,7 +89,7 @@
                     android:id="@+id/title"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/colorPrimary"
+                    android:textColor="@color/white"
                     android:textSize="14sp"
                     android:visibility="gone" />
             </LinearLayout>
@@ -129,7 +129,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:textColor="@color/colorPrimary"
+                    android:textColor="@color/white"
                     android:textSize="14sp"
                     android:text="0" />
             </LinearLayout>
@@ -168,7 +168,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:textColor="@color/colorPrimary"
+                    android:textColor="@color/white"
                     android:textSize="14sp"
                     android:text="0" />
             </LinearLayout>
@@ -178,38 +178,46 @@
             android:id="@+id/profile_menu_container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="12dp"
             android:visibility="gone">
 
-            <Button
+            <com.ornach.nobobutton.NoboButton
                 android:id="@+id/profile_button"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:minWidth="0dp"
-                android:minHeight="0dp"
-                android:layout_marginEnd="4dp"
-                android:padding="8dp"
-                android:background="@color/colorPrimary"
-                android:textAllCaps="false"
-                android:textColor="@color/white"
-                android:textSize="14sp"
+                android:layout_height="40dp"
+                android:layout_marginBottom="20dp"
+                android:textSize="16sp"
                 android:layout_weight="1"
-                android:text="@string/annotation_card_profile" />
+                app:nb_text="@string/annotation_card_profile"
+                app:nb_borderColor="#FFFFFF"
+                app:nb_borderWidth="2dp"
+                app:nb_backgroundColor="@android:color/transparent"
+                app:nb_focusColor="#B83CC3"
+                app:nb_textColor="#FFF"
+                app:nb_radius="6dp"
+                app:nb_fontIcon="&#xf2bd;" />
 
-            <Button
+            <com.ornach.nobobutton.NoboButton
+
                 android:id="@+id/follow_button"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="40dp"
                 android:minWidth="0dp"
                 android:minHeight="0dp"
                 android:layout_marginStart="4dp"
                 android:padding="8dp"
-                android:background="@color/colorPrimary"
-                android:textAllCaps="false"
-                android:textColor="@color/white"
-                android:textSize="14sp"
                 android:layout_weight="1"
-                android:text="@string/annotation_card_follow" />
+                android:textSize="16sp"
+                app:nb_text="@string/annotation_card_follow"
+                app:nb_borderColor="#FFFFFF"
+                app:nb_borderWidth="2dp"
+                app:nb_backgroundColor="@android:color/transparent"
+                app:nb_focusColor="#B83CC3"
+                app:nb_textColor="#FFF"
+                app:nb_radius="6dp"
+                app:nb_fontIcon="&#xf291;" />
+
+
         </LinearLayout>
     </LinearLayout>
 </RelativeLayout>

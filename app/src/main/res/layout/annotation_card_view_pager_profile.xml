@@ -8,4 +8,4 @@
     tools:layout_height="92dp"
     tools:layout_width="92dp"
     tools:src="@drawable/profile_image_default_dark"
-    tools:background="@drawable/oval_border_light" />
+    android:foreground="@drawable/oval_border_light" />
