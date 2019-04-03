@@ -152,20 +152,6 @@ public class AnnotationInputFragment extends Fragment {
         return v;
     }
 
-    @Override
-    public void onResume() {
-        super.onResume();
-
-        valueSeekBar.setProgress(0);
-        commentText.setText("");
-        sourceText.setText("");
-        primarySource.setChecked(false);
-        subscribe.setChecked(false);
-
-        annotationValue = 0;
-        setTitleText(annotationValue);
-    }
-
     private BubbleSeekBar.OnProgressChangedListener handleSeekBarChange = new BubbleSeekBar.OnProgressChangedListener() {
         @Override
         public void onProgressChanged(BubbleSeekBar bubbleSeekBar, int progress, float progressFloat, boolean fromUser) {
@@ -188,6 +174,7 @@ public class AnnotationInputFragment extends Fragment {
             disable();
 
             if (interactionListener != null) {
+                resetFields();
                 interactionListener.onAnnotationClose();
             }
         }
@@ -287,6 +274,7 @@ public class AnnotationInputFragment extends Fragment {
                         @Override
                         public void onSubmit(Annotation annotation) {
                             hideProgress();
+                            resetFields();
                             interactionListener.onAnnotationClose();
                         }
 
@@ -410,6 +398,17 @@ public class AnnotationInputFragment extends Fragment {
         progressText.setText(s);
 
         progressContainer.setVisibility(View.VISIBLE);
+    }
+
+    public void resetFields() {
+        valueSeekBar.setProgress(0);
+        commentText.setText("");
+        sourceText.setText("");
+        primarySource.setChecked(false);
+        subscribe.setChecked(false);
+
+        annotationValue = 0;
+        setTitleText(annotationValue);
     }
 
     public void hideProgress() {
