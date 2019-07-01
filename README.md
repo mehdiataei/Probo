@@ -1,5 +1,8 @@
 # Probo
 
+Probo is a news annotation app which provides line by line news annotation and news and source reliability analysis using Natural Language Processing.
+
+
 ## Functionality
 
 The screenshots below outline the functionality of the application.
