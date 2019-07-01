@@ -593,7 +593,7 @@ public class ArticleFragment extends Fragment
             final String source = SourceCheckerParams[0].getSource();
 
             IamOptions options = new IamOptions.Builder()
-                    .apiKey("48kgp2fHd9HVz6fe3f0TsQjTWysYNx9iKc2eyh2aUoQ-")
+                    .apiKey("API-KEY")
                     .build();
 
             NaturalLanguageUnderstanding naturalLanguageUnderstanding = new NaturalLanguageUnderstanding("2018-11-16", options);
